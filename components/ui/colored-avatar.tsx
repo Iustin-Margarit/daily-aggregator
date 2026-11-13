@@ -1,42 +1,33 @@
-"use client";
+import { cn } from '@/lib/utils';
 
-import * as React from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-
-interface ColoredAvatarProps {
-  username?: string | null;
-  color?: string;
-  size?: "sm" | "md" | "lg" | "xl";
-  className?: string;
-}
-
-const sizeClasses = {
-  sm: "h-8 w-8 text-sm",
-  md: "h-10 w-10 text-base",
-  lg: "h-16 w-16 text-lg",
-  xl: "h-32 w-32 text-4xl"
+const SIZES = {
+  sm: 'h-7 w-7 text-sm',
+  md: 'h-9 w-9 text-base',
+  lg: 'h-14 w-14 text-2xl',
+  xl: 'h-24 w-24 text-5xl',
 };
 
-export function ColoredAvatar({ 
-  username, 
-  color = "#3B82F6", 
-  size = "md", 
-  className 
-}: ColoredAvatarProps) {
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "?";
-    return name.charAt(0).toUpperCase();
-  };
+type ColoredAvatarProps = {
+  username?: string | null;
+  color?: string | null;
+  size?: keyof typeof SIZES;
+  className?: string;
+};
 
+/** Initial-letter seal printed in the user's chosen ink. */
+export function ColoredAvatar({ username, color, size = 'md', className }: ColoredAvatarProps) {
+  const initial = username?.trim().charAt(0).toUpperCase() || '?';
   return (
-    <Avatar className={cn(sizeClasses[size], className)}>
-      <AvatarFallback 
-        style={{ backgroundColor: color }}
-        className="text-white font-semibold"
-      >
-        {getInitials(username)}
-      </AvatarFallback>
-    </Avatar>
+    <span
+      aria-hidden="true"
+      className={cn(
+        'inline-flex shrink-0 select-none items-center justify-center rounded-full font-display font-bold leading-none text-[#f7f3ea] ring-1 ring-rule ring-offset-2 ring-offset-background',
+        SIZES[size],
+        className,
+      )}
+      style={{ backgroundColor: color || '#1E3A5F' }}
+    >
+      {initial}
+    </span>
   );
 }

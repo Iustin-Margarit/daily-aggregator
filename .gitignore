@@ -1,94 +1,31 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# Local Environment Variables
-# Contains secrets and should NEVER be committed.
+# Environment variables (contain secrets - never commit)
+.env
 .env.local
 .env.*.local
 
-# Build output
+# Dependencies and build output
+node_modules/
 .next/
+.next-*/
 out/
+build/
+*.tsbuildinfo
 
-# Dependencies
-node_modules
-
-# VSCode Editor
-.vscode/*
-!.vscode/extensions.json
-
-# User-specific tool configurations (from your original file)
-.cursor/
-.clinerules/
-.roo/
-.windsurf/
-.github/copilot-instructions.md
-.conda/
-.kilocode/
-
-# Turbo
+# Deployment platforms
+.vercel
 .turbo
 
-# Vercel
-.vercel
+# Editors and personal AI-assistant settings
+.vscode/
+.idea/
+.claude/settings.local.json
 
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS-generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Debug and test files (development artifacts)
-debug/
-**/debug-*.js
-**/test-*.js
-new_sources.txt
-
-# Python artifacts (if any)
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Supabase local development state
+# Local Supabase state
 supabase/.branches/
 supabase/.temp/
 
-# Supabase Edge Function dependencies
-supabase/functions/**/node_modules/
-supabase/functions/**/*.npmrc
-
-# General log files
+# Logs and OS files
 *.log
-
-# Business-sensitive documentation (should not be public)
-PREMIUM_FEATURES_GUIDE.md
-DEPLOYMENT.md
-DEPLOYMENT_GUIDE_PER_USER_RETENTION.md
-
-# Development and cleanup scripts
-cleanup_repo.sh
+npm-debug.log*
+.DS_Store
+Thumbs.db

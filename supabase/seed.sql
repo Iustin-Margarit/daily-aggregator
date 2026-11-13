@@ -1,0 +1,9 @@
+-- Local development seed (runs on `supabase db reset` only, never in production).
+--
+-- Categories and RSS sources are created by the migrations, so there is nothing
+-- to seed. To get articles, start the app and either:
+--   * run `npm run ingest`, or
+--   * open /admin/dashboard as an admin and press "Fetch news now".
+--
+-- To make your account an administrator:
+--   npm run make-admin -- you@example.com

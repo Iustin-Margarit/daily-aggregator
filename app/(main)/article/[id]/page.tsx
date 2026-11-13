@@ -1,350 +1,137 @@
+import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { Bookmark, BookmarkCheck, Heart, Calendar, User, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { ArticleActionsBar } from '@/components/article/article-actions-bar';
+import { BackLink } from '@/components/article/back-link';
+import { Comments } from '@/components/article/comments';
+import { RelatedArticles } from '@/components/article/related-articles';
+import { ArticleImage } from '@/components/articles/article-image';
+import { CategoryBadge } from '@/components/articles/category-badge';
+import { TimeAgo } from '@/components/site/time-ago';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
-import { Suspense } from 'react';
-import ArticleInteractions from '@/components/custom/article-interactions';
-import RelatedArticles from '@/components/custom/related-articles';
-import ArticleErrorBoundary from '@/components/custom/article-error-boundary';
-import ArticleDetailSkeleton from '@/components/custom/article-detail-skeleton';
-import ArticleNotFound from '@/components/custom/article-not-found';
-import { calculateReadingTime, formatReadingTime, shouldShowReadingTime } from '@/lib/utils/reading-time';
+import { formatDateTime } from '@/lib/format';
+import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { cleanText, truncate } from '@/lib/text';
+import type { ArticleDetail, CommentItem, RelatedArticle } from '@/lib/types';
 
-interface Article {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  slug: string;
-  image_url?: string;
-  source?: string;
-  author?: string;
-  published_at?: string;
-  created_at: string;
-  category_id?: string;
-  categories?: {
-    id: string;
-    name: string;
-  };
-  sources?: {
-    id: string;
-    name: string;
-    categories?: {
-      id: string;
-      name: string;
-    };
+type PageProps = { params: Promise<{ id: string }> };
+
+const getArticle = cache(async (slugOrId: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc('get_article', { p_slug_or_id: decodeURIComponent(slugOrId) }).maybeSingle();
+  return (data as ArticleDetail | null) ?? null;
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const article = await getArticle((await params).id);
+  if (!article) return { title: 'Article not found' };
+  const title = cleanText(article.title);
+  const description = truncate(cleanText(article.summary), 180) || `${article.category_name} news from ${article.source_name}`;
+  return {
+    title,
+    description,
+    openGraph: {
+      type: 'article',
+      title,
+      description,
+      publishedTime: article.published_at,
+      images: article.image_url ? [{ url: article.image_url }] : undefined,
+    },
+    twitter: { card: article.image_url ? 'summary_large_image' : 'summary', title, description },
   };
 }
 
-// Helper function to check if a string is a UUID
-function isUUID(str: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(str);
-}
+export default async function ArticlePage({ params }: PageProps) {
+  const { id } = await params;
+  const [article, user, profile] = await Promise.all([getArticle(id), getCurrentUser(), getCurrentProfile()]);
+  if (!article) notFound();
 
-async function getArticle(slugOrId: string): Promise<Article | null> {
-  try {
-    const supabase = createClient();
-    
-    // Determine if we're looking for a slug or UUID
-    const isId = isUUID(slugOrId);
-    const searchField = isId ? 'id' : 'slug';
-    
-    const { data: article, error } = await supabase
-      .from('articles')
-      .select(`
-        *,
-        sources (
-          id,
-          name,
-          categories (
-            id,
-            name
-          )
-        ),
-        article_categories (
-          categories (
-            id,
-            name
-          )
-        )
-      `)
-      .eq(searchField, slugOrId)
-      .single();
+  const supabase = await createClient();
+  const [{ data: related }, { data: comments }] = await Promise.all([
+    supabase.rpc('get_related_articles', { p_article_id: article.id, p_limit: 6 }),
+    supabase.rpc('get_article_comments', { p_article_id: article.id }),
+  ]);
 
-    if (error) {
-      console.error('Error fetching article:', error);
-      // If it's a "not found" error, return null to trigger 404
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      // For other errors, throw to trigger error boundary
-      throw new Error(`Failed to fetch article: ${error.message}`);
-    }
-
-    // Validate that we have essential article data
-    if (!article || !article.id || !article.title) {
-      console.error('Article data is incomplete:', article);
-      return null;
-    }
-
-    // Extract category from sources or article_categories
-    let categoryInfo = null;
-    
-    // First try to get category from source
-    if (article.sources?.categories) {
-      categoryInfo = article.sources.categories;
-    }
-    // Fallback to article_categories if available
-    else if (article.article_categories && article.article_categories.length > 0) {
-      categoryInfo = article.article_categories[0].categories;
-    }
-    
-    // Add the category info to the article object for easier access
-    const enrichedArticle = {
-      ...article,
-      categories: categoryInfo
-    };
-
-    return enrichedArticle;
-  } catch (error) {
-    console.error('Unexpected error fetching article:', error);
-    throw error; // Re-throw to trigger error boundary
-  }
-}
-
-async function getUser() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
-
-
-function cleanText(text: string | null | undefined): string {
-  if (!text) return '';
-  
-  return text
-    // Remove CDATA sections
-    .replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
-    // Decode common HTML entities
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    // Remove any remaining HTML tags
-    .replace(/<[^>]*>/g, '')
-    // Clean up extra whitespace
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Create a separate component for the article content to wrap with error boundary
-async function ArticleContent({ params }: { params: { id: string } }) {
-  const article = await getArticle(params.id);
-  const user = await getUser();
-
-  if (!article) {
-    return <ArticleNotFound />;
-  }
-
-  const readingTime = calculateReadingTime(article.summary || '');
-  const showReadingTime = shouldShowReadingTime(article.summary || '');
-  const publishedDate = article.published_at
-    ? new Date(article.published_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    : null;
+  const title = cleanText(article.title);
+  const summary = cleanText(article.summary);
+  const author = article.author ? cleanText(article.author) : null;
+  const articlePath = `/article/${article.slug}`;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back Navigation */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <Link
-              href="/feed"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:text-blue-400 dark:bg-blue-950 dark:hover:bg-blue-900 dark:hover:text-blue-300 rounded-lg transition-all duration-200 border border-blue-200 hover:border-blue-300 dark:border-blue-800 dark:hover:border-blue-700"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Feed
-            </Link>
-            <Link
-              href="/saved"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 hover:text-green-700 dark:text-green-400 dark:bg-green-950 dark:hover:bg-green-900 dark:hover:text-green-300 rounded-lg transition-all duration-200 border border-green-200 hover:border-green-300 dark:border-green-800 dark:hover:border-green-700"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Saved Articles
-            </Link>
-          </div>
-        </div>
+    <div className="container max-w-5xl py-6 sm:py-8">
+      <BackLink />
 
-        {/* Article Header */}
-        <article className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
-          {/* Hero Image with error handling */}
-          {article.image_url && (
-            <div className="w-full h-64 md:h-96 relative">
-              <img
-                src={article.image_url}
-                alt={article.title || 'Article image'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
+      <article className="mt-6">
+        <header className="text-center">
+          <div className="flex items-center justify-center gap-3">
+            <span className="h-px w-10 bg-rule" aria-hidden="true" />
+            <CategoryBadge name={article.category_name} />
+            <span className="h-px w-10 bg-rule" aria-hidden="true" />
+          </div>
+          <h1 className="headline mx-auto mt-4 max-w-4xl text-[2.2rem] sm:text-5xl lg:text-[3.6rem]">{title}</h1>
+          <div className="mt-6 border-y border-rule py-2">
+            <p className="byline flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-foreground/80">
+              {author && <span>By {author}</span>}
+              {author && <span aria-hidden="true">|</span>}
+              {article.source_website_url ? (
+                <a href={article.source_website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  {article.source_name}
+                </a>
+              ) : (
+                <span>{article.source_name}</span>
+              )}
+              <span aria-hidden="true">|</span>
+              <time dateTime={article.published_at}>{formatDateTime(article.published_at)}</time>
+              <span aria-hidden="true">|</span>
+              <TimeAgo date={article.published_at} />
+            </p>
+          </div>
+        </header>
+
+        <figure className="mt-6">
+          <div className="border border-rule p-2">
+            <ArticleImage src={article.image_url} alt={title} category={article.category_name} width={1600} eager className="aspect-video w-full" />
+          </div>
+          <figcaption className="mt-1.5 text-right text-xs italic text-muted-foreground">Photograph via {article.source_name}</figcaption>
+        </figure>
+
+        <div className="mx-auto mt-8 max-w-3xl">
+          <ArticleActionsBar article={article} userId={user?.id ?? null} />
+
+          {summary ? (
+            <p className="news-text dropcap mt-6 text-[1.2rem] leading-relaxed text-foreground/90">{summary}</p>
+          ) : (
+            <p className="mt-6 italic text-muted-foreground">The publisher did not include a summary for this story.</p>
           )}
 
-          <div className="p-6 md:p-8">
-            {/* Category Badge */}
-            {article.categories && (
-              <div className="mb-4">
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                  {article.categories.name}
-                </Badge>
-              </div>
-            )}
-
-            {/* Article Title */}
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 leading-tight">
-              {cleanText(article.title) || 'Untitled Article'}
-            </h1>
-
-            {/* Article Meta Information */}
-            <div className="mb-6 pb-6 border-b border-border">
-              {/* Source Line */}
-              {(article.sources?.name || article.source) && (
-                <div className="mb-3">
-                  <span className="text-lg font-semibold text-foreground">
-                    {cleanText(article.sources?.name || article.source)}
-                  </span>
-                </div>
-              )}
-              
-              {/* Author, Date, and Reading Time Line */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                {article.author && (
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 mr-1" />
-                    <span>{cleanText(article.author)}</span>
-                  </div>
-                )}
-                
-                {publishedDate && (
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    <span>{publishedDate}</span>
-                  </div>
-                )}
-                
-                {showReadingTime && (
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>{formatReadingTime(readingTime)}</span>
-                  </div>
-                )}
-                
-                {!showReadingTime && (
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Quick read</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Article Interactions with error boundary */}
-            <div className="mb-8">
-              <Suspense fallback={
-                <div className="flex items-center gap-2">
-                  <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-24"></div>
-                  <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-24"></div>
-                  <div className="animate-pulse bg-gray-200 rounded-lg h-10 w-24"></div>
-                </div>
-              }>
-                <ArticleErrorBoundary>
-                  <ArticleInteractions
-                    article={article}
-                    userId={user?.id || null}
-                  />
-                </ArticleErrorBoundary>
-              </Suspense>
-            </div>
-
-            {/* Article Content */}
-            <div className="prose prose-lg max-w-none dark:prose-invert">
-              <div className="text-foreground leading-relaxed text-lg mb-8">
-                {cleanText(article.summary) || 'No summary available for this article.'}
-              </div>
-              
-              {/* Read Full Article Link */}
-              {article.url && (
-                <div className="bg-muted rounded-lg p-6 text-center border border-border">
-                  <p className="text-muted-foreground mb-4">
-                    This is a summary of the article. To read the full content, visit the original source.
-                  </p>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium"
-                  >
-                    Read Full Article
-                    <ExternalLink className="h-4 w-4 ml-2" />
-                  </a>
-                </div>
-              )}
-            </div>
+          <div className="paper-box mt-8 px-6 py-7 text-center">
+            <p className="label text-muted-foreground">The story continues</p>
+            <p className="headline mt-2 text-2xl">Read the full report at {article.source_name}</p>
+            <p className="mx-auto mt-2 max-w-md text-sm italic text-muted-foreground">
+              You are reading a summary. The complete article, with all its reporting, is on the publisher’s website.
+            </p>
+            <Button asChild size="lg" className="mt-5">
+              <a href={article.url} target="_blank" rel="noopener noreferrer">
+                Continue reading <ExternalLink />
+              </a>
+            </Button>
           </div>
-        </article>
-
-        {/* Related Articles Section with error boundary */}
-        <div className="mt-12">
-          <Suspense fallback={
-            <div className="bg-card rounded-lg shadow-sm p-6 md:p-8 border border-border">
-              <div className="mb-6">
-                <div className="h-8 w-48 bg-muted rounded animate-pulse mb-2"></div>
-                <div className="h-4 w-64 bg-muted rounded animate-pulse"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="border border-border rounded-lg overflow-hidden">
-                    <div className="aspect-video w-full bg-muted animate-pulse"></div>
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-muted rounded animate-pulse"></div>
-                      <div className="h-4 w-4/5 bg-muted rounded animate-pulse"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          }>
-            <ArticleErrorBoundary>
-              <RelatedArticles
-                currentArticleId={article.id}
-                categoryId={article.category_id}
-                categoryName={article.categories?.name}
-              />
-            </ArticleErrorBoundary>
-          </Suspense>
         </div>
+      </article>
+
+      <div className="mx-auto mt-12 max-w-3xl">
+        <Comments
+          articleId={article.id}
+          articlePath={articlePath}
+          initialComments={(comments ?? []) as CommentItem[]}
+          viewer={user && profile ? { id: user.id, username: profile.username, avatarColor: profile.avatar_color } : null}
+        />
+      </div>
+
+      <div className="mt-14">
+        <RelatedArticles articles={(related ?? []) as RelatedArticle[]} category={article.category_name} />
       </div>
     </div>
-  );
-}
-
-export default function ArticlePage({ params }: { params: { id: string } }) {
-  return (
-    <ArticleErrorBoundary>
-      <Suspense fallback={<ArticleDetailSkeleton />}>
-        <ArticleContent params={params} />
-      </Suspense>
-    </ArticleErrorBoundary>
   );
 }

@@ -1,57 +1,32 @@
-import AuthHeader from "@/components/custom/auth-header";
-import { ThemeProvider } from "@/components/custom/theme-provider";
-import { BannerColorProvider } from "@/components/custom/banner-color-provider";
-import { createClient } from "@/lib/supabase/server";
+import { FontSizeSync } from '@/components/site/font-size-sync';
+import { SiteFooter } from '@/components/site/site-footer';
+import { SiteHeader, type HeaderUser } from '@/components/site/site-header';
+import { accentVariables } from '@/lib/colors';
+import { getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
 
-export default async function MainLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  let isAdmin = false;
-  let bannerColor = '#3B82F6'; // Default color
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()]);
 
-  if (user) {
-    // Try to get profile with banner_color, fallback if column doesn't exist
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role, banner_color')
-        .eq('id', user.id)
-        .single();
-        
-      if (error && error.code === '42703') {
-        // banner_color column doesn't exist, just get role
-        const { data: roleData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        isAdmin = roleData?.role === 'admin';
-        // Keep default banner color
-      } else if (profile) {
-        isAdmin = profile?.role === 'admin';
-        if (profile?.banner_color) {
-          bannerColor = profile.banner_color;
+  const headerUser: HeaderUser | null =
+    user && profile
+      ? {
+          email: user.email ?? null,
+          username: profile.username,
+          avatarColor: profile.avatar_color,
+          isAdmin: profile.role === 'admin',
         }
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      // Continue with defaults
-    }
-  }
+      : null;
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <BannerColorProvider initialColor={bannerColor}>
-        <div className="bg-[var(--banner-color)]">
-          <AuthHeader isAdmin={isAdmin} />
-        </div>
-        {/* Main layout with nav, sidebar will go here */}
-        <main>{children}</main>
-      </BannerColorProvider>
-    </ThemeProvider>
+    <>
+      <div data-accent="" style={accentVariables(profile?.banner_color)} className="flex min-h-screen flex-col">
+        <SiteHeader user={headerUser} />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <SiteFooter />
+      </div>
+      {profile && <FontSizeSync value={profile.font_size} />}
+    </>
   );
 }

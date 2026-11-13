@@ -1,67 +1,44 @@
-import { createClient } from '@/lib/supabase/server';
-import OnboardingForm from '@/components/custom/onboarding-form';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+import { TopicsForm } from '@/components/onboarding/topics-form';
+import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+
+export const metadata: Metadata = { title: 'Your sections' };
 
 export default async function OnboardingPage() {
-  const supabase = createClient();
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()]);
+  if (!user || !profile) redirect('/login?next=/onboarding');
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const [{ data: categories }, { data: preferences }, { data: sources }] = await Promise.all([
+    supabase.from('categories').select('id, name, sort_order').order('sort_order').order('name'),
+    supabase.from('user_preferred_categories').select('category_id').eq('user_id', user.id),
+    supabase.from('sources').select('category_id').eq('is_enabled', true),
+  ]);
 
-  if (!user) {
-    return redirect('/login');
-  }
+  const sourceCounts: Record<string, number> = {};
+  for (const source of sources ?? []) sourceCounts[source.category_id] = (sourceCounts[source.category_id] ?? 0) + 1;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, has_completed_onboarding')
-    .eq('id', user.id)
-    .single();
-
-  const { data: categories, error: categoriesError } = await supabase
-    .from('categories')
-    .select('id, name');
-
-  if (categoriesError) {
-    console.error('Error fetching categories:', categoriesError);
-    return <div>Error loading categories. Please try again later.</div>;
-  }
-
-  const { data: userPreferences, error: preferencesError } = await supabase
-    .from('user_preferred_categories')
-    .select('category_id')
-    .eq('user_id', user.id);
-
-  if (preferencesError) {
-    console.error('Error fetching user preferences:', preferencesError);
-    return <div>Error loading user preferences. Please try again later.</div>;
-  }
-
-  const initialSelectedCategoryIds = userPreferences.map(
-    (pref) => pref.category_id
-  );
-  
-  const pageTitle = profile?.has_completed_onboarding ? "Manage Your Topics" : "Welcome! Let's Personalize Your Feed";
-  const pageDescription = profile?.has_completed_onboarding
-    ? "Update your selection of topics at any time."
-    : "Select the topics you're interested in to get personalized news recommendations.";
+  const isFirstRun = !profile.has_completed_onboarding;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <div className="w-full max-w-md p-8 space-y-4">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">{pageTitle}</h1>
-          <p className="text-muted-foreground">{pageDescription}</p>
-        </div>
-        <OnboardingForm
-          categories={categories || []}
-          initialSelectedCategoryIds={initialSelectedCategoryIds}
-          initialUsername={profile?.username || ''}
-          hasCompletedOnboarding={profile?.has_completed_onboarding || false}
-          user={user}
-        />
+    <div className="container max-w-5xl py-8 sm:py-12">
+      <div className="mx-auto mb-8 max-w-2xl text-center">
+        <p className="kicker">{isFirstRun ? 'Welcome, new reader' : 'Your paper'}</p>
+        <h1 className="headline mt-2 text-4xl sm:text-5xl">{isFirstRun ? 'Choose your sections' : 'Your sections'}</h1>
+        <p className="mt-3 italic text-muted-foreground">
+          {isFirstRun
+            ? 'Pick the sections for your paper. Change them any time; the “For you” edition also learns from what you like.'
+            : 'Your front page shows these sections by default. You can still read every section from the filters.'}
+        </p>
       </div>
+      <TopicsForm
+        categories={categories ?? []}
+        selectedIds={(preferences ?? []).map((p) => p.category_id)}
+        isFirstRun={isFirstRun}
+        username={profile.username}
+        sourceCounts={sourceCounts}
+      />
     </div>
   );
 }

@@ -1,94 +1,39 @@
-name: News Ingestion Scheduler
+name: News ingestion
+
+# Calls the deployed app's cron endpoint every 2 hours. Optional: the app also
+# refreshes itself when people open the feed (INGESTION_INTERVAL_MINUTES).
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   APP_URL      e.g. https://your-app.vercel.app   (no trailing slash)
+#   CRON_SECRET  same value as the CRON_SECRET environment variable of the app
 
 on:
   schedule:
-    # Run every 2 hours (at :00 minutes)
-    - cron: '0 */2 * * *'
-  # Allow manual triggering for testing
+    - cron: '15 */2 * * *'
   workflow_dispatch:
 
+# This job only calls a URL; it needs no access to the repository.
+permissions: {}
+
 jobs:
-  trigger-ingestion:
-    # Only run on the main branch to prevent accidental production changes
-    if: github.ref == 'refs/heads/main'
+  ingest:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 5
     steps:
-    - name: Trigger News Ingestion
-      run: |
-        set -e
-        set -o pipefail
-        echo "🔄 Triggering news ingestion at $(date)"
-        
-        # Check required secrets
-        if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
-          echo "❌ Error: SUPABASE_URL secret is not set."
-          exit 1
-        fi
-        
-        if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
-          echo "❌ Error: SUPABASE_ANON_KEY secret is not set."
-          exit 1
-        fi
-        
-        echo "🌐 Calling Supabase Edge Function: ${{ secrets.SUPABASE_URL }}/functions/v1/news-ingestion"
-        
-        # Call Supabase Edge Function
-        response=$(curl --max-time 300 -s -w "\n%{http_code}" -X POST \
-          "${{ secrets.SUPABASE_URL }}/functions/v1/news-ingestion" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Content-Type: application/json" \
-          -d "{\"triggered_by\":\"github-actions\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}")
-
-        # Extract HTTP status code
-        http_code=$(echo "$response" | tail -n1)
-        body=$(echo "$response" | head -n -1)
-
-        echo "HTTP Status: $http_code"
-
-        # Check if request was successful
-        if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-          echo "✅ News ingestion completed successfully"
-          
-          # Try to parse response if it's JSON
-          if command -v jq &> /dev/null && [ -n "$body" ] && echo "$body" | jq . >/dev/null 2>&1; then
-            echo "📊 Ingestion Results:"
-            echo "$body" | jq '.'
-            
-            # Extract key metrics if available
-            if echo "$body" | jq -e '.processed' >/dev/null 2>&1; then
-              processed=$(echo "$body" | jq -r '.processed // 0')
-              inserted=$(echo "$body" | jq -r '.inserted // 0')
-              sources=$(echo "$body" | jq -r '.sources_processed // 0')
-              
-              echo "📰 Articles processed: $processed"
-              echo "➕ New articles added: $inserted"
-              echo "📂 Sources processed: $sources"
-            fi
-          else
-            echo "Response: $body"
+      - name: Trigger ingestion
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "::notice::APP_URL or CRON_SECRET is not set - skipping (configure them to enable scheduled ingestion)."
+            exit 0
           fi
-        else
-          echo "❌ News ingestion failed with status: $http_code"
-          echo "Response body: $body"
-          
-          # Print debug information
-          echo "🔍 Debug Information:"
-          echo "  - HTTP Status Code: $http_code"
-          echo "  - Check Supabase Edge Function deployment and permissions"
-          echo "  - Verify SUPABASE_URL and SUPABASE_ANON_KEY are correct"
-          echo "  - Check Supabase function logs for detailed error information"
-          
-          # Don't exit with error code unless it's a real failure (not just empty response)
-          if [ "$http_code" -ge 500 ]; then
-            echo "🚨 Server error detected, failing workflow"
+          status=$(curl --silent --show-error --max-time 120 --output response.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/ingest")
+          echo "HTTP $status"
+          jq '{status, inserted, deleted, durationMs, failed: [.sources[]? | select(.ok == false) | {name, error}]}' response.json || cat response.json
+          if [ "$status" -ge 400 ]; then
+            echo "::error::Ingestion failed with HTTP $status"
             exit 1
-          elif [ "$http_code" -ge 400 ]; then
-            echo "⚠️  Client error detected, but continuing (might be temporary)"
           fi
-        fi
-
-    - name: Log Completion
-      run: |
-        echo "📰 News ingestion workflow completed at $(date)"
-        echo "⏰ Next scheduled run will be in 2 hours"

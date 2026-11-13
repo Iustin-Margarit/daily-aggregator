@@ -1,0 +1,26 @@
+import Link from 'next/link';
+import { Compass } from 'lucide-react';
+import { Logo } from '@/components/site/logo';
+import { EmptyState } from '@/components/site/empty-state';
+import { Button } from '@/components/ui/button';
+
+export default function NotFound() {
+  return (
+    <div className="paper container flex min-h-screen max-w-2xl flex-col py-8">
+      <Logo />
+      <div className="flex flex-1 items-center">
+        <EmptyState
+          className="w-full"
+          icon={Compass}
+          title="This page was never printed"
+          description="The page you are looking for does not exist, or it was pulled from an earlier edition."
+          action={
+            <Button asChild>
+              <Link href="/">Back to the front page</Link>
+            </Button>
+          }
+        />
+      </div>
+    </div>
+  );
+}
