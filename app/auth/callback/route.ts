@@ -16,10 +16,22 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return NextResponse.redirect(`${origin}${await landingPath(supabase, data.user?.id, next)}`);
   }
 
   // No code: Google sign-in cancelled or failed, or an old email link.
   return NextResponse.redirect(`${origin}/login?error=${callbackErrorCode(searchParams)}`);
+}
+
+/**
+ * A new account (Google creates one on the first sign-in) is shown Sections once,
+ * right after signing in. Only here: the feed itself never sends anyone back to it,
+ * so a reader who would rather look around first is never forced through it.
+ * A reader on their way to a particular page (?next=) goes there instead.
+ */
+async function landingPath(supabase: Awaited<ReturnType<typeof createClient>>, userId: string | undefined, next: string) {
+  if (next !== '/feed' || !userId) return next;
+  const { data: profile } = await supabase.from('profiles').select('has_completed_onboarding').eq('id', userId).maybeSingle();
+  return profile && !profile.has_completed_onboarding ? '/onboarding' : next;
 }

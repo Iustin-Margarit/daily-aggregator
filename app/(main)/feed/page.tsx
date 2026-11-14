@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { after } from 'next/server';
 import { FeedView } from '@/components/feed/feed-view';
 import { feedRpcArgs, filtersFromSearchParams, pageFromSearchParams } from '@/lib/feed';
@@ -26,7 +25,6 @@ export default async function FeedPage({
   const [user, profile, jar, locale] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies(), getLocale()]);
   // Visitors read the paper too, with the sections they chose in this browser (lib/guest.ts).
   const signedIn = Boolean(user && profile);
-  if (signedIn && !profile?.has_completed_onboarding) redirect('/onboarding');
 
   const supabase = await createClient();
   const [{ data: categories }, { data: sources }, { data: preferences }, params] = await Promise.all([

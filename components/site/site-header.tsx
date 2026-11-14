@@ -71,7 +71,8 @@ function useSignOut() {
   const router = useRouter();
   return async () => {
     await createClient().auth.signOut();
-    router.replace('/login');
+    // Visitors read the paper too: back to the front page, not to a login form.
+    router.replace('/feed');
     router.refresh();
   };
 }
