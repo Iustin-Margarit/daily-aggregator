@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getI18n } from '@/lib/i18n/server';
 import { cookies } from 'next/headers';
 import { TopicsForm } from '@/components/onboarding/topics-form';
 import { PageHeader } from '@/components/site/page-header';
@@ -6,10 +7,14 @@ import { ScrollDivider } from '@/components/site/scroll-divider';
 import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
 import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Your sections' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.sections };
+}
 
 export default async function OnboardingPage() {
-  const [user, profile, jar] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies()]);
+  const [user, profile, jar, { t }] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies(), getI18n()]);
+  const w = t.onboarding;
   // Sections a visitor chose before signing up (lib/guest.ts).
   const guestSections = parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value);
 
@@ -34,15 +39,9 @@ export default async function OnboardingPage() {
   return (
     <div className="container py-8 sm:py-10">
       <PageHeader
-        kicker={isFirstRun ? 'Welcome, new reader' : isGuest ? 'Try it: no account needed' : 'Your paper'}
-        title={isFirstRun ? 'Choose your sections' : 'Your sections'}
-        description={
-          isFirstRun
-            ? 'Pick the sections for your paper. Change them any time; the “For you” edition also learns from the stories you save.'
-            : isGuest
-              ? 'Press the stamps to choose what your front page shows. Your choice is kept in this browser; a free account keeps it everywhere.'
-              : 'Your front page shows these sections under “My sections”. You can still read every section there.'
-        }
+        kicker={isFirstRun ? w.kickerFirst : isGuest ? w.kickerGuest : w.kicker}
+        title={isFirstRun ? w.titleFirst : w.title}
+        description={isFirstRun ? w.descriptionFirst : isGuest ? w.descriptionGuest : w.description}
       />
       <ScrollDivider className="mb-8 mt-8" />
       <TopicsForm

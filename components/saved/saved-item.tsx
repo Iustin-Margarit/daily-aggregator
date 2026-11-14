@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { formatReadingTime } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/client';
 import { cleanText } from '@/lib/text';
 import type { SavedArticle, SavedFolder } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -40,7 +41,9 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
   const href = `/article/${article.slug}`;
   const summary = cleanText(article.summary);
   const title = cleanText(article.title);
-  const readingTime = formatReadingTime(article.reading_minutes);
+  const { t, rich, locale } = useI18n();
+  const w = t.saved.item;
+  const readingTime = formatReadingTime(article.reading_minutes, locale);
   // Each click mounts a fresh clipping, which opens the print dialog; 0 = none.
   const [printRun, setPrintRun] = useState(0);
   const printDone = useCallback(() => setPrintRun(0), []);
@@ -62,9 +65,7 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
           <CategoryBadge name={article.category_name} className="mr-1" />
           <span>{article.source_name}</span>
           <span aria-hidden="true">·</span>
-          <span>
-            Saved <TimeAgo date={article.saved_at} />
-          </span>
+          <span>{rich(w.saved, { time: <TimeAgo date={article.saved_at} /> })}</span>
           {readingTime && (
             <>
               <span aria-hidden="true">·</span>
@@ -73,7 +74,7 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
           )}
           {article.is_read && (
             <span className="ml-1 inline-flex items-center gap-1 rounded-[1px] border-[3px] border-double border-current/35 px-1.5 font-typewriter text-[0.72rem] uppercase tracking-[0.08em] text-foreground/70">
-              <Check className="h-3 w-3" /> Read
+              <Check className="h-3 w-3" /> {w.read}
             </span>
           )}
         </p>
@@ -91,16 +92,16 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
             type="button"
             onClick={() => onEditNote(article)}
             className="mt-3 block w-full rounded-[2px] border-l-[3px] border-double border-(--ink-accent)/50 bg-(--ink-accent)/6 px-3.5 py-2.5 text-left"
-            title="Edit your note"
+            title={w.editYourNote}
           >
-            <span className="block font-label text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-(--ink-accent)">Your note</span>
+            <span className="block font-label text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-(--ink-accent)">{w.yourNote}</span>
             <span className="mt-0.5 block whitespace-pre-line font-serif text-[0.95rem] italic leading-snug">{article.notes}</span>
           </button>
         )}
 
         {folder && (
           <p className="mt-2 text-sm italic text-muted-foreground">
-            In the folder <span className="font-semibold not-italic text-foreground">{folder.name}</span>
+            {rich(w.inFolder, { name: <span className="font-semibold not-italic text-foreground">{folder.name}</span> })}
           </p>
         )}
       </div>
@@ -109,18 +110,18 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
       <div className="col-span-2 mt-3 flex flex-wrap gap-2 sm:col-span-1 sm:col-start-2">
         <Button variant="stamp" size="sm" onClick={() => onToggleRead(article)}>
           {article.is_read ? <RotateCcw /> : <Check />}
-          {article.is_read ? 'Mark as unread' : 'Mark as read'}
+          {article.is_read ? w.markUnread : w.markRead}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="stamp" size="sm">
-              <FolderInput /> {folder ? 'Change folder' : 'Put in a folder'}
+              <FolderInput /> {folder ? w.changeFolder : w.putInFolder}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>Put this story in…</DropdownMenuLabel>
+          <DropdownMenuContent align="start" className="w-60">
+            <DropdownMenuLabel>{w.putIn}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={article.folder_id ?? 'none'} onValueChange={(value) => onMove(article, value === 'none' ? null : value)}>
-              <DropdownMenuRadioItem value="none">No folder</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="none">{w.noFolder}</DropdownMenuRadioItem>
               {folders.map((f) => (
                 <DropdownMenuRadioItem key={f.id} value={f.id}>
                   {f.name}
@@ -128,17 +129,17 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
               ))}
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => onNewFolder(article)}>+ New folder…</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onNewFolder(article)}>{w.newFolder}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="stamp" size="sm" onClick={() => onEditNote(article)}>
-          <NotebookPen /> {article.notes ? 'Edit note' : 'Add a note'}
+          <NotebookPen /> {article.notes ? w.editNote : w.addNote}
         </Button>
-        <Button variant="stamp" size="sm" onClick={() => setPrintRun((run) => run + 1)} title="Print this story as a newspaper clipping, or save it as a PDF">
-          <Printer /> Print clipping
+        <Button variant="stamp" size="sm" onClick={() => setPrintRun((run) => run + 1)} title={w.printTitle}>
+          <Printer /> {w.print}
         </Button>
         <Button variant="stamp" size="sm" onClick={() => onRemove(article)} className="text-destructive hover:text-destructive">
-          <Trash2 /> Remove
+          <Trash2 /> {w.remove}
         </Button>
       </div>
       {printRun > 0 && <PrintClipping key={printRun} article={article} onDone={printDone} />}

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { useI18n } from '@/lib/i18n/client';
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -30,13 +31,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   destructive = false,
   confirmWord,
   onConfirm,
 }: ConfirmDialogProps) {
   const [busy, setBusy] = useState(false);
   const [typed, setTyped] = useState('');
+  const { t, rich } = useI18n();
 
   const handleConfirm = async () => {
     setBusy(true);
@@ -67,14 +69,14 @@ export function ConfirmDialog({
         {confirmWord && (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Type <span className="font-mono font-semibold text-foreground">{confirmWord}</span> to confirm.
+              {rich(t.common.typeToConfirm, { word: <span className="font-mono font-semibold text-foreground">{confirmWord}</span> })}
             </p>
-            <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus aria-label="Confirmation" />
+            <Input value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus aria-label={t.common.confirmation} />
           </div>
         )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             variant={destructive ? 'destructive' : 'default'}
@@ -82,7 +84,7 @@ export function ConfirmDialog({
             disabled={busy || (confirmWord !== undefined && typed.trim() !== confirmWord)}
           >
             {busy && <Spinner />}
-            {confirmLabel}
+            {confirmLabel ?? t.common.confirm}
           </Button>
         </DialogFooter>
       </DialogContent>

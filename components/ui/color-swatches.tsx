@@ -1,6 +1,7 @@
 'use client';
 
 import { COLOR_PRESETS, HEX_COLOR } from '@/lib/colors';
+import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
 
 type ColorSwatchesProps = {
@@ -43,7 +44,9 @@ function Wax({ color, pressed }: { color: string; pressed: boolean }) {
  * seal (a ring and a star) and sits a little raised; a plain parchment blob
  * with a + mixes a custom ink.
  */
-export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md', label = 'Color' }: ColorSwatchesProps) {
+export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md', label }: ColorSwatchesProps) {
+  const { t } = useI18n();
+  const inks = t.settings.inks;
   const dimension = size === 'sm' ? 'h-7 w-7 text-[0.9rem]' : 'h-10 w-10 text-[1.15rem]';
   const isPreset = COLOR_PRESETS.some((preset) => preset.value.toLowerCase() === value.toLowerCase());
   const seal = cn(
@@ -52,8 +55,9 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
   );
 
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-2.5">
-      {COLOR_PRESETS.map((preset) => {
+    <div role="radiogroup" aria-label={label ?? inks.color} className="flex flex-wrap items-center gap-2.5">
+      {COLOR_PRESETS.map((preset, index) => {
+        const name = inks.names[index] ?? preset.name;
         const selected = preset.value.toLowerCase() === value.toLowerCase();
         return (
           <button
@@ -61,8 +65,8 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={preset.name}
-            title={preset.name}
+            aria-label={name}
+            title={name}
             onClick={() => onChange(preset.value)}
             className={cn(seal, selected ? '-translate-y-0.5 scale-110 drop-shadow-[0_3px_3px_rgb(0_0_0/0.4)]' : 'hover:-translate-y-0.5')}
           >
@@ -71,7 +75,7 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
         );
       })}
       {allowCustom && (
-        <label title="Mix your own ink" className={cn(seal, 'cursor-pointer', !isPreset && '-translate-y-0.5 scale-110')}>
+        <label title={inks.mix} className={cn(seal, 'cursor-pointer', !isPreset && '-translate-y-0.5 scale-110')}>
           {!isPreset && HEX_COLOR.test(value) ? (
             <Wax color={value} pressed />
           ) : (
@@ -92,7 +96,7 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
             value={HEX_COLOR.test(value) ? value : '#1E3A5F'}
             onChange={(event) => onChange(event.target.value.toUpperCase())}
             className="absolute inset-0 cursor-pointer opacity-0"
-            aria-label="Mix a custom ink"
+            aria-label={inks.mixLabel}
           />
         </label>
       )}

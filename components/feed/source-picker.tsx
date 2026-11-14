@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Check, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { sectionText } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/client';
 import type { Category, SourceOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +21,7 @@ type SourceListProps = {
 /** A checklist of newspapers, grouped by section, with a search box. */
 export function SourceList({ sources, categories, visibleCategoryIds, selected, onChange }: SourceListProps) {
   const [query, setQuery] = useState('');
+  const { t } = useI18n();
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -37,14 +40,14 @@ export function SourceList({ sources, categories, visibleCategoryIds, selected, 
     <div>
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a newspaper…" className="h-10 pl-10" aria-label="Find a newspaper" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.toolbar.findPaper} className="h-10 pl-10" aria-label={t.toolbar.findPaperLabel} />
       </div>
       <div className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-border/70 bg-background/40 p-1.5">
-        {groups.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No newspapers found.</p>}
+        {groups.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">{t.toolbar.noPapers}</p>}
         {groups.map(({ category, sources: groupSources }) => (
           <div key={category.id} className="py-1" data-section={getCategoryStyle(category.name).key ?? undefined}>
             <p className="flex items-center gap-2 px-2 py-1 font-label text-[0.78rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-              {category.name}
+              {sectionText(t, getCategoryStyle(category.name).key, category.name).name}
             </p>
             {groupSources.map((source) => {
               const checked = selected.includes(source.id);

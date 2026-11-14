@@ -7,6 +7,7 @@ import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast';
+import { useI18n } from '@/lib/i18n/client';
 import type { ArticleDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -19,14 +20,15 @@ import { cn } from '@/lib/utils';
 export function ArticleActionsBar({ article, userId }: { article: ArticleDetail; userId: string | null }) {
   const { saved, busy, toggleSave, share } = useArticleActions(article, userId);
   const { showToast } = useToast();
+  const { t, fmt } = useI18n();
 
   const hide = async () => {
     if (!userId) return;
     const { error } = await hideArticle(userId, article.id);
     showToast(
       error
-        ? { type: 'error', title: 'Could not hide the story', message: error.message }
-        : { type: 'success', title: 'Hidden from your feed' },
+        ? { type: 'error', title: t.feed.hideFailed, message: error.message }
+        : { type: 'success', title: t.article.hiddenFromFeed },
     );
   };
 
@@ -35,11 +37,11 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
     const { error } = await muteSource(userId, article.source_id);
     showToast(
       error
-        ? { type: 'error', title: 'Could not mute the source', message: error.message }
+        ? { type: 'error', title: t.feed.muteFailed, message: error.message }
         : {
             type: 'success',
-            title: `${article.source_name} muted`,
-            message: 'Their stories will no longer appear in your feed. Undo from your profile.',
+            title: fmt(t.feed.muted, { source: article.source_name }),
+            message: t.article.mutedNote,
           },
     );
   };
@@ -51,14 +53,14 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
 
   return (
     <div className="xl:sticky xl:top-24">
-      <p className="label mb-1 hidden text-muted-foreground xl:block">This story</p>
+      <p className="label mb-1 hidden text-muted-foreground xl:block">{t.article.thisStory}</p>
       <div className="flex flex-wrap items-center gap-x-1 border-y border-rule/30 py-1 xl:flex-col xl:items-stretch xl:border-b-0 xl:py-0">
         <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className={line} />
         {divider}
-        <button type="button" onClick={share} className={cn(actionClass, line)} title="Share this story with someone">
+        <button type="button" onClick={share} className={cn(actionClass, line)} title={t.article.shareTitle}>
           {/* A carrier pigeon with its letter (Yarrell, 1843). */}
           <Ornament name="pigeon" className="h-[1.05rem]" />
-          Share
+          {t.story.share}
         </button>
         {userId && (
           <>
@@ -69,10 +71,10 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuItem onSelect={hide}>
-                  <EyeOff className="mr-2 h-4 w-4" /> Hide from my feed
+                  <EyeOff className="mr-2 h-4 w-4" /> {t.article.hideFromFeed}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={mute}>
-                  <VolumeX className="mr-2 h-4 w-4" /> Mute {article.source_name}
+                  <VolumeX className="mr-2 h-4 w-4" /> {fmt(t.story.mute, { source: article.source_name })}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -18,57 +18,53 @@ export type CategoryStyle = {
   icon: LucideIcon;
   /** Public-domain engraving that illustrates the section (public/engravings). */
   engraving: EngravingName;
-  description: string;
 };
+
+/*
+ * The sections' names and descriptions are in the reader's language:
+ * sections.<key> in lib/i18n/dictionaries (sectionText() in lib/i18n).
+ */
 
 const STYLES: Record<string, CategoryStyle> = {
   world: {
     key: 'world',
     icon: Globe,
     engraving: 'world',
-    description: 'International news and global affairs',
   },
   politics: {
     key: 'politics',
     icon: Landmark,
     engraving: 'politics',
-    description: 'Elections, policy and government',
   },
   business: {
     key: 'business',
     icon: Briefcase,
     engraving: 'business',
-    description: 'Markets, companies and the economy',
   },
   technology: {
     key: 'technology',
     icon: Cpu,
     engraving: 'technology',
-    description: 'Gadgets, software, AI and startups',
   },
   science: {
     key: 'science',
     icon: FlaskConical,
     engraving: 'science',
-    description: 'Space, research and discoveries',
   },
   health: {
     key: 'health',
     icon: HeartPulse,
     engraving: 'health',
-    description: 'Medicine, wellbeing and public health',
   },
   sports: {
     key: 'sports',
     icon: Trophy,
     engraving: 'sports',
-    description: 'Football, basketball, tennis and more',
   },
   entertainment: {
     key: 'entertainment',
     icon: Clapperboard,
     engraving: 'entertainment',
-    description: 'Film, TV, music and celebrities',
   },
 };
 
@@ -76,7 +72,6 @@ const FALLBACK: CategoryStyle = {
   key: null,
   icon: Newspaper,
   engraving: 'press',
-  description: 'News and stories',
 };
 
 export function getCategoryStyle(name: string | null | undefined): CategoryStyle {

@@ -10,27 +10,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner } from '@/components/ui/spinner';
+import { useI18n } from '@/lib/i18n/client';
 import { safeNextPath } from '@/lib/redirect';
 import { createClient } from '@/lib/supabase/client';
 
-const LINK_ERRORS: Record<string, string> = {
-  link_invalid: 'That link is invalid or has expired. Please request a new one.',
-  session_expired: 'Your session expired. Please log in again.',
-  sign_in_failed: 'Signing in did not finish. Please try again.',
-};
+/** The error codes a link back to the login page may carry, and their words (auth.login). */
+const LINK_ERRORS = { link_invalid: 'linkInvalid', session_expired: 'sessionExpired', sign_in_failed: 'signInFailed' } as const;
 
 export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
   const initialError = searchParams.get('error');
+  const { t } = useI18n();
+  const w = t.auth.login;
 
   const [email, setEmail] = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
     // Only known codes are shown: text from the URL is never displayed as a message.
-    initialError ? (LINK_ERRORS[initialError] ?? LINK_ERRORS.link_invalid) : null,
+    initialError ? w[LINK_ERRORS[initialError as keyof typeof LINK_ERRORS] ?? 'linkInvalid'] : null,
   );
   const [notice, setNotice] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
@@ -45,7 +45,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
     if (signInError) {
       setLoading(false);
       setUnconfirmed(signInError.code === 'email_not_confirmed' || /not confirmed/i.test(signInError.message));
-      setError(friendlyAuthError(signInError));
+      setError(friendlyAuthError(signInError, t.auth.errors));
       return;
     }
 
@@ -60,16 +60,16 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
     });
     if (resendError) {
-      setError(friendlyAuthError(resendError));
+      setError(friendlyAuthError(resendError, t.auth.errors));
     } else {
       setError(null);
-      setNotice('We sent you a new confirmation link. Can’t find it? Look in your Spam folder.');
+      setNotice(w.resent);
     }
   };
 
   return (
     <>
-      <AuthHeading title="Log in" description="Welcome back. Your edition is ready." />
+      <AuthHeading title={w.title} description={w.description} />
       {googleEnabled && (
         <>
           <GoogleButton next={next} />
@@ -82,7 +82,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
             {error}
             {unconfirmed && (
               <button type="button" onClick={resendConfirmation} className="mt-1 block font-medium underline">
-                Resend confirmation email
+                {w.resend}
               </button>
             )}
           </FormMessage>
@@ -90,12 +90,12 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         {notice && <FormMessage type="success">{notice}</FormMessage>}
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t.auth.email}</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t.auth.emailPlaceholder}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -103,9 +103,9 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t.auth.password}</Label>
             <Link href="/forgot-password" className="text-xs italic text-muted-foreground underline-offset-4 hover:underline">
-              Forgot your password?
+              {w.forgot}
             </Link>
           </div>
           <PasswordInput
@@ -119,13 +119,13 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
 
         <Button type="submit" className="w-full" disabled={loading || !email || !password}>
           {loading && <Spinner />}
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? w.submitting : t.auth.logIn}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm italic text-muted-foreground">
-        New here?{' '}
+        {w.newHere}{' '}
         <Link href={`/signup${next !== '/feed' ? `?next=${encodeURIComponent(next)}` : ''}`} className="font-medium text-foreground underline-offset-4 hover:underline">
-          Create a free account
+          {w.create}
         </Link>
       </p>
     </>

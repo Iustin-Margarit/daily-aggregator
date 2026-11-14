@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { EmptyState } from '@/components/site/empty-state';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n/client';
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const { t } = useI18n();
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -13,13 +15,13 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
     <div className="container max-w-2xl py-16">
       <EmptyState
         engraving="press"
-        title="Stop the presses"
-        description="Something went wrong while printing this page. The newsroom may be busy for a moment; please try again."
+        title={t.errors.stopPresses}
+        description={t.errors.stopPressesNote}
         action={
           <>
-            <Button onClick={reset}>Try again</Button>
+            <Button onClick={reset}>{t.common.tryAgain}</Button>
             <Button variant="outline" onClick={() => (window.location.href = '/')}>
-              Front page
+              {t.errors.frontPage}
             </Button>
           </>
         }

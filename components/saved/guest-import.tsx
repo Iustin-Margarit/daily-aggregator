@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
 import { clearGuestClippings, getGuestClippings } from '@/lib/guest-clippings';
+import { useI18n } from '@/lib/i18n/client';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -16,6 +17,7 @@ export function GuestImport({ userId }: { userId: string }) {
   const { showToast } = useToast();
   const router = useRouter();
   const started = useRef(false);
+  const { t, plural } = useI18n();
 
   useEffect(() => {
     if (started.current) return;
@@ -63,14 +65,14 @@ export function GuestImport({ userId }: { userId: string }) {
       if (moved > 0) {
         showToast({
           type: 'success',
-          title: `${moved} saved ${moved === 1 ? 'story' : 'stories'} moved into your account`,
-          message: 'The stories you saved before signing in are in Saved, on every device.',
-          action: { label: 'Open saved stories', onClick: () => router.push('/saved') },
+          title: plural(t.saved.imported, moved),
+          message: t.saved.importedNote,
+          action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
         });
         router.refresh();
       }
     })();
-  }, [userId, showToast, router]);
+  }, [userId, showToast, router, t, plural]);
 
   return null;
 }

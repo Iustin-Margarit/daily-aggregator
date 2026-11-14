@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -40,6 +41,7 @@ const ICONS = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(1);
+  const { t } = useI18n();
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -94,7 +96,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => dismiss(toast.id)}
               className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Dismiss notification"
+              aria-label={t.common.dismiss}
             >
               <X className="h-4 w-4" />
             </button>

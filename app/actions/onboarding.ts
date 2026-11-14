@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { GUEST_SECTIONS_COOKIE } from '@/lib/guest';
+import { getI18n } from '@/lib/i18n/server';
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResult } from '@/lib/types';
 import { profileSaveError, validateUsername } from '@/lib/validation';
@@ -33,29 +34,30 @@ export async function saveTopics(_previous: ActionResult | null, formData: FormD
     redirect('/feed');
   }
   const rawUsername = formData.get('username');
+  const { t } = await getI18n();
 
   const updates: { has_completed_onboarding: boolean; username?: string } = { has_completed_onboarding: true };
   if (typeof rawUsername === 'string') {
     const username = rawUsername.trim();
-    const problem = validateUsername(username);
+    const problem = validateUsername(username, t.validation);
     if (problem) return fail(problem);
     updates.username = username;
   }
 
   const { error: profileError } = await supabase.from('profiles').update(updates).eq('id', user.id);
   if (profileError) {
-    return fail(profileSaveError(profileError, 'Could not save your profile. Please try again.'));
+    return fail(profileSaveError(profileError, t.actions.profileRetry, t.validation));
   }
 
   if (!skip) {
     const { error: deleteError } = await supabase.from('user_preferred_categories').delete().eq('user_id', user.id);
-    if (deleteError) return fail('Could not update your topics. Please try again.');
+    if (deleteError) return fail(t.actions.topicsUpdateFailed);
 
     if (categoryIds.length > 0) {
       const { error: insertError } = await supabase
         .from('user_preferred_categories')
         .insert(categoryIds.map((category_id) => ({ user_id: user.id, category_id })));
-      if (insertError) return fail('Could not save your topics. Please try again.');
+      if (insertError) return fail(t.actions.topicsSaveFailed);
     }
   }
 

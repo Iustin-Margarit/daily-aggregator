@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Segmented } from '@/components/ui/segmented';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { sectionText } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/client';
 import type { Category, DateRange, FeedFilters, SourceOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -37,36 +39,41 @@ export function FeedToolbar({ filters, onChange, categories, sources, preferredC
   };
 
   const showingMine = preferredCategoryIds.length > 0 && sameIds(filters.categoryIds, preferredCategoryIds);
+  const { t } = useI18n();
 
   return (
     <div className="flex items-stretch gap-3 sm:gap-5">
       {/* Phones and tablets scroll the ribbon sideways; from 1280px every department shows (styles: .dept-bar). */}
-      <nav aria-label="Sections" className="dept-bar min-w-0 flex-1">
+      <nav aria-label={t.toolbar.sections} className="dept-bar min-w-0 flex-1">
         {preferredCategoryIds.length > 0 && (
           <button type="button" className="dept-tab" aria-pressed={showingMine} onClick={() => showSections(preferredCategoryIds)}>
-            My sections
+            {t.toolbar.mine}
           </button>
         )}
         <button type="button" className="dept-tab" aria-pressed={filters.categoryIds.length === 0} onClick={() => showSections([])}>
-          Everything
+          {t.toolbar.everything}
         </button>
         {categories.map((category) => {
           const active = !showingMine && filters.categoryIds.length === 1 && filters.categoryIds[0] === category.id;
+          const style = getCategoryStyle(category.name);
           return (
             <button
               key={category.id}
               type="button"
               className="dept-tab"
               aria-pressed={active}
-              data-section={getCategoryStyle(category.name).key ?? undefined}
+              data-section={style.key ?? undefined}
               onClick={() => showSections([category.id])}
             >
-              {category.name}
+              {sectionText(t, style.key, category.name).name}
             </button>
           );
         })}
       </nav>
-      <FilterDialog filters={filters} onChange={onChange} categories={categories} sources={sources} />
+      {/* Phones show Filters beside Latest | For you instead (components/feed/feed-view.tsx), so the ribbon gets the full width. */}
+      <div className="hidden items-stretch sm:flex">
+        <FilterButton filters={filters} onChange={onChange} categories={categories} sources={sources} />
+      </div>
     </div>
   );
 }
@@ -75,6 +82,7 @@ export function FeedToolbar({ filters, onChange, categories, sources, preferredC
 export function FeedSearch({ value, onChange, className }: { value: string; onChange: (search: string) => void; className?: string }) {
   const [search, setSearch] = useState(value);
   const debounce = useRef<number | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => setSearch(value), [value]);
   useEffect(
@@ -107,9 +115,9 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
         type="search"
         value={search}
         onChange={(event) => updateSearch(event.target.value)}
-        placeholder="Search headlines…"
+        placeholder={t.toolbar.search}
         className="ledger-field"
-        aria-label="Search headlines"
+        aria-label={t.toolbar.searchLabel}
       />
       {search && (
         <button
@@ -119,7 +127,7 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
             onChange('');
           }}
           className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
-          aria-label="Clear search"
+          aria-label={t.toolbar.clearSearch}
         >
           <X className="h-4 w-4" />
         </button>
@@ -128,44 +136,47 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
   );
 }
 
-const RANGES: { value: DateRange; label: string }[] = [
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This week' },
-  { value: 'any', label: 'This month' },
-];
+const RANGES: DateRange[] = ['today', 'week', 'any'];
 
-function FilterDialog({ filters, onChange, categories, sources }: Omit<FeedToolbarProps, 'preferredCategoryIds'>) {
+/** The boxed Filters ticket and its dialog (how recent, which newspapers). */
+export function FilterButton({ filters, onChange, categories, sources }: Omit<FeedToolbarProps, 'preferredCategoryIds'>) {
   const active = (filters.range !== 'any' ? 1 : 0) + (filters.sourceIds.length > 0 ? 1 : 0);
+  const { t } = useI18n();
   return (
     <Dialog>
       {/* An action, not a section: a boxed ticket with a funnel, apart from the ribbon (styles: .filter-ticket). */}
       <DialogTrigger asChild>
         <button type="button" className="filter-ticket">
           <Ornament name="funnel" className="h-[1.3rem]" />
-          Filters
+          {t.toolbar.filters}
           {active > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-[2px] bg-primary px-1.5 text-[0.72rem] tracking-normal text-primary-foreground">
               <span className="sr-only">(</span>
               {active}
-              <span className="sr-only"> in use)</span>
+              <span className="sr-only">{t.toolbar.inUse}</span>
             </span>
           )}
         </button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Filters</DialogTitle>
-          <DialogDescription>Changes show on the page straight away.</DialogDescription>
+          <DialogTitle>{t.toolbar.filters}</DialogTitle>
+          <DialogDescription>{t.toolbar.filtersNote}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
-          <p className="font-label text-[0.95rem] font-medium">How recent</p>
-          <Segmented<DateRange> aria-label="How recent" value={filters.range} onChange={(range) => onChange({ range })} options={RANGES} />
+          <p className="font-label text-[0.95rem] font-medium">{t.toolbar.howRecent}</p>
+          <Segmented<DateRange>
+            aria-label={t.toolbar.howRecent}
+            value={filters.range}
+            onChange={(range) => onChange({ range })}
+            options={RANGES.map((value) => ({ value, label: t.toolbar.ranges[value] }))}
+          />
         </div>
 
         <div className="space-y-2">
           <p className="font-label text-[0.95rem] font-medium">
-            Newspapers <span className="font-normal text-muted-foreground">(none ticked = all)</span>
+            {t.toolbar.newspapers} <span className="font-normal text-muted-foreground">{t.toolbar.noneTicked}</span>
           </p>
           <SourceList
             sources={sources}
@@ -178,10 +189,10 @@ function FilterDialog({ filters, onChange, categories, sources }: Omit<FeedToolb
 
         <DialogFooter className="pt-1">
           <Button variant="ghost" onClick={() => onChange({ range: 'any', sourceIds: [] })} disabled={active === 0}>
-            Reset filters
+            {t.toolbar.reset}
           </Button>
           <DialogClose asChild>
-            <Button>Done</Button>
+            <Button>{t.common.done}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>

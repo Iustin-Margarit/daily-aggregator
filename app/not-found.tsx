@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { Logo } from '@/components/site/logo';
 import { EmptyState } from '@/components/site/empty-state';
 import { Button } from '@/components/ui/button';
+import { getI18n } from '@/lib/i18n/server';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { t } = await getI18n();
   return (
     <div className="paper container flex min-h-screen max-w-2xl flex-col py-8">
       <Logo />
@@ -11,11 +13,11 @@ export default function NotFound() {
         <EmptyState
           className="w-full"
           engraving="kitten-peer"
-          title="This page was never printed"
-          description="The office cat searched every column. The page you want does not exist, or it was pulled from an earlier edition."
+          title={t.errors.notFound}
+          description={t.errors.notFoundNote}
           action={
             <Button asChild>
-              <Link href="/">Back to the front page</Link>
+              <Link href="/">{t.errors.backToFront}</Link>
             </Button>
           }
         />

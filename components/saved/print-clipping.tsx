@@ -3,14 +3,13 @@
 import { useEffect, useEffectEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { formatReadingTime } from '@/lib/format';
+import { sectionText } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/client';
+import { getCategoryStyle } from '@/lib/category-styles';
 import { siteConfig } from '@/lib/site';
 import { cleanText } from '@/lib/text';
 import type { SavedArticle } from '@/lib/types';
 
-function longDate(iso: string) {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 /**
  * A saved story printed as a newspaper clipping (styles: .print-clipping in
@@ -23,7 +22,10 @@ function longDate(iso: string) {
 export function PrintClipping({ article, onDone }: { article: SavedArticle; onDone: () => void }) {
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
-  const readingTime = formatReadingTime(article.reading_minutes);
+  const { t, fmt, locale, dates } = useI18n();
+  const readingTime = formatReadingTime(article.reading_minutes, locale);
+  const longDate = (iso: string) => dates.long(new Date(iso));
+  const fileTitle = fmt(t.saved.print.fileSuffix, { title });
   const done = useEffectEvent(onDone);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function PrintClipping({ article, onDone }: { article: SavedArticle; onDo
       done();
     };
     root.classList.add('printing-clipping');
-    document.title = `${title} - clipping`;
+    document.title = fileTitle;
     window.addEventListener('afterprint', finish);
     // Give the clipping one frame to be laid out before the dialog opens.
     const frame = window.requestAnimationFrame(() => window.print());
@@ -48,16 +50,18 @@ export function PrintClipping({ article, onDone }: { article: SavedArticle; onDo
       root.classList.remove('printing-clipping');
       document.title = pageTitle;
     };
-  }, [title]);
+  }, [fileTitle]);
 
   return createPortal(
     <div className="print-clipping" aria-hidden="true">
       <article className="print-clipping-cut">
         <header className="print-clipping-head">
-          <span className="print-clipping-paper">{siteConfig.masthead}</span>
+          <span className="print-clipping-paper" lang="en">
+            {siteConfig.masthead}
+          </span>
           <span>{longDate(article.published_at)}</span>
         </header>
-        <p className="print-clipping-kicker">{article.category_name}</p>
+        <p className="print-clipping-kicker">{sectionText(t, getCategoryStyle(article.category_name).key, article.category_name).name}</p>
         <h1 className="print-clipping-title">{title}</h1>
         <p className="print-clipping-byline">
           {article.source_name}
@@ -66,12 +70,12 @@ export function PrintClipping({ article, onDone }: { article: SavedArticle; onDo
         {summary && <p className="print-clipping-text">{summary}</p>}
         {article.notes && (
           <div className="print-clipping-note">
-            <p className="print-clipping-note-label">My note</p>
+            <p className="print-clipping-note-label">{t.saved.print.myNote}</p>
             <p className="print-clipping-note-text">{article.notes}</p>
           </div>
         )}
         <footer className="print-clipping-foot">
-          <span>Clipped {longDate(article.saved_at)}</span>
+          <span>{fmt(t.saved.print.clipped, { date: longDate(article.saved_at) })}</span>
           <span className="print-clipping-url">{article.url}</span>
         </footer>
       </article>

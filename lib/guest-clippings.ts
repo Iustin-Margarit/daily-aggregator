@@ -93,7 +93,12 @@ function update(change: (current: GuestClippings) => GuestClippings): boolean {
 
 export type GuestResult = { error: { message: string; code?: string } | null };
 const ok: GuestResult = { error: null };
-const storageError: GuestResult = { error: { message: 'Your browser did not let this page store it (private browsing or full storage).' } };
+const storageError: GuestResult = { error: { message: 'STORAGE_BLOCKED' } };
+
+/** The words for a failed guest action: the browser would not store it, or the message as given. */
+export function guestErrorText(error: { message: string }, t: { common: { storageBlocked: string } }): string {
+  return error.message === 'STORAGE_BLOCKED' ? t.common.storageBlocked : error.message;
+}
 
 export function isGuestClipped(articleId: string): boolean {
   return getGuestClippings().articles.some((a) => a.article_id === articleId);

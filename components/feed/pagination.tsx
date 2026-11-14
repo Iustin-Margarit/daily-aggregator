@@ -1,6 +1,7 @@
 'use client';
 
 import { Ornament } from '@/components/site/ornament';
+import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
 
 type PaginationProps = {
@@ -24,10 +25,12 @@ function visiblePages(page: number, pages: number): (number | 'gap')[] {
   return out;
 }
 
-const linkClass = 'inline-flex h-10 items-center justify-center rounded-[3px] font-display text-[0.95rem] font-semibold transition-colors';
+const linkClass = 'inline-flex h-10 items-center justify-center whitespace-nowrap rounded-[3px] font-display text-[0.95rem] font-semibold transition-colors';
 
 export function Pagination({ page, pages, onChange, hrefFor, disabled }: PaginationProps) {
+  const { t, fmt } = useI18n();
   if (pages <= 1) return null;
+  const { previous, prev, next, nextShort } = t.pagination;
 
   const go = (target: number) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     // Let ctrl/cmd-click open the page in a new tab.
@@ -37,22 +40,22 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
   };
 
   return (
-    <nav aria-label="Pages" className={cn('flex items-center justify-between gap-2 sm:gap-3', disabled && 'opacity-60')}>
+    <nav aria-label={t.pagination.label} className={cn('flex items-center justify-between gap-2 sm:gap-3', disabled && 'opacity-60')}>
       {page > 1 ? (
         <a href={hrefFor(page - 1)} onClick={go(page - 1)} className={cn(linkClass, 'group/read gap-2 border border-rule/50 bg-card/70 px-3 shadow-[inset_0_0_0_2px_hsl(var(--card)),inset_0_0_0_3px_hsl(var(--rule)/0.22)] hover:border-(--ink-gold) hover:bg-card sm:gap-2.5 sm:px-4')} rel="prev">
           {/* A printer's fist pointing back (☜). */}
           <span className="-scale-x-100">
             <Ornament name="fist" className="fist-poke block w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
           </span>
-          <span className="hidden sm:inline">Previous page</span>
-          <span className="sm:hidden">Prev</span>
+          <span className="hidden sm:inline">{previous}</span>
+          <span className="sm:hidden">{prev}</span>
         </a>
       ) : (
         // Keeps the page numbers centred: as wide as the "Previous page" link would be.
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-4')} aria-hidden="true">
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
-          <span className="hidden sm:inline">Previous page</span>
-          <span className="sm:hidden">Prev</span>
+          <span className="hidden sm:inline">{previous}</span>
+          <span className="sm:hidden">{prev}</span>
         </span>
       )}
 
@@ -68,7 +71,7 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
                 href={hrefFor(p)}
                 onClick={go(p)}
                 aria-current={p === page ? 'page' : undefined}
-                aria-label={`Page ${p}`}
+                aria-label={fmt(t.pagination.page, { n: p })}
                 className={cn(
                   linkClass,
                   'min-w-10 px-2 tabular-nums',
@@ -84,15 +87,15 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
 
       {page < pages ? (
         <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
-          <span className="hidden sm:inline">Next page</span>
-          <span className="sm:hidden">Next</span>
+          <span className="hidden sm:inline">{next}</span>
+          <span className="sm:hidden">{nextShort}</span>
           {/* A printer's fist pointing on (☞). */}
           <Ornament name="fist" className="fist-poke w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:currentColor]" />
         </a>
       ) : (
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-5')} aria-hidden="true">
-          <span className="hidden sm:inline">Next page</span>
-          <span className="sm:hidden">Next</span>
+          <span className="hidden sm:inline">{next}</span>
+          <span className="sm:hidden">{nextShort}</span>
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
         </span>
       )}

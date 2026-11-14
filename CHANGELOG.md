@@ -2,6 +2,39 @@
 
 ## Unreleased: "nocturnal broadsheet" interface
 
+### Google bylines (2026-11-14, evening)
+- Readers who join with "Continue with Google" now get their first name as their byline (so the
+  front page says "Good evening, Maria"), with accents folded to fit the byline rules; names that
+  leave fewer than three letters, or are in a non-Latin script, fall back to the e-mail prefix as
+  before. A name chosen at sign-up still wins. Migration `20261114185100_google_name_byline`.
+
+### Editions in four languages (2026-11-14, evening)
+- **English, French, Spanish and German editions.** Everything the paper prints around the news is
+  translated: navigation, masthead line and date, motto, clock, moon phases, the month's almanac and
+  thought for the day, greetings, section names, filters, search, empty states, saved stories and
+  folders, Settings, sign-in pages, toasts and error pages. "On this day" comes from the edition's
+  own Wikipedia. News headlines and summaries stay in the language they were written in, and the
+  blackletter title stays "The Daily Aggregator". Not translated: the Newsroom (admin) pages and the
+  sign-up / password emails (one Supabase template each).
+- Written for each language rather than word for word: *vous* in French, *tú* in Spanish (Spain),
+  *Sie* in German as German newspapers use; local typography (« » with non-breaking spaces in
+  French, «» and ¿ ¡ in Spanish, „…“ in German); dates, plurals, lists and numbers come from the
+  browser's own `Intl` (no translation service, nothing to pay). The French, Spanish and German
+  editions read the time on a 24-hour clock unless the reader chose 12-hour.
+- **The Editions selector** replaces the plain "English edition" line: a printed dispatch slip in
+  a double rule, each edition in its own language with a typed ink-stamp monogram (EN, FR, ES, DE);
+  the edition in hand is inked solid and pointed at by a printer's fist. It sits in the masthead's
+  edition line, under the ribbon on phones, at the foot of every page, on the sign-in pages, as a
+  stamp in the header of inner pages on wide screens, in the account menu and in Settings > The
+  printing.
+- The choice is remembered on the device (a cookie, so pages arrive already translated, mirrored in
+  browser storage, which restores it if the cookie is cleared). It needs no account.
+- Fonts checked in Chrome: Fraunces, Source Serif 4, Jost and Special Elite print every accented
+  letter (é è ê ç à ñ ¿ ü ö ß Œ …) without a fallback font. Layout checked in all four languages
+  from 360 to 1440 px, signed out and signed in: no sideways scrolling, no wrapped labels. Fixed on
+  the way: the tablet header (shorter "Sign up" between 768 and 1024 px), Settings columns that could
+  grow wider than a phone, tighter ribbons below 400 px, and the footer title that wrapped at 360 px.
+
 ### Instruments, street sound, Save and safer sign-up (2026-11-14, later)
 - **Masthead ears as engraved instruments**: the clock is a real pocket-watch case from a 1911
   jeweller's catalogue (public domain) round a live enamel dial (cream by day, deep blue by night)
@@ -24,6 +57,16 @@
   host's time limit still cleans up), runs stay inside a 45-second budget, malformed `?sources=`
   links no longer break the front page, and links from outside feeds and browser storage are kept to
   http(s). The database runs on Postgres 17.
+- **Phones (360-430 px)**: the sticky bar is slimmer and its title stays on one line beside the
+  buttons; at the top of a front page the bar shows the edition line (Vol. · No. and the date)
+  instead of empty space, and the masthead starts with the title. The title and ribbon are smaller,
+  the street banner is a slim 96px strip with small icon-only Sound and Pause tickets, and the top
+  story now starts on the first screen. Filters sits beside Latest | For you at the same height, so
+  the section ribbon gets the full width (fading at both ends). Penfield's reader shows whole on the
+  landing page. Desktop is unchanged.
+- **Fixes**: the scrollwork divider's rules now meet the centre of the flourish; the bar's title
+  reappears after scrolling the front page (it stayed hidden when the page had shown its loading
+  skeleton first).
 - **Dependabot** no longer opens update pull requests (only security alerts); updates are applied
   and tested by hand.
 

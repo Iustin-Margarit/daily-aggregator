@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
+import { getI18n } from '@/lib/i18n/server';
 import type { SavedView } from '@/components/saved/saved-manager';
 import { AccountSaved, GuestSaved } from '@/components/saved/saved-pages';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import type { SavedArticle } from '@/lib/types';
 
-export const metadata: Metadata = { title: 'Saved stories' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.saved };
+}
 
 export default async function SavedPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);

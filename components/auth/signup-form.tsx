@@ -13,6 +13,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { checkPassword, PasswordStrength } from '@/components/ui/password-strength';
 import { Spinner } from '@/components/ui/spinner';
 import { passwordTooLong } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n/client';
 import { createClient } from '@/lib/supabase/client';
 
 export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
@@ -23,23 +24,26 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const { t, rich } = useI18n();
+  const w = t.auth.signup;
+  const errors = t.auth.errors;
 
-  const strength = checkPassword(password);
+  const strength = checkPassword(password, t.auth.strength);
   const mismatch = confirm.length > 0 && confirm !== password;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     if (passwordTooLong(password)) {
-      setError('That password is too long. Please use at most 72 characters.');
+      setError(errors.tooLong);
       return;
     }
     if (!strength.isAcceptable) {
-      setError('Please choose a stronger password (at least 8 characters, mixing letters and numbers).');
+      setError(errors.stronger);
       return;
     }
     if (password !== confirm) {
-      setError('The passwords do not match.');
+      setError(errors.mismatch);
       return;
     }
 
@@ -52,7 +56,7 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
     setLoading(false);
 
     if (signUpError) {
-      setError(friendlyAuthError(signUpError));
+      setError(friendlyAuthError(signUpError, errors));
       return;
     }
     // With email confirmation disabled (local development) we get a session right away.
@@ -74,17 +78,11 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
           <MailCheck className="h-6 w-6" />
         </div>
         <AuthHeading
-          title="Check your inbox"
-          description={
-            <>
-              We sent a confirmation link to <span className="font-medium text-foreground">{sentTo}</span>. Click it to
-              finish creating your account. Can’t find it? Look in your Spam folder and mark it “Not spam”. If you
-              already have an account with this address, no new email is sent - log in instead.
-            </>
-          }
+          title={w.checkInbox}
+          description={rich(w.sent, { email: <span className="break-all font-medium text-foreground">{sentTo}</span> })}
         />
         <Button variant="outline" asChild className="w-full">
-          <Link href={`/login?email=${encodeURIComponent(sentTo)}`}>Back to login</Link>
+          <Link href={`/login?email=${encodeURIComponent(sentTo)}`}>{t.auth.backToLogin}</Link>
         </Button>
       </div>
     );
@@ -92,29 +90,29 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
 
   return (
     <>
-      <AuthHeading title="Create your free account" description="It takes less than a minute. Then you choose the sections you want to read." />
+      <AuthHeading title={w.title} description={w.description} />
       {googleEnabled && (
         <>
           <GoogleButton />
-          <OrDivider>or sign up with your email</OrDivider>
+          <OrDivider>{t.auth.orSignUpEmail}</OrDivider>
         </>
       )}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && <FormMessage type="error">{error}</FormMessage>}
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t.auth.email}</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t.auth.emailPlaceholder}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t.auth.password}</Label>
           <PasswordInput
             id="password"
             autoComplete="new-password"
@@ -126,7 +124,7 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
           <PasswordStrength password={password} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm-password">Confirm password</Label>
+          <Label htmlFor="confirm-password">{w.confirm}</Label>
           <PasswordInput
             id="confirm-password"
             autoComplete="new-password"
@@ -135,17 +133,17 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
             onChange={(e) => setConfirm(e.target.value)}
             aria-invalid={mismatch}
           />
-          {mismatch && <p className="text-xs text-destructive">The passwords do not match.</p>}
+          {mismatch && <p className="text-xs text-destructive">{errors.mismatch}</p>}
         </div>
         <Button type="submit" className="w-full" disabled={loading || !email || !password || !confirm}>
           {loading && <Spinner />}
-          {loading ? 'Setting up your paper…' : 'Create account'}
+          {loading ? w.submitting : w.submit}
         </Button>
       </form>
       <p className="mt-6 text-center text-sm italic text-muted-foreground">
-        Already have an account?{' '}
+        {w.haveAccount}{' '}
         <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
-          Log in
+          {t.auth.logIn}
         </Link>
       </p>
     </>

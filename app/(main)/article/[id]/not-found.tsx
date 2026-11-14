@@ -1,17 +1,19 @@
 import Link from 'next/link';
 import { EmptyState } from '@/components/site/empty-state';
 import { Button } from '@/components/ui/button';
+import { getI18n } from '@/lib/i18n/server';
 
-export default function ArticleNotFound() {
+export default async function ArticleNotFound() {
+  const { t } = await getI18n();
   return (
     <div className="container max-w-2xl py-16">
       <EmptyState
         engraving="kitten-peer"
-        title="This story has been pulled"
-        description="Stories stay in the archive for 30 days unless a reader saved them. This one is no longer on file."
+        title={t.article.pulled}
+        description={t.article.pulledNote}
         action={
           <Button asChild>
-            <Link href="/feed">Back to the paper</Link>
+            <Link href="/feed">{t.article.back}</Link>
           </Button>
         }
       />

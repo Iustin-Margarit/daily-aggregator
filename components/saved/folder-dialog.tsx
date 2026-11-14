@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useI18n } from '@/lib/i18n/client';
 
 type FolderDialogProps = {
   open: boolean;
@@ -21,6 +22,8 @@ export function FolderDialog({ open, onOpenChange, initialName = '', onSubmit }:
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const renaming = initialName !== '';
+  const { t } = useI18n();
+  const w = t.saved.folder;
 
   useEffect(() => {
     if (open) {
@@ -33,7 +36,7 @@ export function FolderDialog({ open, onOpenChange, initialName = '', onSubmit }:
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Please give the folder a name.');
+      setError(w.needName);
       return;
     }
     setBusy(true);
@@ -48,28 +51,28 @@ export function FolderDialog({ open, onOpenChange, initialName = '', onSubmit }:
       <DialogContent className="max-w-sm">
         <form onSubmit={submit} className="grid min-w-0 grid-cols-1 gap-4">
           <DialogHeader>
-            <DialogTitle>{renaming ? 'Rename folder' : 'New folder'}</DialogTitle>
-            {!renaming && <DialogDescription>Folders help you keep saved stories in groups, like “Recipes” or “For later”.</DialogDescription>}
+            <DialogTitle>{renaming ? w.rename : w.create}</DialogTitle>
+            {!renaming && <DialogDescription>{w.help}</DialogDescription>}
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="folder-name">Folder name</Label>
+            <Label htmlFor="folder-name">{w.name}</Label>
             <Input
               id="folder-name"
               autoFocus
               maxLength={25}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Weekend reading"
+              placeholder={w.placeholder}
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="submit" disabled={busy}>
               {busy && <Spinner />}
-              {renaming ? 'Save name' : 'Create folder'}
+              {renaming ? w.saveName : w.createButton}
             </Button>
           </DialogFooter>
         </form>

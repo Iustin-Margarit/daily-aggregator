@@ -17,6 +17,8 @@ import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/toast';
+import { guestErrorText } from '@/lib/guest-clippings';
+import { useI18n } from '@/lib/i18n/client';
 import type { SavedArticle, SavedFolder } from '@/lib/types';
 
 /** What the page shows: a folder ('all' = everything), whether read stories are hidden, a search. */
@@ -42,12 +44,12 @@ function viewToQuery(view: SavedView) {
   return query ? `?${query}` : '';
 }
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-const stories = (n: number) => plural(n, 'story', 'stories');
-
 export function SavedManager({ backend, initialArticles, initialFolders, initialView }: SavedManagerProps) {
   const { showToast } = useToast();
   const guest = backend.kind === 'browser';
+  const { t, fmt, rich, plural } = useI18n();
+  const w = t.saved;
+  const stories = (n: number) => plural(w.storyCount, n);
 
   const [articles, setArticles] = useState(initialArticles);
   const [folders, setFolders] = useState(initialFolders);
@@ -70,8 +72,8 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
   }, []);
 
   const fail = useCallback(
-    (title: string, error: { message: string }) => showToast({ type: 'error', title, message: error.message }),
-    [showToast],
+    (title: string, error: { message: string }) => showToast({ type: 'error', title, message: guestErrorText(error, t) }),
+    [showToast, t],
   );
 
   const patchArticle = useCallback((id: string, patch: Partial<SavedArticle>) => {
@@ -87,10 +89,10 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       const { error } = await backend.setRead(article.article_id, isRead);
       if (error) {
         patchArticle(article.article_id, { is_read: !isRead });
-        if (!quiet) fail('Could not update the story', error);
+        if (!quiet) fail(w.updateFailed, error);
       }
     },
-    [backend, patchArticle, fail],
+    [backend, patchArticle, fail, w],
   );
 
   const toggleRead = useCallback((article: SavedArticle) => setRead(article, !article.is_read), [setRead]);
@@ -104,22 +106,22 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       const { error } = await backend.setFolder(article.article_id, folderId);
       if (error) {
         patchArticle(article.article_id, { folder_id: previous });
-        fail('Could not move the story', error);
+        fail(w.moveFailed, error);
         return;
       }
       const name = folderName ?? folders.find((f) => f.id === folderId)?.name;
-      showToast({ type: 'success', title: name ? `Moved to “${name}”` : 'Taken out of the folder' });
+      showToast({ type: 'success', title: name ? fmt(w.movedTo, { name }) : w.takenOut });
     },
-    [backend, patchArticle, fail, folders, showToast],
+    [backend, patchArticle, fail, folders, showToast, fmt, w],
   );
 
   const restore = useCallback(
     async (removed: SavedArticle) => {
       const { error } = await backend.restore(removed);
-      if (error) return fail('Could not put the story back', error);
+      if (error) return fail(w.restoreFailed, error);
       setArticles((list) => [...list, removed]);
     },
-    [backend, fail],
+    [backend, fail, w],
   );
 
   const remove = useCallback(
@@ -128,22 +130,22 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       const { error } = await backend.remove(article.article_id);
       if (error) {
         setArticles((list) => [...list, article]);
-        fail('Could not remove the story', error);
+        fail(w.removeFailed, error);
         return;
       }
       showToast({
         type: 'success',
-        title: 'Removed from your saved stories',
-        action: { label: 'Undo', onClick: () => void restore(article) },
+        title: w.removed,
+        action: { label: t.common.undo, onClick: () => void restore(article) },
       });
     },
-    [backend, fail, showToast, restore],
+    [backend, fail, showToast, restore, t.common.undo, w],
   );
 
   const saveNote = async (article: SavedArticle, note: string) => {
     const { error } = await backend.setNote(article.article_id, note || null);
     if (error) {
-      fail('Could not save the note', error);
+      fail(w.noteFailed, error);
       return false;
     }
     patchArticle(article.article_id, { notes: note || null });
@@ -157,11 +159,9 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
     const { data, error } =
       folderDialog.mode === 'rename' ? await backend.renameFolder(folderDialog.folder.id, name) : await backend.createFolder(name);
     if (error || !data) {
-      if (error?.code === '23505') return 'You already have a folder with that name.';
-      if (error?.message.includes('FOLDER_LIMIT_REACHED')) {
-        return guest ? 'This browser holds up to 30 folders. Delete one to add another.' : 'You can have up to 100 folders. Delete one to add another.';
-      }
-      return 'Could not save the folder. Please try again.';
+      if (error?.code === '23505') return w.folderExists;
+      if (error?.message.includes('FOLDER_LIMIT_REACHED')) return guest ? w.guestFolderLimit : w.folderLimit;
+      return w.folderFailed;
     }
     setFolders((list) =>
       (folderDialog.mode === 'rename' ? list.map((f) => (f.id === data.id ? data : f)) : [...list, data]).sort((a, b) =>
@@ -169,17 +169,17 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       ),
     );
     if (folderDialog.mode === 'create' && folderDialog.forArticle) void move(folderDialog.forArticle, data.id, data.name);
-    else if (folderDialog.mode === 'create') showToast({ type: 'success', title: `Folder “${data.name}” created` });
+    else if (folderDialog.mode === 'create') showToast({ type: 'success', title: fmt(w.folderCreated, { name: data.name }) });
     return null;
   };
 
   const deleteFolder = async (folder: SavedFolder) => {
     const { error } = await backend.deleteFolder(folder.id);
-    if (error) return fail('Could not delete the folder', error);
+    if (error) return fail(w.folderDeleteFailed, error);
     setFolders((list) => list.filter((f) => f.id !== folder.id));
     setArticles((list) => list.map((a) => (a.folder_id === folder.id ? { ...a, folder_id: null } : a)));
     if (viewRef.current.folder === folder.id) updateView({ folder: 'all' });
-    showToast({ type: 'success', title: `Folder “${folder.name}” deleted`, message: 'The stories in it are still saved.' });
+    showToast({ type: 'success', title: fmt(w.folderDeleted, { name: folder.name }), message: w.folderDeletedNote });
   };
 
   // ------------------------------------------------------------------- view
@@ -214,31 +214,24 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
 
   return (
     <div className="container py-8 sm:py-10">
-      <PageHeader
-        kicker="Kept for later"
-        title="Saved stories"
-        engraving="quill"
-        description="Stories you saved to read later. They stay here until you remove them."
-      />
+      <PageHeader kicker={w.kicker} title={w.title} engraving="quill" description={w.description} />
       <ScrollDivider className="mt-8" />
 
       {guest && (
-        <aside className="card-paper mt-8 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-label="About these clippings">
+        <aside className="card-paper mt-8 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-label={w.about}>
           <div className="flex items-center gap-4">
             <Engraving name="quill" className="hidden h-9 sm:block" />
             <div>
-              <p className="font-display text-[1.1rem] font-semibold">Kept in this browser</p>
-              <p className="text-[0.95rem] italic text-muted-foreground">
-                Your saved stories, folders and notes stay on this device. A free account keeps them on every device; they move into it when you sign in.
-              </p>
+              <p className="font-display text-[1.1rem] font-semibold">{w.guestTitle}</p>
+              <p className="text-pretty text-[0.95rem] italic text-muted-foreground">{w.guestNote}</p>
             </div>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/login?next=/saved">Log in</Link>
+              <Link href="/login?next=/saved">{t.common.logIn}</Link>
             </Button>
             <Button asChild size="sm">
-              <Link href="/signup">Create an account</Link>
+              <Link href="/signup">{t.common.createAccount}</Link>
             </Button>
           </div>
         </aside>
@@ -248,16 +241,11 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
         <div className="mt-10">
           <EmptyState
             engraving="kitten-sit"
-            title="You have not saved any stories yet"
-            description={
-              <>
-                When you see a story you want to keep, press <strong>Save</strong> under it. It will appear here, even after it
-                has left the front page.
-              </>
-            }
+            title={w.emptyTitle}
+            description={rich(w.emptyNote, { save: <strong>{t.story.save}</strong> })}
             action={
               <Button asChild size="lg">
-                <Link href="/feed">Go to the front page</Link>
+                <Link href="/feed">{w.goFront}</Link>
               </Button>
             }
           />
@@ -266,10 +254,10 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
         <div className="mt-8 grid gap-7 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-0">
           {/* The clippings drawer: the folders as an index down the margin on wide screens, a ribbon on phones. */}
           <aside className="min-w-0 lg:border-r lg:border-rule/40 lg:pr-8">
-            <p className="label mb-2 hidden text-(--brass-ink) lg:block">Folders</p>
-            <nav aria-label="Folders" className="folder-index">
+            <p className="label mb-2 hidden text-(--brass-ink) lg:block">{w.folders}</p>
+            <nav aria-label={w.folders} className="folder-index">
               <button type="button" className="dept-tab" aria-pressed={view.folder === 'all'} onClick={() => updateView({ folder: 'all' })}>
-                <span className="folder-name">All saved</span>
+                <span className="folder-name">{w.allSaved}</span>
                 <span className="tabular-nums tracking-normal opacity-70">{articles.length}</span>
               </button>
               {folders.map((f) => (
@@ -280,7 +268,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               ))}
             </nav>
             <Button variant="outline" size="sm" className="mt-3 w-full lg:mt-4" onClick={() => setFolderDialog({ mode: 'create' })}>
-              <Plus /> New folder
+              <Plus /> {w.newFolder}
             </Button>
           </aside>
 
@@ -288,20 +276,20 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 id="saved-list-heading" className="headline text-[1.9rem]">
-                  {activeFolder ? activeFolder.name : 'All saved stories'}
+                  {activeFolder ? activeFolder.name : w.allSavedStories}
                 </h2>
                 <p className="mt-1 italic text-muted-foreground">
                   {stories(inView.length)}
-                  {inView.length > 0 && ` · ${unreadInView === 0 ? 'all read' : `${unreadInView} not read yet`}`}
+                  {inView.length > 0 && ` · ${unreadInView === 0 ? w.allRead : plural(w.notRead, unreadInView)}`}
                 </p>
               </div>
               {activeFolder && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setFolderDialog({ mode: 'rename', folder: activeFolder })}>
-                    <Pencil /> Rename folder
+                    <Pencil /> {w.renameFolder}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setFolderToDelete(activeFolder)}>
-                    <Trash2 /> Delete folder
+                    <Trash2 /> {w.deleteFolder}
                   </Button>
                 </div>
               )}
@@ -316,16 +304,16 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
                   type="search"
                   value={view.q}
                   onChange={(e) => updateView({ q: e.target.value })}
-                  placeholder="Search your saved stories and notes…"
+                  placeholder={w.search}
                   className="ledger-field"
-                  aria-label="Search saved stories"
+                  aria-label={w.searchLabel}
                 />
                 {view.q && (
                   <button
                     type="button"
                     onClick={() => updateView({ q: '' })}
                     className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
-                    aria-label="Clear search"
+                    aria-label={w.clearSearch}
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -334,7 +322,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               <div className="flex items-center gap-2.5">
                 <Checkbox id="hide-read" checked={view.hideRead} onCheckedChange={(hideRead) => updateView({ hideRead: hideRead === true })} />
                 <Label htmlFor="hide-read" className="cursor-pointer">
-                  Hide stories I’ve read
+                  {w.hideRead}
                 </Label>
               </div>
             </div>
@@ -344,33 +332,33 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
                 {inView.length === 0 && activeFolder ? (
                   <EmptyState
                     icon={FolderOpen}
-                    title="This folder is empty"
-                    description="To add a story, press “Put in a folder” under it and pick this folder."
+                    title={w.emptyFolder}
+                    description={w.emptyFolderNote}
                     action={
                       <Button variant="outline" onClick={() => updateView({ folder: 'all' })}>
-                        Show all saved stories
+                        {w.showAll}
                       </Button>
                     }
                   />
                 ) : view.q ? (
                   <EmptyState
                     engraving="kitten-peer"
-                    title={`No saved stories match “${view.q}”`}
-                    description="Check the spelling or try fewer words."
+                    title={fmt(w.noMatch, { q: view.q })}
+                    description={w.noMatchNote}
                     action={
                       <Button variant="outline" onClick={() => updateView({ q: '' })}>
-                        Clear the search
+                        {w.clearTheSearch}
                       </Button>
                     }
                   />
                 ) : (
                   <EmptyState
                     engraving="kitten-curious"
-                    title="You have read everything here"
-                    description="Turn off “Hide stories I’ve read” to see them again."
+                    title={w.allReadTitle}
+                    description={w.allReadNote}
                     action={
                       <Button variant="outline" onClick={() => updateView({ hideRead: false })}>
-                        Show read stories
+                        {w.showRead}
                       </Button>
                     }
                   />
@@ -380,7 +368,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               <>
                 {filtered && (
                   <p className="mt-4 text-sm italic text-muted-foreground">
-                    Showing {visible.length} of {stories(inView.length)}.
+                    {fmt(w.showing, { n: visible.length, total: stories(inView.length) })}
                   </p>
                 )}
                 <ul className="card-paper mt-4 divide-y divide-dashed divide-border px-4 sm:px-6">
@@ -424,9 +412,9 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
         open={folderToDelete !== null}
         onOpenChange={(open) => !open && setFolderToDelete(null)}
         destructive
-        title={`Delete the folder “${folderToDelete?.name ?? ''}”?`}
-        description="Only the folder is deleted. The stories in it stay in your saved stories."
-        confirmLabel="Delete folder"
+        title={fmt(w.deleteFolderTitle, { name: folderToDelete?.name ?? '' })}
+        description={w.deleteFolderNote}
+        confirmLabel={w.deleteFolder}
         onConfirm={async () => {
           if (folderToDelete) await deleteFolder(folderToDelete);
         }}

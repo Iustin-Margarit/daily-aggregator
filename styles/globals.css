@@ -1199,7 +1199,8 @@ article:focus-within .photo-plate::after,
     overflow-x: auto;
     scrollbar-width: none;
     border-block: 3px double hsl(var(--rule) / 0.6);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent);
+    /* Both ends fade softly, so it reads as a strip that scrolls. */
+    mask-image: linear-gradient(90deg, transparent, #000 0.85rem, #000 calc(100% - 2.5rem), transparent);
     &::-webkit-scrollbar {
       display: none;
     }
@@ -1232,6 +1233,10 @@ article:focus-within .photo-plate::after,
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: -5px;
+    }
+    /* Small phones: a little tighter, so the longer French or Spanish labels and Filters share one row. */
+    @media (width < 25rem) {
+      padding-inline: 0.72rem;
     }
     /* The chosen one: brass type and an inked brass underline (a rule over a hairline, thinning at the ends). */
     &[aria-pressed='true'],
@@ -1298,6 +1303,11 @@ article:focus-within .photo-plate::after,
     &:focus-visible {
       outline: 2px solid hsl(var(--ring));
       outline-offset: 2px;
+    }
+    @media (width < 25rem) {
+      gap: 0.35rem;
+      padding-inline: 0.55rem 0.65rem;
+      letter-spacing: 0.1em;
     }
   }
 

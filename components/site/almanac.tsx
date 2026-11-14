@@ -3,6 +3,7 @@
 import { useId, useSyncExternalStore } from 'react';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
+import { useI18n } from '@/lib/i18n/client';
 import type { OnThisDay } from '@/lib/on-this-day';
 import { formatClock } from '@/lib/reader-prefs';
 import { useClientValue } from '@/lib/use-client-value';
@@ -10,10 +11,10 @@ import { useReaderPref } from '@/lib/use-reader-pref';
 import { cn } from '@/lib/utils';
 
 /*
- * Small printed details with some soul: a live clock, tonight's moon, the
- * month's woodcut with a thought for the day, and the edition's language
- * under an engraved globe. The time, moon and month use the reader's own
- * clock, so they only appear after the page loads.
+ * Small printed details with some soul: a live clock, tonight's moon and the
+ * month's woodcut with a thought for the day, in the reader's edition. The
+ * time, moon and month use the reader's own clock, so they only appear after
+ * the page loads. (The edition's language: components/site/edition-selector.tsx.)
  */
 
 // ---------------------------------------------------------------- time source
@@ -155,7 +156,8 @@ export function Clock({ className }: { className?: string }) {
   // Seconds since midnight: grows all day, so each tick turns the hand forwards.
   const daySeconds = date ? date.getHours() * 3600 + date.getMinutes() * 60 + seconds : 0;
   const clock = useReaderPref('clock');
-  const label = date ? `The time is ${formatClock(date, clock)}` : 'Clock';
+  const { t, fmt, locale } = useI18n();
+  const label = date ? fmt(t.almanac.timeIs, { time: formatClock(date, clock, locale) }) : t.almanac.clock;
   const caseMask = useSvgId('case');
   const brass = useSvgId('brass');
   const enamel = useSvgId('enamel');
@@ -248,19 +250,22 @@ export function Clock({ className }: { className?: string }) {
 export function ClockText({ className }: { className?: string }) {
   const now = useNow();
   const clock = useReaderPref('clock');
+  const { locale } = useI18n();
   if (now === null) return <span className={className}>{' '}</span>;
-  return <span className={className}>{formatClock(new Date(now * 1000), clock)}</span>;
+  return <span className={className}>{formatClock(new Date(now * 1000), clock, locale)}</span>;
 }
 
-/** "Thursday" in the reader's time zone. */
+/** "Thursday" ("Jeudi", "Jueves", ...) in the reader's time zone. */
 export function WeekdayText({ className }: { className?: string }) {
-  const day = useClientValue(() => new Date().toLocaleDateString('en-GB', { weekday: 'long' }), null);
+  const { dates } = useI18n();
+  const day = useClientValue(() => dates.weekday(new Date()), null);
   return <span className={className}>{day ?? ' '}</span>;
 }
 
 /** The clock for the masthead: its left ear, or a row on tablets. */
 export function ClockTile({ className, layout }: { className?: string; layout?: 'ear' | 'row' }) {
-  return <AlmanacTile className={className} layout={layout} picture={<Clock className="h-full w-auto" />} label="Local time" value={<ClockText />} note={<WeekdayText />} />;
+  const { t } = useI18n();
+  return <AlmanacTile className={className} layout={layout} picture={<Clock className="h-full w-auto" />} label={t.almanac.localTime} value={<ClockText />} note={<WeekdayText />} />;
 }
 
 // ---------------------------------------------------------------- moon
@@ -275,17 +280,8 @@ export function moonAge(date: Date): number {
   return ((days % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
 }
 
-export function moonPhaseName(age: number): string {
-  const names = [
-    'New moon',
-    'Waxing crescent',
-    'First quarter',
-    'Waxing gibbous',
-    'Full moon',
-    'Waning gibbous',
-    'Last quarter',
-    'Waning crescent',
-  ];
+/** The phase's name from the edition's eight (almanac.phases: new moon, waxing crescent, ... waning crescent). */
+export function moonPhaseName(age: number, names: string[]): string {
   return names[Math.round((age / SYNODIC_MONTH) * 8) % 8];
 }
 
@@ -319,6 +315,7 @@ export function Moon({ className }: { className?: string }) {
   const hatch = useSvgId('hatch');
   const sky = useSvgId('sky');
   const trail = useSvgId('trail');
+  const { t, fmt, tag } = useI18n();
   // Whole hours are enough; the shape barely changes within a day.
   const age = now === null ? null : moonAge(new Date(Math.floor(now / 3600) * 3_600_000));
   const r = MOON_R;
@@ -340,7 +337,7 @@ export function Moon({ className }: { className?: string }) {
   }
   return (
     <span className={cn('relative inline-block aspect-square shrink-0', className)}>
-      <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={age === null ? 'The moon' : `The moon tonight: ${moonPhaseName(age).toLowerCase()}`}>
+      <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={age === null ? t.almanac.moon : fmt(t.almanac.moonTonight, { phase: moonPhaseName(age, t.almanac.phases).toLocaleLowerCase(tag) })}>
         <defs>
           <InkMask id={engraving} href="/ornaments/moon-engraving.webp" x={c - r} y={c - r} width={2 * r} height={2 * r} />
           <InkMask id={bezel} href="/ornaments/watch-bezel.webp" width={100} height={100} />
@@ -413,14 +410,16 @@ export function Moon({ className }: { className?: string }) {
 
 export function MoonText({ className }: { className?: string }) {
   const now = useNow();
+  const { t } = useI18n();
   if (now === null) return <span className={className}>{' '}</span>;
-  return <span className={className}>{moonPhaseName(moonAge(new Date(now * 1000)))}</span>;
+  return <span className={className}>{moonPhaseName(moonAge(new Date(now * 1000)), t.almanac.phases)}</span>;
 }
 
 /** "62% lit". Changes slowly, so whole hours are enough. */
 export function MoonLitText({ className }: { className?: string }) {
+  const { t, fmt } = useI18n();
   const lit = useClientValue(() => Math.round(moonIllumination(moonAge(new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000))) * 100), null);
-  return <span className={className}>{lit === null ? ' ' : `${lit}% lit`}</span>;
+  return <span className={className}>{lit === null ? ' ' : fmt(t.almanac.lit, { n: lit })}</span>;
 }
 
 /**
@@ -428,60 +427,14 @@ export function MoonLitText({ className }: { className?: string }) {
  * almanac" reads right in both editions (morning and night alike).
  */
 export function MoonTile({ className, layout }: { className?: string; layout?: 'ear' | 'row' }) {
-  return <AlmanacTile className={className} layout={layout} picture={<Moon className={layout === 'ear' ? 'h-[78%] w-auto' : 'h-full w-auto'} />} label="Lunar almanac" value={<MoonText />} note={<MoonLitText />} />;
+  const { t } = useI18n();
+  return <AlmanacTile className={className} layout={layout} picture={<Moon className={layout === 'ear' ? 'h-[78%] w-auto' : 'h-full w-auto'} />} label={t.almanac.lunar} value={<MoonText />} note={<MoonLitText />} />;
 }
 
 // ---------------------------------------------------------------- month
 
-const MONTHS: { name: string; note: string }[] = [
-  { name: 'January', note: 'Sleigh bells on the high road and a fresh year to read.' },
-  { name: 'February', note: 'Short days, long letters and the first sign of spring.' },
-  { name: 'March', note: 'High winds: hold on to your hat and your paper.' },
-  { name: 'April', note: 'Gates mended, seeds sown, showers expected.' },
-  { name: 'May', note: 'Ploughing under big skies; evenings grow long.' },
-  { name: 'June', note: 'Carriages out, roses in, the longest light of the year.' },
-  { name: 'July', note: 'Haymaking weather. Read in the shade.' },
-  { name: 'August', note: 'Slow wagons over old bridges; the year at full height.' },
-  { name: 'September', note: 'Apples in the cart and a new term begins.' },
-  { name: 'October', note: 'Walks with the dog through the turning leaves.' },
-  { name: 'November', note: 'The fire is lit, the cat is home. A good month for reading.' },
-  { name: 'December', note: 'Wood for the hearth and stories for the long nights.' },
-];
-
-/** Short public-domain thoughts, one for each day of the month. */
-const THOUGHTS: { text: string; by: string }[] = [
-  { text: 'Well begun is half done.', by: 'Aristotle' },
-  { text: 'Courage is resistance to fear, mastery of fear, not absence of fear.', by: 'Mark Twain' },
-  { text: 'Knowledge is power.', by: 'Francis Bacon' },
-  { text: 'Little by little, one travels far.', by: 'Spanish proverb' },
-  { text: 'Lost time is never found again.', by: 'Benjamin Franklin' },
-  { text: 'Reading is to the mind what exercise is to the body.', by: 'Richard Steele' },
-  { text: 'Early to bed and early to rise makes a man healthy, wealthy and wise.', by: 'Benjamin Franklin' },
-  { text: 'What do we live for, if it is not to make life less difficult to each other?', by: 'George Eliot' },
-  { text: 'Brevity is the soul of wit.', by: 'William Shakespeare' },
-  { text: 'Well done is better than well said.', by: 'Benjamin Franklin' },
-  { text: 'Nothing is so strong as gentleness.', by: 'Francis de Sales' },
-  { text: 'Kind hearts are more than coronets.', by: 'Alfred Tennyson' },
-  { text: 'The best way out is always through.', by: 'Robert Frost' },
-  { text: 'The unexamined life is not worth living.', by: 'Socrates' },
-  { text: 'Books are the quietest and most constant of friends.', by: 'Charles W. Eliot' },
-  { text: 'Hope is a good breakfast.', by: 'Francis Bacon' },
-  { text: 'He that can have patience can have what he will.', by: 'Benjamin Franklin' },
-  { text: 'I am large, I contain multitudes.', by: 'Walt Whitman' },
-  { text: 'To be, or not to be: that is the question.', by: 'William Shakespeare' },
-  { text: 'Every day is a fresh beginning.', by: 'Susan Coolidge' },
-  { text: 'Fortune favours the bold.', by: 'Virgil' },
-  { text: 'Where there is a will, there is a way.', by: 'Proverb' },
-  { text: 'The beginning is the most important part of the work.', by: 'Plato' },
-  { text: 'One today is worth two tomorrows.', by: 'Benjamin Franklin' },
-  { text: 'A journey of a thousand miles begins with a single step.', by: 'Laozi' },
-  { text: 'All things are difficult before they are easy.', by: 'Thomas Fuller' },
-  { text: 'Light tomorrow with today.', by: 'Elizabeth Barrett Browning' },
-  { text: 'Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.', by: 'Francis Bacon' },
-  { text: 'Act well your part; there all the honour lies.', by: 'Alexander Pope' },
-  { text: 'What we learn with pleasure we never forget.', by: 'Alfred Mercier' },
-  { text: 'Tomorrow is a new day with no mistakes in it yet.', by: 'L. M. Montgomery' },
-];
+/** The Penfield woodcut for each month (public/engravings/month-*.webp); the words are in the dictionaries (almanac.months). */
+const MONTH_WOODCUTS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'] as const;
 
 /** The reader's month (0-11) and day of the month (1-31). */
 function useMonthAndDay(): { month: number; day: number } {
@@ -500,22 +453,23 @@ function useMonthAndDay(): { month: number; day: number } {
  */
 export function MonthAlmanac({ className, wide = false }: { className?: string; wide?: boolean }) {
   const { month, day } = useMonthAndDay();
-  const { name, note } = MONTHS[month];
-  const thought = THOUGHTS[(day - 1) % THOUGHTS.length];
+  const { t, fmt } = useI18n();
+  const { name, note } = t.almanac.months[month];
+  const thought = t.almanac.thoughts[(day - 1) % t.almanac.thoughts.length];
   return (
     <section
-      aria-label="The almanac"
+      aria-label={t.almanac.title}
       className={cn('card-paper overflow-hidden', wide && 'grid items-center md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]', className)}
     >
       <div className={wide ? 'p-5 sm:p-7' : 'px-5 pt-5'}>
-        <Engraving name={`month-${name.toLowerCase()}` as EngravingName} className="w-full" soft label={`A woodcut for ${name}`} />
+        <Engraving name={`month-${MONTH_WOODCUTS[month]}` as EngravingName} className="w-full" soft label={fmt(t.almanac.woodcutFor, { month: name })} />
       </div>
       <div className={wide ? 'px-6 pb-8 text-center md:py-8 md:pl-2 md:pr-10' : 'px-5 pb-6 pt-3 text-center'}>
-        <p className="label text-muted-foreground">The almanac</p>
+        <p className="label text-muted-foreground">{t.almanac.title}</p>
         <h2 className={cn('mt-1 font-display font-semibold italic', wide ? 'text-[2rem]' : 'text-2xl')}>{name}</h2>
         <p className="mt-1 text-[0.95rem] italic text-muted-foreground">{note}</p>
         <div className="ornament mx-auto my-4 w-3/4" />
-        <p className="label text-muted-foreground">Thought for the day</p>
+        <p className="label text-muted-foreground">{t.almanac.thought}</p>
         <blockquote className={cn('mt-1.5 font-display leading-snug', wide ? 'text-[1.3rem]' : 'text-[1.1rem]')}>“{thought.text}”</blockquote>
         <p className="mt-1 font-label text-[0.82rem] text-muted-foreground">{thought.by}</p>
       </div>
@@ -531,11 +485,12 @@ export function MonthAlmanac({ className, wide = false }: { className?: string; 
  * dated paragraphs of an old almanac. Sits under "In other news".
  */
 export function OnThisDayCard({ data, className }: { data: OnThisDay; className?: string }) {
+  const { t, fmt, rich } = useI18n();
   return (
     <section aria-labelledby="on-this-day" className={cn('card-paper px-5 pb-4 pt-5', className)}>
-      <p className="kicker text-center">From the almanac</p>
-      <h2 id="on-this-day" className="mt-1 text-center font-display text-[1.35rem] font-semibold italic leading-tight">
-        On this day, {data.dateLabel}
+      <p className="kicker text-center">{t.almanac.fromAlmanac}</p>
+      <h2 id="on-this-day" className="mt-1 text-center font-display text-[1.35rem] font-semibold italic leading-tight text-balance">
+        {fmt(t.almanac.onThisDay, { date: data.dateLabel })}
       </h2>
       <div className="ornament mx-auto my-3 w-2/3" />
       <ol className="divide-y divide-dashed divide-rule/40">
@@ -555,24 +510,14 @@ export function OnThisDayCard({ data, className }: { data: OnThisDay; className?
         ))}
       </ol>
       <p className="mt-2 border-t border-rule/30 pt-2 text-center font-label text-[0.72rem] text-muted-foreground">
-        From{' '}
-        <a href="https://en.wikipedia.org/wiki/Wikipedia:Selected_anniversaries" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-          Wikipedia’s anniversaries
-        </a>{' '}
-        (CC BY-SA)
+        {rich(t.almanac.wikipediaCredit, {
+          link: (
+            <a href={data.source} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+              {t.almanac.wikipediaLink}
+            </a>
+          ),
+        })}
       </p>
     </section>
-  );
-}
-
-// ---------------------------------------------------------------- language
-
-/** "English edition" in small capitals beside an engraved globe. Only English for now; more languages may follow. */
-export function EditionLanguage({ className }: { className?: string }) {
-  return (
-    <span className={cn('inline-flex items-center gap-1.5', className)} title="This paper is printed in English">
-      <Ornament name="globe" className="h-[1.05rem] [--ornament-ink:currentColor]" />
-      <span className="text-[0.76rem] font-semibold uppercase tracking-[0.14em]">English edition</span>
-    </span>
   );
 }

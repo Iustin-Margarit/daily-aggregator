@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { formatReadingTime } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/client';
 import { cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,7 @@ type ArticleCardProps = {
  */
 function StoryActions({ article, userId, onHide, onMuteSource }: Omit<ArticleCardProps, 'eagerImage' | 'variant'>) {
   const { saved, busy, toggleSave, share } = useArticleActions(article, userId);
+  const { t, fmt } = useI18n();
   return (
     <div className="flex flex-wrap items-center gap-x-1">
       <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className="pl-0" />
@@ -53,21 +55,21 @@ function StoryActions({ article, userId, onHide, onMuteSource }: Omit<ArticleCar
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuItem asChild>
             <a href={article.url} target="_blank" rel="noopener noreferrer">
-              <SquareArrowOutUpRight className="mr-2.5 h-4 w-4" /> Read on {article.source_name}
+              <SquareArrowOutUpRight className="mr-2.5 h-4 w-4" /> {fmt(t.story.readOn, { source: article.source_name })}
             </a>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={share}>
-            <Share2 className="mr-2.5 h-4 w-4" /> Share
+            <Share2 className="mr-2.5 h-4 w-4" /> {t.story.share}
           </DropdownMenuItem>
           {userId && (onHide || onMuteSource) && <DropdownMenuSeparator />}
           {userId && onHide && (
             <DropdownMenuItem onSelect={() => onHide(article)}>
-              <EyeOff className="mr-2.5 h-4 w-4" /> Hide this story
+              <EyeOff className="mr-2.5 h-4 w-4" /> {t.story.hide}
             </DropdownMenuItem>
           )}
           {userId && onMuteSource && (
             <DropdownMenuItem onSelect={() => onMuteSource(article)}>
-              <VolumeX className="mr-2.5 h-4 w-4" /> Mute {article.source_name}
+              <VolumeX className="mr-2.5 h-4 w-4" /> {fmt(t.story.mute, { source: article.source_name })}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
@@ -77,13 +79,14 @@ function StoryActions({ article, userId, onHide, onMuteSource }: Omit<ArticleCar
 }
 
 function Byline({ article, withAuthor = false, className }: { article: FeedArticle; withAuthor?: boolean; className?: string }) {
+  const { t, fmt, locale } = useI18n();
   const author = withAuthor && article.author ? cleanText(article.author) : null;
-  const readingTime = formatReadingTime(article.reading_minutes);
+  const readingTime = formatReadingTime(article.reading_minutes, locale);
   return (
     <p className={cn('byline flex min-w-0 flex-wrap items-center gap-x-1.5', className)}>
       {author && (
         <>
-          <span className="truncate">By {author}</span>
+          <span className="truncate">{fmt(t.story.by, { author })}</span>
           <span aria-hidden="true">·</span>
         </>
       )}
@@ -110,6 +113,7 @@ function ArticleCardImpl({ article, userId, onHide, onMuteSource, eagerImage, va
   const summary = cleanText(article.summary);
   const section = getCategoryStyle(article.category_name).key ?? undefined;
   const actions = <StoryActions article={article} userId={userId} onHide={onHide} onMuteSource={onMuteSource} />;
+  const { t } = useI18n();
 
   if (variant === 'lead') {
     return (
@@ -142,7 +146,7 @@ function ArticleCardImpl({ article, userId, onHide, onMuteSource, eagerImage, va
               href={href}
               className="group/read inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold text-(--brass-ink) hover:text-foreground"
             >
-              Read dispatch
+              {t.story.readDispatch}
               <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
             </Link>
             {actions}

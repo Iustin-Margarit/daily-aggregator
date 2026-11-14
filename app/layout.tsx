@@ -4,6 +4,9 @@ import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } fro
 import { SoundTicket } from '@/components/site/sound-ticket';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
+import { LOCALE_INFO } from '@/lib/i18n/config';
+import { I18nProvider } from '@/lib/i18n/client';
+import { getI18n } from '@/lib/i18n/server';
 import { prefAttributes } from '@/lib/reader-prefs';
 import { siteConfig } from '@/lib/site';
 import '@/styles/globals.css';
@@ -33,25 +36,29 @@ function siteUrl(): URL {
 }
 
 // Link previews use app/opengraph-image.png and app/twitter-image.png (picked up by file name).
-export const metadata: Metadata = {
-  metadataBase: siteUrl(),
-  title: { default: `${siteConfig.masthead} · your own morning paper`, template: `%s · ${siteConfig.masthead}` },
-  description: siteConfig.description,
-  applicationName: siteConfig.masthead,
-  openGraph: {
-    type: 'website',
-    siteName: siteConfig.masthead,
-    title: `${siteConfig.masthead}: ${siteConfig.motto.toLowerCase()}`,
-    description: siteConfig.description,
-    locale: 'en_GB',
-    url: '/',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${siteConfig.masthead}: ${siteConfig.motto.toLowerCase()}`,
-    description: siteConfig.description,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t, locale } = await getI18n();
+  const motto = t.masthead.motto.toLocaleLowerCase(LOCALE_INFO[locale].tag);
+  return {
+    metadataBase: siteUrl(),
+    title: { default: `${siteConfig.masthead} · ${t.meta.titleDefault}`, template: `%s · ${siteConfig.masthead}` },
+    description: t.meta.description,
+    applicationName: siteConfig.masthead,
+    openGraph: {
+      type: 'website',
+      siteName: siteConfig.masthead,
+      title: `${siteConfig.masthead}: ${motto}`,
+      description: t.meta.description,
+      locale: LOCALE_INFO[locale].ogLocale,
+      url: '/',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${siteConfig.masthead}: ${motto}`,
+      description: t.meta.description,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -64,28 +71,31 @@ const FONT_SIZES = new Set(['small', 'medium', 'large']);
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Cookies mirror per-reader display preferences so they apply before hydration.
-  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
+  const [cookieStore, requestHeaders, { locale }] = await Promise.all([cookies(), headers(), getI18n()]);
   const fontSize = cookieStore.get('font-size')?.value;
   // Set by the proxy (proxy.ts); lets the theme's inline script pass the Content-Security-Policy.
   const nonce = requestHeaders.get('x-nonce') ?? undefined;
 
   return (
     <html
-      lang="en"
+      // The reader's edition (lib/i18n): French, Spanish or German pages also hyphenate in that language.
+      lang={LOCALE_INFO[locale].htmlLang}
       suppressHydrationWarning
       data-font-size={fontSize && FONT_SIZES.has(fontSize) ? fontSize : 'medium'}
       // Reading preferences kept on this device (clock, street banner, photographs, columns): lib/reader-prefs.ts.
-      {...prefAttributes((name) => cookieStore.get(name)?.value)}
+      {...prefAttributes((name) => cookieStore.get(name)?.value, locale)}
       className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable}`}
     >
       <body className="min-h-screen">
         <ThemeProvider nonce={nonce}>
-          <ToastProvider>
-            {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
-            <div className="sheet">{children}</div>
-            {/* Stop the street sound from any page once the banner is out of sight. */}
-            <SoundTicket />
-          </ToastProvider>
+          <I18nProvider locale={locale}>
+            <ToastProvider>
+              {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
+              <div className="sheet">{children}</div>
+              {/* Stop the street sound from any page once the banner is out of sight. */}
+              <SoundTicket />
+            </ToastProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>

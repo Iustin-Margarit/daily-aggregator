@@ -8,14 +8,14 @@ import { getCategoryStyle } from '@/lib/category-styles';
 import { cleanText } from '@/lib/text';
 import type { RelatedArticle } from '@/lib/types';
 
-/** More stories from the same desk, set in columns like the front page (the grid draws the rules). */
-export function RelatedArticles({ articles, category }: { articles: RelatedArticle[]; category: string }) {
+/** More stories from the same desk, set in columns like the front page (the grid draws the rules). `heading`: "More from the World desk". */
+export function RelatedArticles({ articles, category, heading }: { articles: RelatedArticle[]; category: string; heading: string }) {
   if (articles.length === 0) return null;
   return (
     <section aria-labelledby="related-heading">
       <ScrollDivider className="mb-6" />
       <SectionHead id="related-heading" engraving={getCategoryStyle(category).engraving} className="mb-7 text-[1.3rem]">
-        More from the {category} desk
+        {heading}
       </SectionHead>
       <div className="news-grid">
         {articles.map((article) => (

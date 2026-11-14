@@ -16,14 +16,15 @@ OAuth client, which only the owner of the Google account can create. It takes ab
 3. **Google Auth Platform > Data Access**: add only `openid`, `.../auth/userinfo.email` and
    `.../auth/userinfo.profile`. Nothing else is needed.
 4. **Google Auth Platform > Clients > Create client**, type **Web application**:
-   - Authorised JavaScript origins: your site, for example `https://your-app.vercel.app`
-     (and `http://localhost:3000` for local testing).
-   - Authorised redirect URIs (this is Supabase's address, **not** the site's):
-     - `https://zjxzzecffppaffrdhmds.supabase.co/auth/v1/callback` (hosted project)
-     - `http://127.0.0.1:58321/auth/v1/callback` (local stack, only if you want to test locally)
+   - Authorised JavaScript origins: `https://daily-aggregator.vercel.app` and
+     `http://localhost:3000`.
+   - Authorised redirect URIs (Supabase's addresses, **not** the site's). One client serves both
+     projects:
+     - `https://zjxzzecffppaffrdhmds.supabase.co/auth/v1/callback` (production)
+     - `https://sppfigcxpmhrcybhvbhp.supabase.co/auth/v1/callback` (dev)
    - Copy the **Client ID** and **Client secret**. Keep the secret out of git and out of chats.
 
-## 2. Supabase dashboard (hosted project)
+## 2. Supabase dashboard (production, then dev)
 
 **First** make sure *Authentication > Sign In / Providers > Email > Confirm email* is **on** (it
 needs the custom SMTP from the go-live list). With it off, anyone can register someone else's
@@ -32,33 +33,28 @@ Supabase adds Google to that account and the stranger's password still opens it.
 
 1. *Authentication > Sign In / Providers > Google*: switch it on, paste the Client ID and the
    Client secret, save.
-2. *Authentication > URL Configuration*: the **Site URL** and **Redirect URLs** must contain the
-   real site, for example `https://your-app.vercel.app/**` (this is already on the go-live list).
+2. *Authentication > URL Configuration*:
+   - production: Site URL `https://daily-aggregator.vercel.app`, Redirect URLs
+     `https://daily-aggregator.vercel.app/**`;
+   - dev: Site URL `http://localhost:3000`, Redirect URLs `http://localhost:3000/**` and
+     `http://localhost:3100/**` (the preview port used for browser tests).
    After Google, Supabase sends people to `/auth/callback` on the site; an address that is not in
    this list is replaced by the Site URL.
 
 Within five minutes the button shows up on `/login` and `/signup` (the app checks which sign-in
 methods are on and keeps the answer for five minutes).
 
-## 3. Local testing (optional)
+## 3. Dev project
 
-1. In `supabase/config.toml`, under `[auth.external.google]`, set `enabled = true` (do not commit
-   that change if you prefer the button hidden locally).
-2. In Git Bash, in the project folder:
-
-   ```sh
-   export SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=...apps.googleusercontent.com
-   export SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
-   supabase stop && supabase start
-   ```
-
-   This keeps the data (it is not a reset).
+Do the same two steps in the dev project's dashboard (same Client ID and secret). Dev has Confirm
+email off, which is fine there: it only holds test accounts.
 
 ## How it behaves
 
 - **New reader**: Google confirms the email address, so the account is ready at once (no
-  confirmation email). The username starts as the part of the email before the @, and the reader
-  picks their sections next, like everyone else.
+  confirmation email). The byline starts as their first name from Google, accents folded
+  (María -> Maria); if that leaves fewer than three letters, or the name is in another script, it is
+  the part of the email before the @. They can change it on the first-run page or in Settings.
 - **Same email as an existing, confirmed account**: Supabase adds Google to that account instead of creating
   a second one, so the reader keeps their saved stories. The password keeps working too.
 - **Settings**: a reader who only uses Google sees "How you sign in" instead of the email and

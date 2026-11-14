@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Ornament } from '@/components/site/ornament';
+import { useI18n } from '@/lib/i18n/client';
 
 /** Goes back when the reader came from inside the app, otherwise to the feed. A printer's fist points the way (☜). */
 export function BackLink() {
   const router = useRouter();
+  const { t } = useI18n();
   return (
     <Link
       href="/feed"
@@ -21,7 +23,7 @@ export function BackLink() {
       <span className="-scale-x-100">
         <Ornament name="fist" className="fist-poke block w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
       </span>
-      Back to the paper
+      {t.article.back}
     </Link>
   );
 }

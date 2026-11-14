@@ -5,6 +5,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { Ornament } from '@/components/site/ornament';
 import { isAmbiencePlaying, setAmbience, setAmbiencePaused, setAmbienceStage, setAmbienceStageInView, subscribeAmbience } from '@/lib/ambience';
+import { useI18n } from '@/lib/i18n/client';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cn } from '@/lib/utils';
 
@@ -216,6 +217,7 @@ function Lane({ walker }: { walker: Walker }) {
  */
 function SoundToggle({ paused }: { paused: boolean }) {
   const playing = useSyncExternalStore(subscribeAmbience, isAmbiencePlaying, () => false);
+  const { t } = useI18n();
   useEffect(() => setAmbiencePaused(paused), [paused]);
   // Leaving the front page lets the sound play on: Pause only holds it while the banner is here.
   useEffect(() => () => setAmbiencePaused(false), []);
@@ -225,11 +227,11 @@ function SoundToggle({ paused }: { paused: boolean }) {
       className="st-toggle st-sound"
       onClick={() => setAmbience(!playing)}
       aria-pressed={playing}
-      title={playing ? 'Victorian street ambience (playing): click to stop' : 'Victorian street ambience'}
+      title={playing ? t.street.soundTitlePlaying : t.street.soundTitle}
     >
       <Ornament name="gramophone" className="h-[1.05rem] [--ornament-ink:currentColor]" />
-      Sound
-      <span className="sr-only">: Victorian street ambience</span>
+      <span className="st-label">{t.street.sound}</span>
+      <span className="sr-only">{t.street.soundSr}</span>
     </button>
   );
 }
@@ -238,6 +240,7 @@ function SoundToggle({ paused }: { paused: boolean }) {
 
 export function StreetTheatre({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
   const paused = useReaderPref('banner') === 'still';
 
   // A pause from before the setting existed (localStorage) becomes the setting.
@@ -374,11 +377,11 @@ export function StreetTheatre({ className }: { className?: string }) {
           className="st-toggle st-motion"
           onClick={() => setReaderPref('banner', paused ? 'moving' : 'still')}
           aria-pressed={paused}
-          title={paused ? 'Let the town move again' : 'Stop everything that moves: the people, the cab, the smoke and the sky'}
+          title={paused ? t.street.playTitle : t.street.pauseTitle}
         >
           {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
-          {paused ? 'Play' : 'Pause'}
-          <span className="sr-only"> the moving pictures</span>
+          <span className="st-label">{paused ? t.street.play : t.street.pause}</span>
+          <span className="sr-only">{t.street.motionSr}</span>
         </button>
       </div>
     </div>

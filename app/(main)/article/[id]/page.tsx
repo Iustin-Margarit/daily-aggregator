@@ -14,6 +14,8 @@ import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { formatReadingTime } from '@/lib/format';
+import { sectionText } from '@/lib/i18n';
+import { getI18n } from '@/lib/i18n/server';
 import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { cleanText, truncate } from '@/lib/text';
 import type { ArticleDetail, RelatedArticle } from '@/lib/types';
@@ -29,10 +31,11 @@ const getArticle = cache(async (slugOrId: string) => {
 });
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const article = await getArticle((await params).id);
-  if (!article) return { title: 'Article not found' };
+  const [article, { t, fmt }] = await Promise.all([getArticle((await params).id), getI18n()]);
+  if (!article) return { title: t.meta.articleNotFound };
   const title = cleanText(article.title);
-  const description = truncate(cleanText(article.summary), 180) || `${article.category_name} news from ${article.source_name}`;
+  const section = sectionText(t, getCategoryStyle(article.category_name).key, article.category_name).name;
+  const description = truncate(cleanText(article.summary), 180) || fmt(t.meta.articleFallback, { section, source: article.source_name });
   return {
     title,
     description,
@@ -56,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  */
 export default async function ArticlePage({ params }: PageProps) {
   const { id } = await params;
-  const [article, user] = await Promise.all([getArticle(id), getCurrentUser()]);
+  const [article, user, { t, fmt, locale }] = await Promise.all([getArticle(id), getCurrentUser(), getI18n()]);
   if (!article) notFound();
 
   const supabase = await createClient();
@@ -65,8 +68,9 @@ export default async function ArticlePage({ params }: PageProps) {
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
   const author = article.author ? cleanText(article.author) : null;
-  const readingTime = formatReadingTime(article.reading_minutes);
+  const readingTime = formatReadingTime(article.reading_minutes, locale);
   const style = getCategoryStyle(article.category_name);
+  const section = sectionText(t, style.key, article.category_name).name;
 
   const source = article.source_website_url ? (
     <a href={article.source_website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
@@ -88,7 +92,7 @@ export default async function ArticlePage({ params }: PageProps) {
           <CategoryBadge name={article.category_name} />
           <h1 className="headline mx-auto mt-4 max-w-[24ch] text-[2.1rem] sm:text-5xl lg:text-[3.4rem]">{title}</h1>
           <p className="byline mt-5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[0.95rem] text-foreground/80">
-            {author && <span>By {author}</span>}
+            {author && <span>{fmt(t.story.by, { author })}</span>}
             {author && <span aria-hidden="true">·</span>}
             <span>{source}</span>
             {readingTime && <span aria-hidden="true">·</span>}
@@ -100,19 +104,19 @@ export default async function ArticlePage({ params }: PageProps) {
 
         <div className="story-columns px-5 pb-12 pt-7 sm:px-10 lg:pt-9">
           {/* The margin column: when the story was filed, by whom, and for which desk. */}
-          <aside className="story-date" aria-label="Dateline">
-            <p className="label mb-1 hidden text-(--brass-ink) lg:block">Dateline</p>
+          <aside className="story-date" aria-label={t.article.dateline}>
+            <p className="label mb-1 hidden text-(--brass-ink) lg:block">{t.article.dateline}</p>
             <Dateline publishedAt={article.published_at} />
             <div className="mt-6 hidden space-y-5 border-t border-rule/30 pt-5 lg:block">
               <div>
-                <p className="label text-muted-foreground">Filed by</p>
+                <p className="label text-muted-foreground">{t.article.filedBy}</p>
                 <p className="mt-1 font-display text-[1.1rem] font-semibold leading-snug">{source}</p>
                 {author && <p className="mt-0.5 text-[0.92rem] italic text-muted-foreground">{author}</p>}
               </div>
               <div className="border-t border-rule/30 pt-5">
-                <p className="label text-muted-foreground">From the desk of</p>
+                <p className="label text-muted-foreground">{t.article.fromDesk}</p>
                 <Engraving name={style.engraving} className="mt-3 h-14 max-w-[7rem] [--engraving-ink:var(--section,var(--engraving-ink))]" />
-                <p className="mt-2 font-display text-[1.1rem] font-semibold text-(--section)">{article.category_name}</p>
+                <p className="mt-2 font-display text-[1.1rem] font-semibold text-(--section)">{section}</p>
               </div>
             </div>
           </aside>
@@ -126,27 +130,25 @@ export default async function ArticlePage({ params }: PageProps) {
               <div className="photo-plate">
                 <ArticleImage src={article.image_url} alt={title} category={article.category_name} width={1600} eager className="aspect-video w-full" />
               </div>
-              <figcaption className="mt-2 text-right font-label text-[0.8rem] italic text-muted-foreground">Photograph via {article.source_name}</figcaption>
+              <figcaption className="mt-2 text-right font-label text-[0.8rem] italic text-muted-foreground">{fmt(t.article.photoVia, { source: article.source_name })}</figcaption>
             </figure>
 
             {summary ? (
               <DropCap text={summary} className="news-text mt-7 text-[1.2rem] leading-relaxed text-foreground/90" />
             ) : (
-              <p className="mt-7 italic text-muted-foreground">The publisher did not include a summary for this story.</p>
+              <p className="mt-7 italic text-muted-foreground">{t.article.noSummary}</p>
             )}
 
             {/* The way on to the full report, set as a ruled notice at the foot of the column. */}
             <div className="mt-9 border-y-[3px] border-double border-rule/45 px-4 py-7 text-center sm:px-8">
-              <p className="label text-muted-foreground">The story continues</p>
-              <p className="headline mt-2 text-2xl">Read the full report at {article.source_name}</p>
-              <p className="mx-auto mt-2 max-w-md text-[0.95rem] text-muted-foreground">
-                You are reading a summary. The complete article, with all its reporting, is on the publisher’s website.
-              </p>
+              <p className="label text-muted-foreground">{t.article.continues}</p>
+              <p className="headline mt-2 text-balance text-2xl">{fmt(t.article.fullReport, { source: article.source_name })}</p>
+              <p className="mx-auto mt-2 max-w-md text-pretty text-[0.95rem] text-muted-foreground">{t.article.summaryNote}</p>
               <Button asChild size="lg" className="group/read mt-5">
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  Continue reading
+                  {t.article.continueReading}
                   <Ornament name="fist" className="fist-poke w-[1.45rem] [--ornament-ink:currentColor]" />
-                  <span className="sr-only"> (opens the publisher’s website)</span>
+                  <span className="sr-only">{t.article.opensPublisher}</span>
                 </a>
               </Button>
             </div>
@@ -155,7 +157,7 @@ export default async function ArticlePage({ params }: PageProps) {
       </article>
 
       <div className="mt-14">
-        <RelatedArticles articles={(related ?? []) as RelatedArticle[]} category={article.category_name} />
+        <RelatedArticles articles={(related ?? []) as RelatedArticle[]} category={article.category_name} heading={fmt(t.article.moreFromDesk, { section })} />
       </div>
     </div>
   );

@@ -1,0 +1,160 @@
+/*
+ * The Editions selector (components/site/edition-selector.tsx): the language
+ * of the paper, chosen from a printed dispatch slip. Each edition carries an
+ * ink-stamp monogram (EN, FR, ES, DE) in a double ring, set slightly askew as
+ * a hand stamp would be; the edition in hand is inked solid and pointed at
+ * by a printer's fist.
+ */
+
+/* The trigger beside the Vol. / No. line and under the masthead: small capitals, a gilt caret.
+ * (display comes from the component's classes, so Tailwind's hidden / lg:inline-flex can switch it.) */
+.edition-line {
+  align-items: center;
+  gap: 0.4rem;
+  margin-inline: -0.35rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 2px;
+  color: inherit;
+  transition: color 0.15s;
+  &:hover,
+  &[data-state='open'] {
+    color: hsl(var(--foreground));
+  }
+  &:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 1px;
+  }
+  & .edition-line-name {
+    font-family: var(--font-jost), ui-sans-serif, sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-decoration: underline dotted hsl(var(--rule) / 0.55);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.3em;
+  }
+  &:hover .edition-line-name,
+  &[data-state='open'] .edition-line-name {
+    text-decoration: underline solid var(--ink-gold);
+  }
+}
+.edition-caret {
+  font-size: 0.62rem;
+  line-height: 1;
+  color: var(--ink-gold);
+  transition: transform 0.2s;
+  [data-state='open'] > & {
+    transform: rotate(180deg);
+  }
+}
+
+/* The compact trigger in the header bar: the edition's stamp alone, with its caret. */
+.edition-seal-button {
+  height: 2.5rem;
+  align-items: center;
+  gap: 0.25rem;
+  padding-inline: 0.3rem 0.4rem;
+  border-radius: 3px;
+  transition: background-color 0.15s;
+  &:hover,
+  &[data-state='open'] {
+    background: hsl(var(--foreground) / 0.06);
+  }
+  &:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/* An ink-stamp monogram: typewriter capitals in a double ring, pressed a little askew. */
+.edition-stamp {
+  --edition-ink: hsl(var(--muted-foreground));
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 3px double var(--edition-ink);
+  border-radius: 50%;
+  color: var(--edition-ink);
+  font-family: var(--font-special-elite), 'Courier New', monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  /* A little uneven, like ink from a rubber stamp. */
+  text-shadow: 0.3px 0 0 currentColor;
+  transform: rotate(-7deg);
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    transform 0.2s;
+}
+.edition-seal-button .edition-stamp {
+  --edition-ink: var(--brass-ink);
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.7rem;
+}
+
+/* The dispatch slip. */
+.edition-slip {
+  width: 19.5rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0;
+  overflow: hidden;
+}
+.edition-slip-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 1rem 0.7rem;
+  border-bottom: 3px double hsl(var(--rule) / 0.45);
+}
+.edition-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 1rem;
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s;
+  & + & {
+    border-top: 1px dashed hsl(var(--rule) / 0.35);
+  }
+  &[data-highlighted] {
+    background: color-mix(in srgb, var(--ink-gold) 14%, transparent);
+  }
+  &[data-highlighted] .edition-stamp {
+    --edition-ink: var(--brass-ink);
+    transform: rotate(-3deg);
+  }
+  /* The edition in hand: its stamp inked solid, in the paper's accent ink. */
+  &[data-state='checked'] .edition-stamp {
+    --edition-ink: var(--ink-accent);
+    background: var(--ink-accent);
+    color: hsl(var(--card));
+    box-shadow: inset 0 0 0 2px hsl(var(--card));
+    text-shadow: none;
+  }
+}
+.edition-slip-note {
+  padding: 0.65rem 1rem 0.8rem;
+  border-top: 3px double hsl(var(--rule) / 0.45);
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edition-stamp,
+  .edition-caret {
+    transition: none;
+  }
+}

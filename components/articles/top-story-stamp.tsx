@@ -1,5 +1,8 @@
+'use client';
+
 import { useId } from 'react';
 import { Ornament } from '@/components/site/ornament';
+import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
 
 /** Wax colour: the reader's daytime accent (oxblood by default), deep red in both editions. */
@@ -12,6 +15,7 @@ const WAX = 'var(--accent-day, #8b1e1e)';
  */
 export function TopStoryStamp({ className }: { className?: string }) {
   const ring = `${useId()}-ring`;
+  const { t } = useI18n();
   return (
     <div className={cn('pointer-events-none relative', className)} aria-hidden="true">
       <span
@@ -39,11 +43,11 @@ export function TopStoryStamp({ className }: { className?: string }) {
           <g key={dy} fill={fill} transform={`translate(0 ${dy})`}>
             <text style={{ fontFamily: 'var(--font-special-elite)', fontSize: 8.2, letterSpacing: 0.6 }}>
               <textPath href={`#${ring}`} startOffset="2%" textLength="150" lengthAdjust="spacing">
-                TOP STORY ✦ FRONT PAGE ✦
+                {t.story.topStamp}
               </textPath>
             </text>
             <text x="50" y="47" textAnchor="middle" style={{ fontFamily: 'var(--font-special-elite)', fontSize: 7, letterSpacing: 1 }}>
-              NO.
+              {t.story.topStampNo}
             </text>
             <text
               x="50"

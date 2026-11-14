@@ -4,6 +4,7 @@ import '@/styles/street-theatre.css';
 import { useSyncExternalStore } from 'react';
 import { Ornament } from '@/components/site/ornament';
 import { isAmbiencePlaying, isAmbienceStageInView, setAmbience, subscribeAmbience } from '@/lib/ambience';
+import { useI18n } from '@/lib/i18n/client';
 
 /**
  * The street sound keeps playing while the reader moves around the site. This
@@ -16,16 +17,17 @@ export function SoundTicket() {
     () => isAmbiencePlaying() && !isAmbienceStageInView(),
     () => false,
   );
+  const { t } = useI18n();
   if (!shown) return null;
   return (
     <button
       type="button"
       className="st-toggle st-sound st-float"
       onClick={() => setAmbience(false)}
-      title="The Victorian street sound is playing: click to stop it"
+      title={t.street.stopTitle}
     >
       <Ornament name="gramophone" className="h-[1.2rem] [--ornament-ink:currentColor]" />
-      Stop sound
+      {t.street.stop}
     </button>
   );
 }

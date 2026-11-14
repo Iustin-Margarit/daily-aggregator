@@ -6,11 +6,15 @@ import { FeedView } from '@/components/feed/feed-view';
 import { feedRpcArgs, filtersFromSearchParams, pageFromSearchParams } from '@/lib/feed';
 import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
 import { canIngest, refreshNewsIfStale } from '@/lib/ingestion/auto-refresh';
+import { getI18n, getLocale } from '@/lib/i18n/server';
 import { getOnThisDay } from '@/lib/on-this-day';
 import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
 import type { Category, FeedArticle, SourceOption } from '@/lib/types';
 
-export const metadata: Metadata = { title: 'Front page' };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.frontPage };
+}
 // The background refresh started with after() may take a few seconds.
 export const maxDuration = 60;
 
@@ -19,7 +23,7 @@ export default async function FeedPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [user, profile, jar] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies()]);
+  const [user, profile, jar, locale] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies(), getLocale()]);
   // Visitors read the paper too, with the sections they chose in this browser (lib/guest.ts).
   const signedIn = Boolean(user && profile);
   if (signedIn && !profile?.has_completed_onboarding) redirect('/onboarding');
@@ -41,7 +45,7 @@ export default async function FeedPage({
   const page = pageFromSearchParams(params);
   const asOf = new Date().toISOString();
 
-  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf)), getOnThisDay()]);
+  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf)), getOnThisDay(new Date(), locale)]);
   const initialArticles = (articles ?? []) as FeedArticle[];
 
   // Brand-new install: the database has no articles yet, so fetch them now.

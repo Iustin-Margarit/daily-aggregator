@@ -6,10 +6,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n/client";
 
 const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
+    const { t } = useI18n();
 
     return (
       <div className="relative">
@@ -32,7 +34,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttribut
             <Eye className="h-4 w-4" aria-hidden="true" />
           )}
           <span className="sr-only">
-            {showPassword ? "Hide password" : "Show password"}
+            {showPassword ? t.common.hidePassword : t.common.showPassword}
           </span>
         </Button>
       </div>

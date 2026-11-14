@@ -12,6 +12,8 @@ import { Spinner } from '@/components/ui/spinner';
 import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { sectionText } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/client';
 import type { Category } from '@/lib/types';
 
 type TopicsFormProps = {
@@ -25,21 +27,23 @@ type TopicsFormProps = {
 function SubmitButtons({ isFirstRun, count }: { isFirstRun: boolean; count: number }) {
   const { pending, data } = useFormStatus();
   const intent = data?.get('intent');
+  const { t, plural } = useI18n();
+  const w = t.onboarding;
   return (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end lg:flex-col-reverse lg:justify-start">
       {isFirstRun ? (
         <Button type="submit" name="intent" value="skip" variant="ghost" disabled={pending}>
           {pending && intent === 'skip' && <Spinner />}
-          Skip for now
+          {w.skip}
         </Button>
       ) : (
         <Button variant="outline" asChild>
-          <Link href="/feed">Cancel</Link>
+          <Link href="/feed">{t.common.cancel}</Link>
         </Button>
       )}
       <Button type="submit" name="intent" value="save" disabled={pending} className="sm:min-w-44">
         {pending && intent !== 'skip' && <Spinner />}
-        {isFirstRun ? (count > 0 ? `Continue with ${count} section${count === 1 ? '' : 's'}` : 'Continue with every section') : 'Save sections'}
+        {isFirstRun ? (count > 0 ? plural(w.continueWith, count) : w.continueAll) : w.save}
       </Button>
     </div>
   );
@@ -48,6 +52,8 @@ function SubmitButtons({ isFirstRun, count }: { isFirstRun: boolean; count: numb
 export function TopicsForm({ categories, selectedIds, isFirstRun, username, sourceCounts }: TopicsFormProps) {
   const [selected, setSelected] = useState<string[]>(selectedIds);
   const [state, formAction] = useActionState(saveTopics, null);
+  const { t, fmt, plural } = useI18n();
+  const w = t.onboarding;
 
   const toggle = (id: string) => setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
   const allSelected = selected.length === categories.length;
@@ -61,21 +67,19 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
 
         {isFirstRun && (
           <div className="max-w-sm space-y-2">
-            <Label htmlFor="username">Your byline (username)</Label>
+            <Label htmlFor="username">{w.byline}</Label>
             <Input id="username" name="username" defaultValue={username} required minLength={3} maxLength={30} autoComplete="username" />
-            <p className="text-xs italic text-muted-foreground">Shown at the top of your paper. You can change it later.</p>
+            <p className="text-xs italic text-muted-foreground">{w.bylineHint}</p>
           </div>
         )}
 
         <div className="flex items-end justify-between gap-4 lg:block">
           <div>
-            <p className="label text-(--brass-ink)">In your paper</p>
+            <p className="label text-(--brass-ink)">{w.inYourPaper}</p>
             <p className="mt-1 font-display text-[1.45rem] font-semibold leading-tight" aria-live="polite">
-              {selected.length === 0 ? 'Every section' : `${selected.length} of ${categories.length} sections`}
+              {selected.length === 0 ? w.everySection : plural(w.countOf, selected.length, { total: categories.length })}
             </p>
-            <p className="mt-1 text-[0.95rem] italic text-muted-foreground">
-              {selected.length === 0 ? 'No section chosen yet, so your paper includes them all.' : 'Press a stamp to add or remove it.'}
-            </p>
+            <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">{selected.length === 0 ? w.noneYet : w.pressStamp}</p>
           </div>
           <Button
             type="button"
@@ -84,16 +88,17 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
             className="shrink-0 lg:mt-4"
             onClick={() => setSelected(allSelected ? [] : categories.map((c) => c.id))}
           >
-            {allSelected ? 'Clear all' : 'Select all'}
+            {allSelected ? w.clearAll : w.selectAll}
           </Button>
         </div>
       </div>
 
       <fieldset className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:pl-10">
-        <legend className="sr-only">Sections</legend>
+        <legend className="sr-only">{w.legend}</legend>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 xl:grid-cols-4">
           {categories.map((category, index) => {
             const style = getCategoryStyle(category.name);
+            const section = sectionText(t, style.key, category.name);
             const checked = selected.includes(category.id);
             return (
               <label
@@ -112,15 +117,15 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                 />
                 <span className="stamp flex h-full flex-col items-center gap-2.5 text-center">
                   <span className="flex w-full items-center justify-between font-label text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-(--stamp-ink)">
-                    <span>No. {String(index + 1).padStart(2, '0')}</span>
+                    <span>{fmt(t.sections.stampNo, { n: String(index + 1).padStart(2, '0') })}</span>
                   </span>
                   <Engraving name={style.engraving} className="mx-auto h-16 max-w-[7rem]" />
                   <span>
-                    <span className="headline block text-xl text-(--stamp-ink)">{category.name}</span>
-                    <span className="mt-1 block text-[0.9rem] leading-snug text-muted-foreground">{style.description}</span>
+                    <span className="headline block text-xl text-(--stamp-ink)">{section.name}</span>
+                    <span className="mt-1 block text-[0.9rem] leading-snug text-muted-foreground">{section.description}</span>
                   </span>
                   {sourceCounts[category.id] ? (
-                    <span className="byline">{sourceCounts[category.id]} newspapers</span>
+                    <span className="byline">{plural(w.newspapers, sourceCounts[category.id])}</span>
                   ) : null}
                 </span>
                 {/* Chosen stamps are franked with a real postmark (docs/ASSETS.md); the others show a faint "Choose" ring. */}
@@ -130,7 +135,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                     <span className="relative block w-[4.4rem]">
                       <Ornament name="postmark-ring" className="block w-full [--ornament-ink:var(--postmark-ink)]" />
                       <span className="absolute inset-0 flex flex-col items-center justify-center font-typewriter leading-none text-(--postmark-ink)">
-                        <span className="text-[0.66rem] tracking-[0.1em]">CHOSEN</span>
+                        <span className="text-[0.66rem] tracking-[0.1em]">{w.chosen}</span>
                         <span className="mt-1 text-[0.7rem]">✦</span>
                       </span>
                     </span>
@@ -139,7 +144,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                   <span className="choose-ring pointer-events-none absolute right-2 top-1 w-[4rem]" aria-hidden="true">
                     <Ornament name="postmark-ring" className="block w-full [--ornament-ink:currentColor]" />
                     <span className="absolute inset-0 flex items-center justify-center font-typewriter text-[0.62rem] tracking-[0.1em]">
-                      CHOOSE
+                      {w.choose}
                     </span>
                   </span>
                 )}

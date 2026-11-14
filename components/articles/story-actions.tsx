@@ -3,6 +3,7 @@
 import { forwardRef, useState } from 'react';
 import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
+import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
 
 /*
@@ -36,6 +37,7 @@ export function SaveButton({
 }) {
   const [stamps, setStamps] = useState(0);
   const stamp = stamps > 0 && saved;
+  const { t } = useI18n();
   return (
     <button
       type="button"
@@ -45,8 +47,8 @@ export function SaveButton({
       }}
       disabled={disabled}
       aria-pressed={saved}
-      aria-label={saved ? 'Saved: remove from saved stories' : 'Save this story for later'}
-      title={saved ? 'In your saved stories. Press to remove.' : 'Save this story to read later'}
+      aria-label={saved ? t.story.savedLabel : t.story.saveLabel}
+      title={saved ? t.story.savedTitle : t.story.saveTitle}
       className={cn(actionClass, saved && 'text-(--brass-ink)', className)}
     >
       {/* A hairline shadow thickens the quill's fine lines, as on the Saved tab. */}
@@ -55,10 +57,10 @@ export function SaveButton({
       </span>
       {saved ? (
         <span key="saved" className={cn('inline-block', stamp && 'clip-stamp')}>
-          Saved
+          {t.story.saved}
         </span>
       ) : (
-        'Save'
+        t.story.save
       )}
     </button>
   );
@@ -66,12 +68,13 @@ export function SaveButton({
 
 /** "More ☞": the label and a printer's fist pointing on to the menu. Used as a menu trigger. */
 export const MoreButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(function MoreButton(
-  { className, children = 'More', ...props },
+  { className, children, ...props },
   ref,
 ) {
+  const { t } = useI18n();
   return (
-    <button ref={ref} type="button" aria-label="More options" className={cn(actionClass, 'group/read', className)} {...props}>
-      {children}
+    <button ref={ref} type="button" aria-label={t.story.moreOptions} className={cn(actionClass, 'group/read', className)} {...props}>
+      {children ?? t.story.more}
       <Ornament name="fist" className="fist-poke w-[1.3rem]" />
     </button>
   );

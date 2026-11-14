@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArticleCard, type StoryVariant } from '@/components/articles/article-card';
 import { ArticleGridSkeleton } from '@/components/articles/article-card-skeleton';
 import { hideArticle, muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
-import { FeedSearch, FeedToolbar } from '@/components/feed/feed-toolbar';
+import { FeedSearch, FeedToolbar, FilterButton } from '@/components/feed/feed-toolbar';
 import { Pagination } from '@/components/feed/pagination';
 import { MonthAlmanac, OnThisDayCard } from '@/components/site/almanac';
 import { EmptyState } from '@/components/site/empty-state';
@@ -19,6 +19,9 @@ import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { feedRpcArgs, filtersToQueryString, hasFrontPage, pageCount } from '@/lib/feed';
+import { sectionText } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n/client';
+import { getCategoryStyle } from '@/lib/category-styles';
 import type { OnThisDay } from '@/lib/on-this-day';
 import { createClient } from '@/lib/supabase/client';
 import type { Category, FeedArticle, FeedFilters, FeedSort, SourceOption } from '@/lib/types';
@@ -58,28 +61,26 @@ function insertBack(list: FeedArticle[], removed: { article: FeedArticle; index:
 
 const totalOf = (list: FeedArticle[]) => Number(list[0]?.total_count ?? 0);
 
-function greetingFor(hour: number) {
-  return hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-}
-
-/** Uses the reader's own clock, so it is only known in the browser. */
-function Greeting({ name }: { name: string }) {
-  const text = useClientValue(() => greetingFor(new Date().getHours()), 'Welcome back');
-  return (
-    <>
-      {text}, {name}.
-    </>
-  );
+/** Uses the reader's own clock, so it is only known in the browser. A visitor without an account is greeted as "reader". */
+function Greeting({ name }: { name: string | null }) {
+  const { t, fmt } = useI18n();
+  const { greetings, morningFrom, afternoonFrom, eveningFrom } = t.feed;
+  const hello = useClientValue(() => {
+    const hour = new Date().getHours();
+    return hour < morningFrom ? greetings.night : hour < afternoonFrom ? greetings.morning : hour < eveningFrom ? greetings.afternoon : greetings.evening;
+  }, greetings.welcome);
+  return <>{name ? fmt(t.feed.greeting, { hello, name }) : fmt(t.feed.greetingGuest, { hello })}</>;
 }
 
 /** The last page: "— 30 —", the old printers' mark for the end, and the office cat asleep. */
 function EndOfEdition() {
+  const { t } = useI18n();
   return (
     <div className="card-paper mx-auto flex max-w-2xl flex-col items-center gap-5 p-6 text-center sm:flex-row sm:text-left">
       {/* eslint-disable-next-line @next/next/no-img-element -- a small local picture */}
       <img
         src="/plates/cat.webp"
-        alt="A tabby cat asleep on a red cushion (Théophile Steinlen, 1909)"
+        alt={t.feed.catAlt}
         width={1000}
         height={819}
         loading="lazy"
@@ -87,8 +88,8 @@ function EndOfEdition() {
       />
       <div>
         <p className="font-display text-2xl font-semibold tracking-[0.3em]">— 30 —</p>
-        <p className="mt-2 font-display text-lg italic">That is the end of today’s edition.</p>
-        <p className="mt-1 text-[0.95rem] text-muted-foreground">Even the office cat has nodded off. Fresh stories arrive every hour.</p>
+        <p className="mt-2 font-display text-lg italic">{t.feed.endTitle}</p>
+        <p className="mt-1 text-[0.95rem] text-muted-foreground">{t.feed.endNote}</p>
       </div>
     </div>
   );
@@ -113,6 +114,7 @@ function GridFiller({
   hrefFor: (page: number) => string;
   showFrontPageLink: boolean;
 }) {
+  const { t, fmt } = useI18n();
   const target = next ?? (showFrontPageLink ? 1 : null);
   const go = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (target === null || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
@@ -124,18 +126,18 @@ function GridFiller({
       <Engraving name={next ? 'newsboy' : 'typewriter'} className="h-24 max-w-[8rem]" />
       {next ? (
         <>
-          <p className="label mt-4 text-muted-foreground">Continued</p>
-          <p className="mt-1 font-display text-[1.5rem] font-semibold italic">on page {next}</p>
+          <p className="label mt-4 text-muted-foreground">{t.feed.continued}</p>
+          <p className="mt-1 font-display text-[1.5rem] font-semibold italic">{fmt(t.feed.onPage, { n: next })}</p>
         </>
       ) : (
         <>
-          <p className="label mt-4 text-muted-foreground">The last page</p>
-          <p className="mt-1 font-display text-[1.35rem] font-semibold italic">That is every story for now</p>
+          <p className="label mt-4 text-muted-foreground">{t.feed.lastPage}</p>
+          <p className="mt-1 text-balance font-display text-[1.35rem] font-semibold italic">{t.feed.everyStory}</p>
         </>
       )}
       {target !== null && (
         <a href={hrefFor(target)} onClick={go} className="group/read mt-4 inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold text-(--brass-ink) hover:text-foreground">
-          {next ? `Turn to page ${next}` : 'Back to the front page'}
+          {next ? fmt(t.feed.turnTo, { n: next }) : t.feed.backToFront}
           <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
         </a>
       )}
@@ -159,6 +161,7 @@ export function FeedView({
   databaseEmptyWithoutIngestion = false,
 }: FeedViewProps) {
   const { showToast } = useToast();
+  const { t, fmt, plural, list, rich } = useI18n();
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(initialPage);
   const [articles, setArticles] = useState(initialArticles);
@@ -195,7 +198,7 @@ export function FeedView({
 
       if (error) {
         setStatus('error');
-        showToast({ type: 'error', title: 'Could not load the stories', message: error.message });
+        showToast({ type: 'error', title: t.feed.loadFailed, message: error.message });
         return;
       }
       const rows = (data ?? []) as FeedArticle[];
@@ -209,7 +212,7 @@ export function FeedView({
       setStatus('idle');
       if (rows.length > 0) setWaiting(false);
     },
-    [showToast],
+    [showToast, t],
   );
 
   /** New filters always start again at page 1. */
@@ -273,15 +276,15 @@ export function FeedView({
       if (error) {
         setArticles((list) => insertBack(list, [{ article, index }]));
         setTotal((t) => t + 1);
-        showToast({ type: 'error', title: 'Could not hide the story', message: error.message });
+        showToast({ type: 'error', title: t.feed.hideFailed, message: error.message });
         return;
       }
       showToast({
         type: 'success',
-        title: 'Story hidden',
-        message: 'It will not appear in your paper again.',
+        title: t.feed.hidden,
+        message: t.feed.hiddenNote,
         action: {
-          label: 'Undo',
+          label: t.common.undo,
           onClick: async () => {
             await unhideArticle(userId, article.id);
             setArticles((list) => insertBack(list, [{ article, index }]));
@@ -290,7 +293,7 @@ export function FeedView({
         },
       });
     },
-    [userId, showToast],
+    [userId, showToast, t],
   );
 
   const handleMute = useCallback(
@@ -303,15 +306,15 @@ export function FeedView({
       const { error } = await muteSource(userId, article.source_id);
       if (error) {
         setArticles((list) => insertBack(list, removed));
-        showToast({ type: 'error', title: 'Could not mute the source', message: error.message });
+        showToast({ type: 'error', title: t.feed.muteFailed, message: error.message });
         return;
       }
       showToast({
         type: 'success',
-        title: `${article.source_name} muted`,
-        message: 'Unmute it any time in your settings.',
+        title: fmt(t.feed.muted, { source: article.source_name }),
+        message: t.feed.mutedNote,
         action: {
-          label: 'Undo',
+          label: t.common.undo,
           onClick: async () => {
             await unmuteSource(userId, article.source_id);
             void load(filtersRef.current, pageRef.current, false);
@@ -321,18 +324,20 @@ export function FeedView({
       // The page now has gaps; reload it so it is full again.
       void load(filtersRef.current, pageRef.current, false);
     },
-    [userId, showToast, load],
+    [userId, showToast, load, fmt, t],
   );
 
-  const selectedNames = categories.filter((c) => filters.categoryIds.includes(c.id)).map((c) => c.name);
+  const selectedNames = categories
+    .filter((c) => filters.categoryIds.includes(c.id))
+    .map((c) => sectionText(t, getCategoryStyle(c.name).key, c.name).name);
   const subtitle =
     filters.search !== ''
-      ? `Searching the paper for “${filters.search}”.`
+      ? fmt(t.feed.searching, { q: filters.search })
       : selectedNames.length === 0
-        ? 'Every section, freshest first.'
+        ? t.feed.everySection
         : selectedNames.length <= 3
-          ? `Your edition covers ${selectedNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}.`
-          : `Your edition covers ${selectedNames.slice(0, 2).join(', ')} and ${selectedNames.length - 2} more sections.`;
+          ? fmt(t.feed.covers, { list: list(selectedNames) })
+          : fmt(t.feed.coversMany, { first: selectedNames[0], second: selectedNames[1], n: selectedNames.length - 2 });
 
   const loading = status === 'loading';
   const pages = pageCount(total, hasFrontPage(filters));
@@ -369,38 +374,43 @@ export function FeedView({
       <FrontMasthead home="/feed" />
 
       {/* The zones of the page (masthead, lead story, the columns) are parted by engraved scrollwork. */}
-      <ScrollDivider className="mt-6" />
+      <ScrollDivider className="mt-4 sm:mt-6" />
 
-      <div className="mt-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div className="mt-3 flex flex-col gap-4 sm:mt-5 xl:flex-row xl:items-end xl:justify-between">
         <div className="flex items-end gap-3">
           <Engraving name="newsboy" className="hidden h-[4.2rem] sm:inline-block" />
           <div>
             <h1 className="font-display text-[1.7rem] font-semibold italic leading-tight sm:text-3xl">
-              <Greeting name={username ?? 'reader'} />
+              <Greeting name={username} />
             </h1>
             <p className="mt-1 text-[0.98rem] italic text-muted-foreground">{subtitle}</p>
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-          <Segmented<FeedSort>
-            aria-label="Order of the stories"
-            variant="ribbon"
-            className="self-start sm:self-auto"
-            value={filters.sort}
-            onChange={(sort) => updateFilters({ sort })}
-            options={[
-              { value: 'latest', label: 'Latest', title: 'Newest stories first' },
-              {
-                value: 'for_you',
-                label: (
-                  <>
-                    <Ornament name="nib" className="h-[0.95rem]" /> For you
-                  </>
-                ),
-                title: 'Ranked using your sections and the stories you save',
-              },
-            ]}
-          />
+          {/* Phones: Latest | For you on the left and Filters at the same height on the right. */}
+          <div className="flex items-stretch justify-between gap-2 min-[400px]:gap-3">
+            <Segmented<FeedSort>
+              aria-label={t.feed.order}
+              variant="ribbon"
+              value={filters.sort}
+              onChange={(sort) => updateFilters({ sort })}
+              options={[
+                { value: 'latest', label: t.feed.latest, title: t.feed.latestTitle },
+                {
+                  value: 'for_you',
+                  label: (
+                    <>
+                      <Ornament name="nib" className="h-[0.95rem]" /> {t.feed.forYou}
+                    </>
+                  ),
+                  title: t.feed.forYouTitle,
+                },
+              ]}
+            />
+            <div className="flex items-stretch sm:hidden">
+              <FilterButton filters={filters} onChange={updateFilters} categories={categories} sources={sources} />
+            </div>
+          </div>
           <FeedSearch value={filters.search} onChange={(search) => updateFilters({ search })} className="sm:w-72" />
         </div>
       </div>
@@ -417,16 +427,14 @@ export function FeedView({
 
       <div ref={topRef} className="scroll-mt-20" />
       {/* Clipped sideways so a page swinging in (the page turn) never makes the page scroll sideways. */}
-      <section className="mt-6 overflow-x-clip" aria-label="Stories" aria-busy={loading}>
+      <section className="mt-6 overflow-x-clip" aria-label={t.feed.stories} aria-busy={loading}>
         {waiting && articles.length === 0 ? (
           <div className="space-y-6">
             <div className="card-paper flex items-center gap-4 p-5">
               <Spinner className="h-5 w-5" />
               <div>
-                <p className="font-display text-lg font-semibold">The presses are running…</p>
-                <p className="text-sm italic text-muted-foreground">
-                  Today’s stories are being fetched for the first time. This takes about 20 seconds; the page updates by itself.
-                </p>
+                <p className="font-display text-lg font-semibold">{t.feed.running}</p>
+                <p className="text-sm italic text-muted-foreground">{t.feed.runningNote}</p>
               </div>
             </div>
             <ArticleGridSkeleton />
@@ -437,41 +445,36 @@ export function FeedView({
           status === 'error' ? (
             <EmptyState
               engraving="press"
-              title="The presses jammed"
-              description="The paper could not be loaded. Check your connection and try again."
-              action={<Button onClick={() => updateFilters({})}>Try again</Button>}
+              title={t.feed.jammed}
+              description={t.feed.jammedNote}
+              action={<Button onClick={() => updateFilters({})}>{t.common.tryAgain}</Button>}
             />
           ) : page > 1 ? (
             <EmptyState
               engraving="kitten-peer"
-              title={`There is no page ${page}`}
-              description="This edition is shorter than that. New stories may have moved things around."
-              action={<Button onClick={() => goToPage(1)}>Back to page 1</Button>}
+              title={fmt(t.feed.noPage, { n: page })}
+              description={t.feed.noPageNote}
+              action={<Button onClick={() => goToPage(1)}>{t.feed.backToPage1}</Button>}
             />
           ) : databaseEmptyWithoutIngestion ? (
             <EmptyState
               engraving="press"
-              title="No stories have been printed yet"
-              description={
-                <>
-                  Run {code('npm run ingest')} in the project folder, or add {code('SUPABASE_SERVICE_ROLE_KEY')} to {code('.env.local')} so
-                  the app can fetch news by itself.
-                </>
-              }
-              action={<Button onClick={() => updateFilters({})}>Check again</Button>}
+              title={t.feed.notPrinted}
+              description={rich(t.feed.notPrintedNote, { command: code('npm run ingest'), key: code('SUPABASE_SERVICE_ROLE_KEY'), file: code('.env.local') })}
+              action={<Button onClick={() => updateFilters({})}>{t.feed.checkAgain}</Button>}
             />
           ) : filters.search ? (
             <EmptyState
               engraving="kitten-peer"
-              title={`Nothing in the paper about “${filters.search}”`}
-              description="Try different words, a longer time range or more sections."
+              title={fmt(t.feed.nothingAbout, { q: filters.search })}
+              description={t.feed.nothingAboutNote}
               action={
                 <>
                   <Button variant="outline" onClick={() => updateFilters({ search: '' })}>
-                    Clear search
+                    {t.feed.clearSearch}
                   </Button>
                   {filters.categoryIds.length > 0 && (
-                    <Button onClick={() => updateFilters({ categoryIds: [], sourceIds: [] })}>Search every section</Button>
+                    <Button onClick={() => updateFilters({ categoryIds: [], sourceIds: [] })}>{t.feed.searchEverySection}</Button>
                   )}
                 </>
               }
@@ -479,15 +482,15 @@ export function FeedView({
           ) : (
             <EmptyState
               engraving="kitten-curious"
-              title="No stories for these filters"
-              description="There is nothing recent here yet. New stories arrive every hour."
+              title={t.feed.noStories}
+              description={t.feed.noStoriesNote}
               action={
                 <>
                   <Button variant="outline" onClick={() => updateFilters({ categoryIds: [], sourceIds: [], range: 'any' })}>
-                    Show everything
+                    {t.feed.showEverything}
                   </Button>
                   <Button asChild>
-                    <Link href="/onboarding">Edit my sections</Link>
+                    <Link href="/onboarding">{t.feed.editSections}</Link>
                   </Button>
                 </>
               }
@@ -501,9 +504,9 @@ export function FeedView({
           >
             {page > 1 && (
               <p className="mb-4 flex items-baseline justify-between font-label text-[0.92rem] text-muted-foreground">
-                <span className="font-medium text-foreground">Page {page}</span>
+                <span className="font-medium text-foreground">{fmt(t.feed.pageN, { n: page })}</span>
                 <span>
-                  {total.toLocaleString('en-US')} stories · {pages} pages
+                  {plural(t.feed.storyCount, total)} · {plural(t.feed.pageCount, pages)}
                 </span>
               </p>
             )}
@@ -514,7 +517,7 @@ export function FeedView({
                 <div className="flex lg:pr-9">{story(lead, 0, 'lead')}</div>
                 <aside className="flex flex-col border-t border-rule/40 pt-6 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0" aria-labelledby="other-news">
                   <SectionHead id="other-news" engraving="telegraph">
-                    In other news
+                    {t.landing.otherNews}
                   </SectionHead>
                   <div className="mt-2 divide-y divide-rule/30">
                     {sidebar.map((article, index) => (
@@ -532,7 +535,7 @@ export function FeedView({
               <>
                 <ScrollDivider className="mt-12" />
                 <SectionHead engraving="press" className="mb-7 mt-6 text-[1.3rem]">
-                  Latest dispatches
+                  {t.landing.latest}
                 </SectionHead>
               </>
             )}
