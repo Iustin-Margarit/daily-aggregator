@@ -1,7 +1,9 @@
+import { parseGuestSections } from '../lib/guest';
+import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { bannerGradient, isLightColor, shade } from '../lib/colors';
-import { FEED_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, pageCount, pageFromSearchParams, sinceFor } from '../lib/feed';
+import { FEED_PAGE_SIZE, FRONT_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, pageCount, pageFromSearchParams, sinceFor } from '../lib/feed';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
 import { cleanText, decodeEntities, truncate } from '../lib/text';
@@ -76,9 +78,21 @@ describe('feed filters', () => {
     const filters = filtersFromSearchParams({}, categories, preferred);
     assert.equal(filtersToQueryString(filters, categories, preferred, 1), '');
     assert.equal(filtersToQueryString(filters, categories, preferred, 4), '?page=4');
-    assert.equal(feedRpcArgs(filters, 3, '2026-11-12T12:00:00.000Z').p_offset, 2 * FEED_PAGE_SIZE);
-    assert.equal(pageCount(0), 1);
-    assert.equal(pageCount(FEED_PAGE_SIZE + 1), 2);
+    // Latest without a search: a front page of 16, then pages of 15.
+    assert.equal(feedRpcArgs(filters, 1, '2026-11-12T12:00:00.000Z').p_limit, FRONT_PAGE_SIZE);
+    assert.equal(feedRpcArgs(filters, 2, '2026-11-12T12:00:00.000Z').p_offset, FRONT_PAGE_SIZE);
+    assert.equal(feedRpcArgs(filters, 3, '2026-11-12T12:00:00.000Z').p_offset, FRONT_PAGE_SIZE + FEED_PAGE_SIZE);
+    assert.equal(feedRpcArgs(filters, 3, '2026-11-12T12:00:00.000Z').p_limit, FEED_PAGE_SIZE);
+    // For you (or a search): pages of 15 from the start.
+    const forYou = { ...filters, sort: 'for_you' as const };
+    assert.equal(feedRpcArgs(forYou, 1, '2026-11-12T12:00:00.000Z').p_limit, FEED_PAGE_SIZE);
+    assert.equal(feedRpcArgs(forYou, 3, '2026-11-12T12:00:00.000Z').p_offset, 2 * FEED_PAGE_SIZE);
+    assert.equal(pageCount(0, true), 1);
+    assert.equal(pageCount(FRONT_PAGE_SIZE, true), 1);
+    assert.equal(pageCount(FRONT_PAGE_SIZE + 1, true), 2);
+    assert.equal(pageCount(FRONT_PAGE_SIZE + FEED_PAGE_SIZE + 1, true), 3);
+    assert.equal(pageCount(FEED_PAGE_SIZE, false), 1);
+    assert.equal(pageCount(FEED_PAGE_SIZE + 1, false), 2);
   });
 
   it('computes the date window', () => {
@@ -111,5 +125,28 @@ describe('colors', () => {
     assert.match(bannerGradient('#3B82F6'), /linear-gradient\(120deg, #3B82F6 0%, #[0-9a-f]{6} 100%\)/);
     assert.equal(isLightColor('#F59E0B'), true);
     assert.equal(isLightColor('#27272A'), false);
+  });
+});
+
+describe('guest mode', () => {
+  it('reads the sections a visitor chose from their cookie', () => {
+    const a = '11111111-1111-4111-8111-111111111111';
+    const b = '22222222-2222-4222-8222-222222222222';
+    assert.deepEqual(parseGuestSections(`${a},${b},${a}`), [a, b]);
+    assert.deepEqual(parseGuestSections(`${a},not-a-uuid,'; drop table x`), [a]);
+    assert.deepEqual(parseGuestSections(undefined), []);
+  });
+
+  it('turns a story into a clipping kept in the browser', () => {
+    const clip = toClipping({
+      id: 'id-1', title: 'T', summary: null, url: 'https://x.test/a', slug: 't', image_url: null, author: null,
+      published_at: '2026-11-14T08:00:00.000Z', reading_minutes: 3, source_id: 's', source_name: 'S', category_id: 'c',
+      category_name: 'World', is_saved: false,
+    });
+    assert.equal(clip.article_id, 'id-1');
+    assert.equal(clip.reading_minutes, 3);
+    assert.equal(clip.folder_id, null);
+    assert.equal(clip.is_read, false);
+    assert.ok(!Number.isNaN(Date.parse(clip.saved_at)));
   });
 });

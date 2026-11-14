@@ -1,0 +1,739 @@
+/*
+ * The paper-theatre street under the masthead (components/site/street-theatre.tsx).
+ *
+ * Every picture is a black-on-transparent mask (public/street) printed in one
+ * ink at a different strength per plane: far skyline faint, railings and lamps
+ * stronger, people almost full ink. By day the ink is sepia on cream; at night
+ * it is near-black against a slate dusk, lit only by the gas lamps' halos.
+ *
+ * Sizes and speeds are shares of the banner height (--st-h); --span (width in
+ * heights) is set by the component. Only transform and opacity are animated.
+ */
+
+.st {
+  --st-h: 150px;
+  --span: 8;
+  /* Share of each figure below the knee, left below the banner's edge (feet out of frame). */
+  --knee: 0.25;
+  /* Morning edition: sepia ink on cream paper. */
+  --st-ink: #3a2c20;
+  --st-sky: linear-gradient(#f7f1e5, #efe6d4 70%, #e8dcc6);
+  --st-halo: rgb(230 213 167 / 0.34);
+  --st-mist: rgb(244 237 224 / 0.55);
+  --st-vignette: rgb(120 90 50 / 0.16);
+  /* Moths round the lamps: dark specks by day, lit pale gold at night. */
+  --st-moth: rgb(70 52 34 / 0.6);
+  /* Chimney smoke and the gas flames. */
+  --st-smoke: rgb(110 94 78 / 0.45);
+  --st-flame: rgb(255 228 166 / 0.55);
+  --o-smoke: 0.5;
+  --o-cab: 0.62;
+  --o-far: 0.17;
+  --o-mid: 0.3;
+  --o-lamp: 0.36;
+  --o-front: 0.78;
+  --o-back: 0.5;
+  --o-street: 0.66;
+  --o-grain: 0.14;
+  position: relative;
+  height: var(--st-h);
+  overflow: hidden;
+  background: var(--st-sky);
+  contain: paint;
+  isolation: isolate;
+  user-select: none;
+}
+
+/* Night edition: charcoal navy, slate and steel, with parchment-warm lamplight. */
+.dark .st {
+  --st-ink: #0d1016;
+  --st-sky: linear-gradient(#262c3a, #2c3343 50%, #4a5264 90%, #3b4253);
+  --st-halo: rgb(230 213 167 / 0.24);
+  --st-mist: rgb(74 82 100 / 0.42);
+  --st-vignette: rgb(5 7 12 / 0.5);
+  --st-moth: rgb(244 226 178 / 0.88);
+  --st-smoke: rgb(132 140 162 / 0.36);
+  --st-flame: rgb(255 214 138 / 0.95);
+  --o-smoke: 0.72;
+  --o-cab: 0.72;
+  --o-far: 0.3;
+  --o-mid: 0.44;
+  --o-lamp: 0.5;
+  --o-front: 0.82;
+  --o-back: 0.58;
+  --o-street: 0.72;
+  --o-grain: 0.1;
+}
+
+@media (width >= 40rem) {
+  .st {
+    --st-h: 180px;
+  }
+}
+@media (width >= 64rem) {
+  .st {
+    --st-h: 214px;
+  }
+}
+
+.st-scene {
+  position: absolute;
+  inset: 0;
+}
+
+/* ---------------------------------------------------------------- planes that drift */
+
+.st-pan {
+  position: absolute;
+  left: 0;
+  will-change: transform;
+  animation: st-pan var(--dur) linear infinite;
+}
+@keyframes st-pan {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--period) * -1), 0, 0);
+  }
+}
+
+/* Far: Hollar's skyline (2148 x 240 px), slightly soft with distance, and the smoke over it (same drift). */
+.st-far-pan {
+  --tile: calc(var(--st-h) * 0.7 * 8.95);
+  --period: calc(var(--tile) * 2);
+  --dur: 900s;
+  bottom: calc(var(--st-h) * 0.17);
+  width: calc(var(--tile) * 4);
+  height: calc(var(--st-h) * 0.7);
+}
+.st-far {
+  display: flex;
+  opacity: var(--o-far);
+  filter: blur(0.4px);
+}
+.st-far-tile {
+  flex: none;
+  width: var(--tile);
+  height: 100%;
+  background: var(--st-ink);
+  mask: url(/street/far.webp) left bottom / 100% 100% no-repeat;
+}
+.st-mirror {
+  transform: scaleX(-1);
+}
+
+/* Street mist that slowly rises and settles again over the roofs. */
+.st-haze {
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(transparent, var(--st-mist));
+  opacity: 0.7;
+  will-change: transform, opacity;
+  animation: st-haze 19s ease-in-out infinite alternate;
+}
+@keyframes st-haze {
+  to {
+    opacity: 0.95;
+    transform: translate3d(0, -9%, 0);
+  }
+}
+
+/*
+ * Chimney smoke: from each chimney a soft column rises from behind the roofs,
+ * swaying and leaning with the wind, and now and then a puff breaks off its
+ * top and thins away downwind. Barely there, like breath on a cold night.
+ */
+.st-plume {
+  position: absolute;
+  left: calc(var(--x) * var(--tile));
+  bottom: calc(var(--y) * 100%);
+  width: 0;
+  height: 0;
+  opacity: var(--o-smoke);
+}
+.st-plume i {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+.st-plume i:first-child {
+  left: calc(var(--st-h) * -0.035);
+  bottom: 0;
+  width: calc(var(--st-h) * 0.07);
+  height: calc(var(--st-h) * 0.24);
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, var(--st-smoke) 0%, color-mix(in srgb, var(--st-smoke) 40%, transparent) 45%, transparent 80%);
+  transform-origin: 50% 100%;
+  animation: st-wisp 9s ease-in-out var(--smoke-delay) infinite alternate;
+}
+@keyframes st-wisp {
+  from {
+    opacity: 0.55;
+    transform: skewX(-2deg) scaleY(0.88);
+  }
+  50% {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0.7;
+    transform: skewX(7deg) scaleY(1.1);
+  }
+}
+.st-plume i:last-child {
+  left: calc(var(--st-h) * -0.04);
+  bottom: calc(var(--st-h) * 0.17);
+  width: calc(var(--st-h) * 0.08);
+  height: calc(var(--st-h) * 0.05);
+  background: radial-gradient(ellipse, var(--st-smoke) 0%, transparent 70%);
+  opacity: 0;
+  animation: st-smoke 12s ease-out var(--smoke-delay) infinite;
+}
+@keyframes st-smoke {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.6);
+  }
+  20% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--st-h) * 0.12), calc(var(--st-h) * -0.16), 0) scale(2.2, 1.6);
+  }
+}
+
+/* Middle: the railing (566 x 360 px per panel) and a lamp every four panels. */
+.st-mid {
+  --panel: calc(var(--st-h) * 0.27 * 1.572);
+  --period: calc(var(--panel) * 8);
+  --dur: 121s;
+  top: 0;
+  bottom: 0;
+  width: calc(100% + var(--period));
+}
+.st-railing {
+  position: absolute;
+  inset: auto 0 calc(var(--st-h) * 0.095);
+  height: calc(var(--st-h) * 0.27);
+  background: var(--st-ink);
+  opacity: var(--o-mid);
+  mask: url(/street/mid-railing.webp) left bottom / var(--panel) 100% repeat-x;
+}
+.st-lamp {
+  position: absolute;
+  bottom: calc(var(--st-h) * 0.085);
+  left: calc(var(--x) * var(--st-h));
+  width: calc(var(--st-h) * 0.71 * 0.1115);
+  height: calc(var(--st-h) * 0.71);
+}
+.st-lamp-post {
+  position: absolute;
+  inset: 0;
+  background: var(--st-ink);
+  opacity: var(--o-lamp);
+  mask: url(/street/mid-lamp.webp) center / 100% 100% no-repeat;
+}
+/* The only light in the scene: a warm, softly breathing halo round each lantern. */
+.st-halo {
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  width: calc(var(--st-h) * 0.62);
+  aspect-ratio: 1;
+  margin: calc(var(--st-h) * -0.31) 0 0 calc(var(--st-h) * -0.31);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--st-halo) 0%, color-mix(in srgb, var(--st-halo) 45%, transparent) 32%, transparent 70%);
+  animation:
+    st-flicker 7s ease-in-out var(--flicker) infinite alternate,
+    st-halo-breathe 11s ease-in-out var(--flicker) infinite alternate;
+}
+@keyframes st-halo-breathe {
+  from {
+    scale: 0.95;
+  }
+  to {
+    scale: 1.05;
+  }
+}
+/* The gas flame itself: a warm core that gutters irregularly, never in step with the neighbouring lamps. */
+.st-flame {
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  width: calc(var(--st-h) * 0.064);
+  aspect-ratio: 1;
+  margin: calc(var(--st-h) * -0.032) 0 0 calc(var(--st-h) * -0.032);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--st-flame) 0%, color-mix(in srgb, var(--st-flame) 35%, transparent) 42%, transparent 72%);
+  will-change: opacity, scale;
+  animation: st-gutter 3.7s linear var(--flicker) infinite;
+}
+@keyframes st-gutter {
+  0%,
+  100% {
+    opacity: 0.95;
+    scale: 1;
+  }
+  8% {
+    opacity: 0.78;
+    scale: 0.93;
+  }
+  11% {
+    opacity: 1;
+    scale: 1.05;
+  }
+  23% {
+    opacity: 0.88;
+  }
+  27% {
+    opacity: 0.97;
+    scale: 0.98;
+  }
+  41% {
+    opacity: 0.72;
+    scale: 0.9;
+  }
+  44% {
+    opacity: 1;
+    scale: 1.06;
+  }
+  58% {
+    opacity: 0.9;
+    scale: 1;
+  }
+  76% {
+    opacity: 0.8;
+    scale: 0.95;
+  }
+  79% {
+    opacity: 1;
+    scale: 1.03;
+  }
+}
+@keyframes st-flicker {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.86;
+  }
+  100% {
+    opacity: 0.96;
+  }
+}
+
+/*
+ * Moths round each lantern (public/ornaments/moth.webp, PSF line art). Two
+ * eased back-and-forth motions a quarter-lap apart trace an ellipse: the
+ * orbit slides left and right, the moth rises and falls and beats its wings.
+ * Separate translate / scale properties, so the motions never fight.
+ */
+.st-orbit {
+  --r: calc(var(--reach) * var(--st-h) * 0.62);
+  position: absolute;
+  left: 50%;
+  top: 9%;
+  width: 0;
+  height: 0;
+  will-change: translate;
+  animation: st-moth-x calc(var(--lap) / 2) ease-in-out var(--lap-delay) infinite alternate;
+}
+.st-moth {
+  position: absolute;
+  left: calc(var(--st-h) * -0.022);
+  top: calc(var(--st-h) * -0.013);
+  width: calc(var(--st-h) * 0.044);
+  height: calc(var(--st-h) * 0.026);
+  background: var(--st-moth);
+  mask: url(/ornaments/moth.webp) center / contain no-repeat;
+  will-change: translate, scale;
+  animation:
+    st-moth-y calc(var(--lap) / 2) ease-in-out calc(var(--lap-delay) - var(--lap) / 4) infinite alternate,
+    st-flutter 0.11s linear infinite alternate;
+}
+.st-orbit-back .st-moth {
+  width: calc(var(--st-h) * 0.034);
+  height: calc(var(--st-h) * 0.02);
+  opacity: 0.75;
+}
+@keyframes st-moth-x {
+  from {
+    translate: calc(var(--r) * -1) 0;
+  }
+  to {
+    translate: var(--r) 0;
+  }
+}
+@keyframes st-moth-y {
+  from {
+    translate: 0 calc(var(--r) * -0.55);
+  }
+  to {
+    translate: 0 calc(var(--r) * 0.55);
+  }
+}
+@keyframes st-flutter {
+  to {
+    scale: 0.35 1;
+  }
+}
+
+/*
+ * The carrier pigeon (public/ornaments/pigeon.webp): it crosses the far sky in
+ * the first 40% of a 70-second loop, then waits out of sight. It starts the
+ * page near the end of a wait, so it first appears after a few seconds.
+ */
+.st-pigeon-path {
+  position: absolute;
+  top: 12%;
+  left: 0;
+  width: calc(var(--st-h) * 0.16);
+  height: calc(var(--st-h) * 0.123);
+  opacity: calc(var(--o-mid) + 0.1);
+  will-change: transform;
+  animation: st-pigeon-fly 70s linear -63s infinite;
+}
+.st-pigeon {
+  position: absolute;
+  inset: 0;
+  background: var(--st-ink);
+  mask: url(/ornaments/pigeon.webp) center / contain no-repeat;
+  transform-origin: 50% 60%;
+  will-change: translate, scale;
+  animation:
+    st-pigeon-bob 1.6s ease-in-out infinite alternate,
+    st-pigeon-flap 0.32s ease-in-out infinite alternate;
+}
+@keyframes st-pigeon-fly {
+  0% {
+    transform: translate3d(calc(var(--st-h) * -0.3), 0, 0);
+  }
+  40%,
+  100% {
+    transform: translate3d(calc(var(--span) * var(--st-h) + var(--st-h) * 0.1), calc(var(--st-h) * -0.07), 0);
+  }
+}
+@keyframes st-pigeon-bob {
+  to {
+    translate: 0 calc(var(--st-h) * 0.025);
+  }
+}
+@keyframes st-pigeon-flap {
+  to {
+    scale: 1 0.82;
+  }
+}
+
+/* Mist drifting along the ground; each layer repeats every half of its width. */
+.st-mist {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 200%;
+  height: 46%;
+  background:
+    radial-gradient(ellipse 22% 60% at 12% 100%, var(--st-mist), transparent 72%),
+    radial-gradient(ellipse 30% 46% at 44% 100%, var(--st-mist), transparent 72%),
+    radial-gradient(ellipse 20% 70% at 76% 100%, var(--st-mist), transparent 72%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  will-change: transform;
+  animation: st-mist 110s linear infinite;
+}
+.st-mist-b {
+  height: 26%;
+  opacity: 0.55;
+  animation-duration: 70s;
+  animation-direction: reverse;
+}
+@keyframes st-mist {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/*
+ * The road: a hansom cab (cab-body.webp, its near wheel cab-wheel.webp) trots
+ * past behind the pavement for 60% of its loop and waits out of sight for the
+ * rest. Its speed is a share of the banner height per second, so it keeps the
+ * same pace on any screen; the wheel turns at the matching rate (its rim is
+ * about 0.56 banner heights round) and the body rides a little on its springs.
+ */
+.st-cab {
+  --cab-h: 0.34;
+  --cab-w: calc(var(--cab-h) * 1.7964);
+  --cab-speed: 0.17;
+  --cab-loop: calc((var(--span) + var(--cab-w)) / var(--cab-speed) / 0.6 * 1s);
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--st-h) * 0.075);
+  width: calc(var(--cab-w) * var(--st-h));
+  height: calc(var(--cab-h) * var(--st-h));
+  opacity: var(--o-cab);
+  will-change: transform;
+  animation: st-cab-drive var(--cab-loop) linear calc(var(--cab-loop) * -0.2) infinite;
+}
+@keyframes st-cab-drive {
+  0% {
+    transform: translate3d(calc(var(--cab-w) * var(--st-h) * -1), 0, 0);
+  }
+  60%,
+  100% {
+    transform: translate3d(calc(var(--span) * var(--st-h)), 0, 0);
+  }
+}
+.st-cab-body,
+.st-cab-wheel {
+  position: absolute;
+  background: var(--st-ink);
+}
+.st-cab-body {
+  inset: 0;
+  mask: url(/street/cab-body.webp) center / 100% 100% no-repeat;
+  animation: st-trot 0.34s ease-in-out infinite alternate;
+}
+.st-cab-wheel {
+  left: 7%;
+  top: 50.3%;
+  width: 27.33%;
+  height: 49.1%;
+  mask: url(/street/cab-wheel.webp) center / 100% 100% no-repeat;
+  animation: st-wheel 2.7s linear infinite;
+}
+@keyframes st-trot {
+  to {
+    transform: translate3d(0, calc(var(--st-h) * -0.005), 0);
+  }
+}
+@keyframes st-wheel {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Front: cobbles (1600 x 64 px per tile) and the people standing in the street. */
+.st-street {
+  --cobble: calc(var(--st-h) * 0.093 * 25);
+  --period: calc(var(--st-h) * 9.3);
+  --dur: 199s;
+  top: 0;
+  bottom: 0;
+  width: calc(var(--st-h) * 27.9);
+}
+.st-cobbles {
+  position: absolute;
+  inset: auto 0 0;
+  height: calc(var(--st-h) * 0.093);
+  background: var(--st-ink);
+  opacity: var(--o-street);
+  mask: url(/street/fg-cobbles.webp) left bottom / var(--cobble) 100% repeat-x;
+}
+.st-stand {
+  position: absolute;
+  bottom: calc(var(--fh) * var(--st-h) * var(--knee) * -1);
+  left: calc(var(--x) * var(--st-h));
+}
+/* People standing further back: a little smaller (set in the component) and fainter. */
+.st-stand .st-fig {
+  opacity: var(--o-back);
+}
+
+/* ---------------------------------------------------------------- the cut-outs */
+
+.st-fig {
+  position: relative;
+  width: calc(var(--fw) * var(--st-h));
+  height: calc(var(--fh) * var(--st-h));
+  /* Opacity on the whole figure, so overlapping paper pieces print as one. */
+  opacity: var(--o-front);
+  transform-origin: 50% 100%;
+}
+.st-piece {
+  position: absolute;
+  inset: 0;
+  background: var(--st-ink);
+  mask: var(--src) center / 100% 100% no-repeat;
+}
+
+/* A walker crosses the whole banner; right-to-left walkers run the route backwards. */
+.st-lane {
+  --dur: calc((var(--span) + var(--fw) * 2) / var(--speed) * 1s);
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--fh) * var(--st-h) * var(--knee) * -1);
+  will-change: transform;
+  animation: st-walk var(--dur) linear calc(var(--dur) * var(--offset) * -1) infinite;
+}
+.st-left {
+  animation-direction: reverse;
+}
+.st-left .st-flip {
+  transform: scaleX(-1);
+}
+@keyframes st-walk {
+  from {
+    transform: translate3d(calc(var(--fw) * var(--st-h) * -1), 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--span) * var(--st-h)), 0, 0);
+  }
+}
+
+/* Gentlemen: paper legs jointed at the hip, swinging in turn; the body rises at each step. */
+.st-walk {
+  animation: st-bob calc(var(--cycle) / 4) ease-in-out infinite alternate;
+}
+.st-walk .st-leg {
+  animation: st-swing calc(var(--cycle) / 2) ease-in-out infinite alternate;
+}
+.st-walk .st-leg-b {
+  animation-delay: calc(var(--cycle) / -2);
+}
+@keyframes st-swing {
+  from {
+    transform: rotate(calc(var(--swing) * -1deg));
+  }
+  to {
+    transform: rotate(calc(var(--swing) * 1deg));
+  }
+}
+@keyframes st-bob {
+  to {
+    transform: translate3d(0, calc(var(--st-h) * -0.006), 0);
+  }
+}
+
+/* Ladies glide, skirts swaying a little at each step. */
+.st-glide {
+  animation: st-glide calc(var(--cycle) / 2) ease-in-out infinite alternate;
+}
+@keyframes st-glide {
+  from {
+    transform: translate3d(0, 0, 0) skewX(0.8deg);
+  }
+  to {
+    transform: translate3d(0, calc(var(--st-h) * -0.005), 0) skewX(-0.8deg);
+  }
+}
+
+/* Children skip. */
+.st-hop {
+  animation: st-hop calc(var(--cycle) / 2) ease-in-out infinite alternate;
+}
+@keyframes st-hop {
+  to {
+    transform: translate3d(0, calc(var(--st-h) * -0.014), 0);
+  }
+}
+
+/* People standing still are never quite still. */
+.st-breathe {
+  animation: st-breathe 4.6s ease-in-out infinite alternate;
+}
+@keyframes st-breathe {
+  to {
+    transform: scaleY(1.008);
+  }
+}
+.st-chat {
+  animation: st-chat 3.4s ease-in-out infinite alternate;
+}
+@keyframes st-chat {
+  from {
+    transform: rotate(-0.5deg);
+  }
+  to {
+    transform: rotate(0.5deg);
+  }
+}
+
+/* ---------------------------------------------------------------- paper */
+
+.st-grain {
+  position: absolute;
+  inset: 0;
+  background: url(/street/grain.webp) 0 0 / 150px 150px repeat;
+  opacity: var(--o-grain);
+  pointer-events: none;
+}
+.st-vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 calc(var(--st-h) * 0.32) var(--st-vignette);
+  pointer-events: none;
+}
+
+/* Sound and Pause / Play, each printed on a little ticket stub, in the top right corner. */
+.st-controls {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  z-index: 2;
+  display: flex;
+  gap: 0.4rem;
+}
+.st-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  font-family: var(--font-jost), ui-sans-serif, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--action-ink);
+  background: hsl(var(--card) / 0.85);
+  border: 3px double hsl(var(--rule) / 0.5);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.st-toggle:hover {
+  color: var(--brass-ink);
+  border-color: var(--ink-gold);
+}
+.st-toggle:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+.st-toggle svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+/* Sound on: the ticket is inked in brass with a gilt double rule, and the gramophone gently rocks. */
+.st-sound[aria-pressed='true'] {
+  color: var(--brass-ink);
+  border-color: var(--ink-gold);
+}
+.st-sound[aria-pressed='true'] .ornament-mask {
+  animation: st-gramophone 2.4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+@keyframes st-gramophone {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+/* Paused (the reader's "banner" preference is Still) or scrolled out of view. */
+:root[data-banner='still'] .st *,
+.st-offscreen * {
+  animation-play-state: paused !important;
+}
+
+/* Readers who ask for less motion get a still picture: everyone stops mid-stride. */
+@media (prefers-reduced-motion: reduce) {
+  .st * {
+    animation-play-state: paused !important;
+  }
+  /* Sound stays: it does not move anything. */
+  .st-motion {
+    display: none;
+  }
+  .st-sound[aria-pressed='true'] .ornament-mask {
+    animation: none;
+  }
+}

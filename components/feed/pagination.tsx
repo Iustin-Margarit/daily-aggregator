@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { Ornament } from '@/components/site/ornament';
 import { cn } from '@/lib/utils';
 
 type PaginationProps = {
@@ -24,7 +24,7 @@ function visiblePages(page: number, pages: number): (number | 'gap')[] {
   return out;
 }
 
-const linkClass = 'label inline-flex h-9 items-center justify-center transition-colors';
+const linkClass = 'inline-flex h-10 items-center justify-center rounded-[3px] font-display text-[0.95rem] font-semibold transition-colors';
 
 export function Pagination({ page, pages, onChange, hrefFor, disabled }: PaginationProps) {
   if (pages <= 1) return null;
@@ -37,22 +37,29 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
   };
 
   return (
-    <nav aria-label="Pages" className={cn('flex items-center justify-between gap-3 border-y-2 border-rule py-2', disabled && 'opacity-60')}>
+    <nav aria-label="Pages" className={cn('flex items-center justify-between gap-2 sm:gap-3', disabled && 'opacity-60')}>
       {page > 1 ? (
-        <a href={hrefFor(page - 1)} onClick={go(page - 1)} className={cn(linkClass, 'gap-1.5 px-1 hover:underline')} rel="prev">
-          <ArrowLeft className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Previous page</span>
+        <a href={hrefFor(page - 1)} onClick={go(page - 1)} className={cn(linkClass, 'group/read gap-2 border border-rule/50 bg-card/70 px-3 shadow-[inset_0_0_0_2px_hsl(var(--card)),inset_0_0_0_3px_hsl(var(--rule)/0.22)] hover:border-(--ink-gold) hover:bg-card sm:gap-2.5 sm:px-4')} rel="prev">
+          {/* A printer's fist pointing back (☜). */}
+          <span className="-scale-x-100">
+            <Ornament name="fist" className="fist-poke block w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
+          </span>
+          <span className="hidden sm:inline">Previous page</span>
           <span className="sm:hidden">Prev</span>
         </a>
       ) : (
-        <span className={cn(linkClass, 'invisible px-1')} aria-hidden="true">
-          Previous page
+        // Keeps the page numbers centred: as wide as the "Previous page" link would be.
+        <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-4')} aria-hidden="true">
+          <span className="w-[1.1rem] sm:w-[1.35rem]" />
+          <span className="hidden sm:inline">Previous page</span>
+          <span className="sm:hidden">Prev</span>
         </span>
       )}
 
       <ol className="flex items-center gap-0.5 sm:gap-1">
         {visiblePages(page, pages).map((p, index) =>
           p === 'gap' ? (
-            <li key={`gap-${index}`} className="label w-6 text-center text-muted-foreground" aria-hidden="true">
+            <li key={`gap-${index}`} className="w-6 text-center text-muted-foreground" aria-hidden="true">
               …
             </li>
           ) : (
@@ -64,8 +71,8 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
                 aria-label={`Page ${p}`}
                 className={cn(
                   linkClass,
-                  'min-w-9 px-2 font-display text-base font-bold normal-case tracking-normal',
-                  p === page ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:underline',
+                  'min-w-10 px-2 tabular-nums',
+                  p === page ? 'border-[3px] border-double border-(--ink-gold) bg-(--ink-gold)/12 text-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
                 )}
               >
                 {p}
@@ -76,13 +83,17 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
       </ol>
 
       {page < pages ? (
-        <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'gap-1.5 px-1 hover:underline')} rel="next">
+        <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
           <span className="hidden sm:inline">Next page</span>
-          <span className="sm:hidden">Next</span> <ArrowRight className="h-3.5 w-3.5" />
+          <span className="sm:hidden">Next</span>
+          {/* A printer's fist pointing on (☞). */}
+          <Ornament name="fist" className="fist-poke w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:currentColor]" />
         </a>
       ) : (
-        <span className={cn(linkClass, 'invisible px-1')} aria-hidden="true">
-          Next page
+        <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-5')} aria-hidden="true">
+          <span className="hidden sm:inline">Next page</span>
+          <span className="sm:hidden">Next</span>
+          <span className="w-[1.1rem] sm:w-[1.35rem]" />
         </span>
       )}
     </nav>

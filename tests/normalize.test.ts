@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { improveImageUrl, normalizeItem, normalizeUrl, parseFeedDate } from '../lib/ingestion/normalize';
+import { countStoryWords, readingMinutesFor } from '../lib/ingestion/enrich';
 import type { ParsedFeedItem } from '../lib/ingestion/parse-feed';
 
 const NOW = Date.parse('2026-11-12T12:00:00Z');
@@ -120,5 +121,27 @@ describe('normalizeItem', () => {
   it('normalises the image URL relative to the feed', () => {
     const result = normalizeItem(item({ imageUrl: '/img/photo.jpg' }), { now: NOW, baseUrl: 'https://news.example.com/feed' });
     assert.equal(result?.image_url, 'https://news.example.com/img/photo.jpg');
+  });
+});
+
+describe('reading time', () => {
+  const para = (words: number) => `<p>${Array.from({ length: words }, (_, i) => `word${i}`).join(' ')}</p>`;
+
+  it('counts the paragraphs of the story, not menus, scripts or captions', () => {
+    const html = `<html><nav><p>${'menu '.repeat(50)}</p></nav><script>var a = "<p>${'x '.repeat(40)}</p>";</script>
+      <article><h1>Title</h1>${para(300)}<p>Share this</p><figure><p>${'caption '.repeat(20)}</p></figure>${para(160)}</article>
+      <footer>${para(100)}</footer></html>`;
+    assert.equal(countStoryWords(html), 460);
+  });
+
+  it('falls back to the whole page when there is no <article>', () => {
+    assert.equal(countStoryWords(`<div>${para(20)}${para(30)}</div>`), 50);
+  });
+
+  it('turns words into minutes, and says nothing for too little text', () => {
+    assert.equal(readingMinutesFor(100), 0);
+    assert.equal(readingMinutesFor(200), 1);
+    assert.equal(readingMinutesFor(920), 4);
+    assert.equal(readingMinutesFor(10_000_000), 600);
   });
 });

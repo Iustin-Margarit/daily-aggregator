@@ -32,8 +32,9 @@ Supabase. Originally a 2025 student project written with Gemini; rebuilt in Nov 
   lint rules (`react-hooks/set-state-in-effect`, `react-hooks/refs`) are warnings for now; fix
   the warnings when rewriting a component and turn them back into errors when none are left.
 - **Tailwind CSS 4**: there is no `tailwind.config.ts`; the theme lives in `@theme` in
-  `styles/globals.css`. next/font variables are `--font-playfair`, `--font-source-serif` and
-  `--font-oswald` (never name them `--font-display/serif/label`: those are Tailwind's own theme names).
+  `styles/globals.css`. next/font variables are `--font-fraunces`, `--font-source-serif`,
+  `--font-jost`, `--font-special-elite` and `--font-unifraktur` (the blackletter masthead, `font-masthead`; never name them
+  `--font-display/serif/label/masthead`: those are Tailwind's own theme names).
 - Don't run Prettier (there is no config; it rewrites the code style).
 - Never put the cloud keys, the database password or `CRON_SECRET` in a tracked file.
 
@@ -43,7 +44,12 @@ Supabase. Originally a 2025 student project written with Gemini; rebuilt in Nov 
 - Simple enough for people of all ages: labelled buttons, plain words, few options per screen.
 - Newspaper tone is welcome (Front Page, Sections, Letters to the Editor) but **never "subscribe" /
   "subscriber"**: people would think it costs money.
-- Photos in normal colour; the feed is paginated (30 stories per page).
+- No sign-up wall: visitors read, search, choose sections (cookie `guest-sections`) and clip
+  (browser storage, `lib/guest-clippings.ts`) without an account; signing in moves both into the
+  account. Only `/profile` and `/admin` need a login (`PRIVATE_SECTIONS` in `lib/supabase/proxy.ts`).
+  Every function the feed uses must work for `anon` too: test logged out as well as logged in.
+- Photos: an archival look (a little faded and warm) that clears to full colour when pointed at;
+  touch screens keep them close to normal colour. The feed is paginated: 16 stories on the front page (lead, 3 in the sidebar, 4 rows of 3), 15 on every other page, so the 3-column grid always ends on full rows.
 
 ## Commands
 
@@ -63,7 +69,8 @@ Local ports: API 58321, DB 58322, Studio 58323, mail (Mailpit) 58324. DB contain
 
 - Test on another port so the owner's dev server is not disturbed:
   `NEXT_DIST_DIR=.next-preview npx next build && NEXT_DIST_DIR=.next-preview npx next start -p 3100`.
-  This rewrites `tsconfig.json` and `next-env.d.ts`: back them up first, restore them afterwards,
+  This rewrites `tsconfig.json` and `next-env.d.ts` (and `next dev` writes an `AGENTS.md`, which
+  is not wanted): back them up first, restore them afterwards, delete `AGENTS.md`,
   then delete `.next-preview` and stop the server (kill whatever still listens on 3100).
 - Playwright scripts are not part of the repo; use `playwright-core` with the installed Chrome.
 - Test accounts: `readerNNNNN@example.com`; delete them afterwards

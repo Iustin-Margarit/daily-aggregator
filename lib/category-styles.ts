@@ -10,72 +10,72 @@ import {
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
+import type { EngravingName } from '@/components/site/engraving';
 
 export type CategoryStyle = {
+  /** Key of the section's muted ink in styles/globals.css (`data-section`); null for unknown sections. */
+  key: string | null;
   icon: LucideIcon;
-  /** Badge colours for light and dark mode. */
-  badge: string;
-  /** Gradient used when an article has no image. */
-  placeholder: string;
+  /** Public-domain engraving that illustrates the section (public/engravings). */
+  engraving: EngravingName;
   description: string;
 };
 
-// Full class names are spelled out so Tailwind can find them.
 const STYLES: Record<string, CategoryStyle> = {
   world: {
+    key: 'world',
     icon: Globe,
-    badge: 'bg-sky-100 text-sky-800 dark:bg-sky-400/15 dark:text-sky-300',
-    placeholder: 'from-sky-500 to-cyan-700',
+    engraving: 'world',
     description: 'International news and global affairs',
   },
   politics: {
+    key: 'politics',
     icon: Landmark,
-    badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-400/15 dark:text-indigo-300',
-    placeholder: 'from-indigo-500 to-violet-700',
+    engraving: 'politics',
     description: 'Elections, policy and government',
   },
   business: {
+    key: 'business',
     icon: Briefcase,
-    badge: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300',
-    placeholder: 'from-emerald-500 to-teal-700',
+    engraving: 'business',
     description: 'Markets, companies and the economy',
   },
   technology: {
+    key: 'technology',
     icon: Cpu,
-    badge: 'bg-blue-100 text-blue-800 dark:bg-blue-400/15 dark:text-blue-300',
-    placeholder: 'from-blue-500 to-indigo-700',
+    engraving: 'technology',
     description: 'Gadgets, software, AI and startups',
   },
   science: {
+    key: 'science',
     icon: FlaskConical,
-    badge: 'bg-violet-100 text-violet-800 dark:bg-violet-400/15 dark:text-violet-300',
-    placeholder: 'from-violet-500 to-purple-700',
+    engraving: 'science',
     description: 'Space, research and discoveries',
   },
   health: {
+    key: 'health',
     icon: HeartPulse,
-    badge: 'bg-rose-100 text-rose-800 dark:bg-rose-400/15 dark:text-rose-300',
-    placeholder: 'from-rose-500 to-red-700',
+    engraving: 'health',
     description: 'Medicine, wellbeing and public health',
   },
   sports: {
+    key: 'sports',
     icon: Trophy,
-    badge: 'bg-orange-100 text-orange-800 dark:bg-orange-400/15 dark:text-orange-300',
-    placeholder: 'from-orange-500 to-amber-700',
+    engraving: 'sports',
     description: 'Football, basketball, tennis and more',
   },
   entertainment: {
+    key: 'entertainment',
     icon: Clapperboard,
-    badge: 'bg-pink-100 text-pink-800 dark:bg-pink-400/15 dark:text-pink-300',
-    placeholder: 'from-pink-500 to-fuchsia-700',
+    engraving: 'entertainment',
     description: 'Film, TV, music and celebrities',
   },
 };
 
 const FALLBACK: CategoryStyle = {
+  key: null,
   icon: Newspaper,
-  badge: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-400/15 dark:text-zinc-300',
-  placeholder: 'from-zinc-500 to-zinc-700',
+  engraving: 'press',
   description: 'News and stories',
 };
 

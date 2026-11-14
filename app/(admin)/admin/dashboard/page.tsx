@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { FileText, Heart, Rss, Users } from 'lucide-react';
+import { Bookmark, FileText, Rss, Users } from 'lucide-react';
 import { CategoryBars, RecentRuns, StatTile, TopArticles, type IngestionRun } from '@/components/admin/dashboard-widgets';
 import { FetchNewsButton } from '@/components/admin/ingestion-panel';
-import { pluralize } from '@/lib/format';
 import { canIngest } from '@/lib/ingestion/auto-refresh';
 import { createClient } from '@/lib/supabase/server';
 
@@ -18,11 +17,9 @@ type DashboardStats = {
   sources_total: number;
   sources_enabled: number;
   sources_failing: number;
-  likes_total: number;
   saves_total: number;
-  comments_total: number;
   articles_by_category: { name: string; count: number }[];
-  top_articles: { title: string; slug: string; likes: number; comments: number }[];
+  top_articles: { title: string; slug: string; saves: number }[];
   recent_runs: IngestionRun[];
 };
 
@@ -37,7 +34,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-rule pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-dashed border-border pb-4">
         <div>
           <p className="kicker">The newsroom</p>
           <h1 className="headline mt-1 text-4xl">Dashboard</h1>
@@ -46,7 +43,7 @@ export default async function DashboardPage() {
         {ingestionReady ? (
           <FetchNewsButton />
         ) : (
-          <p className="paper-box max-w-sm px-3 py-2 text-sm italic">
+          <p className="card-paper max-w-sm px-4 py-2.5 text-sm italic">
             Set SUPABASE_SERVICE_ROLE_KEY on the server to fetch news from here.
           </p>
         )}
@@ -62,12 +59,7 @@ export default async function DashboardPage() {
           detail={stats.sources_failing > 0 ? `${stats.sources_failing} failing - check Wire services` : 'All enabled sources healthy'}
           tone={stats.sources_failing > 0 ? 'warning' : 'default'}
         />
-        <StatTile
-          icon={Heart}
-          label="Engagement"
-          value={stats.likes_total + stats.saves_total + stats.comments_total}
-          detail={`${pluralize(stats.likes_total, 'like')} · ${pluralize(stats.saves_total, 'save')} · ${pluralize(stats.comments_total, 'comment')}`}
-        />
+        <StatTile icon={Bookmark} label="Saved stories" value={stats.saves_total} detail="Clippings kept by all readers" />
       </div>
 
       <RecentRuns runs={stats.recent_runs} />

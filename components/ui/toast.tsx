@@ -69,13 +69,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             role={toast.type === 'error' ? 'alert' : 'status'}
             className={cn(
-              'pointer-events-auto flex w-full max-w-sm items-start gap-3 border border-rule bg-popover p-4 text-popover-foreground shadow-[4px_4px_0_hsl(var(--rule)/0.18)]',
+              'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-border/70 bg-popover p-4 text-popover-foreground shadow-float',
               'animate-in fade-in-0 slide-in-from-bottom-4 sm:slide-in-from-right-4',
             )}
           >
             <div className="mt-0.5 shrink-0">{ICONS[toast.type ?? 'info']}</div>
             <div className="min-w-0 flex-1">
-              <p className="font-display text-base font-bold leading-5">{toast.title}</p>
+              <p className="font-display text-base font-semibold leading-5">{toast.title}</p>
               {toast.message && <p className="mt-1 text-sm text-muted-foreground">{toast.message}</p>}
               {toast.action && (
                 <button

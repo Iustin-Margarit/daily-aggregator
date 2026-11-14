@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
 import { EmptyState } from '@/components/site/empty-state';
 import { Button } from '@/components/ui/button';
 
@@ -13,9 +12,9 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   return (
     <div className="container max-w-2xl py-16">
       <EmptyState
-        icon={AlertTriangle}
+        engraving="press"
         title="Stop the presses"
-        description="Something went wrong while printing this page. Please try again; if it keeps happening, check that the database is running."
+        description="Something went wrong while printing this page. The newsroom may be busy for a moment; please try again."
         action={
           <>
             <Button onClick={reset}>Try again</Button>

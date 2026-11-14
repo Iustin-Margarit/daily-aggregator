@@ -16,10 +16,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="paper flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b-2 border-rule bg-background">
-        <div className="container flex h-14 items-center gap-3">
+      <header className="paper sticky top-0 z-40 border-b border-border/60">
+        <div className="container flex h-16 items-center gap-3">
           <Logo href="/feed" />
-          <span className="label hidden border-l border-rule pl-3 text-muted-foreground sm:inline">The Newsroom</span>
+          <span className="hidden rounded-[2px] border-[3px] border-double border-rule/30 bg-panel px-3 py-0.5 font-label text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:inline">The Newsroom</span>
           <div className="ml-auto">
             <AdminNav variant="back" />
           </div>

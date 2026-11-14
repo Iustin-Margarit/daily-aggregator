@@ -50,3 +50,9 @@ export function formatDuration(ms: number | null | undefined): string {
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** "4 min read", or null when the reading time is unknown (null or 0). */
+export function formatReadingTime(minutes: number | null | undefined): string | null {
+  if (!minutes || minutes < 1) return null;
+  return `${Math.round(minutes)} min read`;
+}

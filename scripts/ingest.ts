@@ -15,6 +15,10 @@ async function main() {
   const summary = await runIngestion(supabase, {
     trigger: 'cli',
     retentionDays,
+    // No time limit here (unlike the hourly cron), so a run by hand also measures
+    // the reading time of up to 400 recent stories that do not have one yet.
+    maxBackfill: 400,
+    pageBudgetMs: 180_000,
     log: (message) => console.log(message),
   });
 

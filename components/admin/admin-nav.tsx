@@ -23,7 +23,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'back' }) {
   }
 
   return (
-    <nav className="flex overflow-x-auto border-y border-rule lg:flex-col lg:border-y-0 lg:border-t-2" aria-label="Newsroom">
+    <nav className="flex gap-1 overflow-x-auto lg:flex-col" aria-label="Newsroom">
       {LINKS.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href);
         return (
@@ -32,11 +32,11 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'back' }) {
             href={href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'label flex shrink-0 items-center gap-2 px-3 py-2.5 transition-colors lg:border-b lg:border-border',
-              active ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+              'flex shrink-0 items-center gap-2.5 rounded-[3px] px-4 py-2 font-label text-[0.95rem] font-medium transition-colors',
+              active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
             )}
           >
-            <Icon className="h-3.5 w-3.5" /> {label}
+            <Icon className="h-4 w-4" /> {label}
           </Link>
         );
       })}

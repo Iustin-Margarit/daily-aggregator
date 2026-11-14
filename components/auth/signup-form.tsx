@@ -5,15 +5,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MailCheck } from 'lucide-react';
 import { AuthHeading, FormMessage, friendlyAuthError } from '@/components/auth/form-message';
+import { GoogleButton, OrDivider } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { checkPassword, PasswordStrength } from '@/components/ui/password-strength';
 import { Spinner } from '@/components/ui/spinner';
+import { passwordTooLong } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 
-export function SignupForm() {
+export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +30,10 @@ export function SignupForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    if (passwordTooLong(password)) {
+      setError('That password is too long. Please use at most 72 characters.');
+      return;
+    }
     if (!strength.isAcceptable) {
       setError('Please choose a stronger password (at least 8 characters, mixing letters and numbers).');
       return;
@@ -64,7 +70,7 @@ export function SignupForm() {
   if (sentTo) {
     return (
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-rule">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] border-[3px] border-double border-rule/30 bg-panel">
           <MailCheck className="h-6 w-6" />
         </div>
         <AuthHeading
@@ -87,6 +93,12 @@ export function SignupForm() {
   return (
     <>
       <AuthHeading title="Create your free account" description="It takes less than a minute. Then you choose the sections you want to read." />
+      {googleEnabled && (
+        <>
+          <GoogleButton />
+          <OrDivider>or sign up with your email</OrDivider>
+        </>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && <FormMessage type="error">{error}</FormMessage>}
         <div className="space-y-2">

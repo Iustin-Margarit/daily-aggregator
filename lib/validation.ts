@@ -29,3 +29,19 @@ export function profileSaveError(error: { code?: string; message: string }, fall
   if (error.message.includes('USERNAME_RESERVED')) return USERNAME_RESERVED_MESSAGE;
   return fallback;
 }
+
+/** Most muted words a reader can keep (the database allows 50). */
+export const MAX_MUTED_KEYWORDS = 50;
+const MUTED_KEYWORD_PATTERN = /^[\p{L}\p{N}]([\p{L}\p{N} '’&.-]*[\p{L}\p{N}])?$/u;
+
+/**
+ * A muted keyword as the database stores it (lower case, single spaces), or the
+ * reason it cannot be used. Matches the check on public.muted_keywords.
+ */
+export function normalizeMutedKeyword(input: string): { keyword: string } | { error: string } {
+  const keyword = input.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (keyword.length < 2) return { error: 'Type a word of at least 2 letters.' };
+  if (keyword.length > 40) return { error: 'Keep it to 40 characters or fewer.' };
+  if (!MUTED_KEYWORD_PATTERN.test(keyword)) return { error: 'Use letters and numbers (spaces, - and apostrophes are fine inside).' };
+  return { keyword };
+}

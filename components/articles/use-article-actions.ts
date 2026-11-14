@@ -1,68 +1,69 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useRouter } from 'next/navigation';
 import { articleShareUrl, shareLink } from '@/components/articles/share';
 import { useToast } from '@/components/ui/toast';
+import { addGuestClipping, isGuestClipped, removeGuestClipping, subscribeGuestClippings, toClipping } from '@/lib/guest-clippings';
 import { createClient } from '@/lib/supabase/client';
+import type { FeedArticle } from '@/lib/types';
 
-export type ActionableArticle = {
-  id: string;
-  slug: string;
-  title: string;
-  like_count: number;
-  is_liked: boolean;
-  is_saved: boolean;
-};
-
-/** Like / save / share with optimistic updates and friendly errors. */
-export function useArticleActions(article: ActionableArticle, userId: string | null) {
+/**
+ * Save (clip) / share with optimistic updates and friendly errors. Readers
+ * without an account clip into this browser (lib/guest-clippings.ts); signing
+ * in moves those clippings into the account.
+ */
+export function useArticleActions(article: FeedArticle, userId: string | null) {
   const router = useRouter();
-  const pathname = usePathname();
   const { showToast } = useToast();
 
-  const [liked, setLiked] = useState(article.is_liked);
-  const [likeCount, setLikeCount] = useState(article.like_count);
   const [saved, setSaved] = useState(article.is_saved);
-  const [busy, setBusy] = useState({ like: false, save: false });
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    setLiked(article.is_liked);
-    setLikeCount(article.like_count);
+  // When the page hands over a different story (or fresh data), start again from it.
+  const [shown, setShown] = useState({ id: article.id, isSaved: article.is_saved });
+  if (shown.id !== article.id || shown.isSaved !== article.is_saved) {
+    setShown({ id: article.id, isSaved: article.is_saved });
     setSaved(article.is_saved);
-  }, [article.id, article.is_liked, article.like_count, article.is_saved]);
+  }
 
-  const requireLogin = useCallback(
-    (what: string) => {
-      if (userId) return false;
-      showToast({
-        type: 'info',
-        title: `Log in to ${what}`,
-        action: { label: 'Log in', onClick: () => router.push(`/login?next=${encodeURIComponent(pathname)}`) },
-      });
-      return true;
-    },
-    [userId, showToast, router, pathname],
+  const guestSaved = useSyncExternalStore(
+    subscribeGuestClippings,
+    () => isGuestClipped(article.id),
+    () => false,
   );
 
-  const toggleLike = async () => {
-    if (requireLogin('like articles') || busy.like || !userId) return;
-    const next = !liked;
-    setLiked(next);
-    setLikeCount((count) => Math.max(0, count + (next ? 1 : -1)));
-    setBusy((b) => ({ ...b, like: true }));
-
-    const supabase = createClient();
-    const { error } = next
-      ? await supabase.from('likes').insert({ user_id: userId, article_id: article.id })
-      : await supabase.from('likes').delete().eq('user_id', userId).eq('article_id', article.id);
-
-    setBusy((b) => ({ ...b, like: false }));
-    if (error && error.code !== '23505') {
-      setLiked(!next);
-      setLikeCount((count) => Math.max(0, count + (next ? -1 : 1)));
-      showToast({ type: 'error', title: 'Could not update your like', message: error.message });
+  /** A guest's clip: kept in this browser, with a word about accounts. */
+  const toggleGuestClip = () => {
+    if (guestSaved) {
+      const { error } = removeGuestClipping(article.id);
+      if (error) {
+        showToast({ type: 'error', title: 'Could not remove the story', message: error.message });
+        return;
+      }
+      showToast({
+        type: 'success',
+        title: 'Removed from your clippings',
+        action: { label: 'Undo', onClick: () => void addGuestClipping(toClipping(article)) },
+      });
+      return;
     }
+    const { error } = addGuestClipping(toClipping(article));
+    if (error) {
+      const full = error.message === 'SAVED_LIMIT_REACHED';
+      showToast({
+        type: 'error',
+        title: full ? 'This browser holds 200 clippings' : 'Could not clip the story',
+        message: full ? 'Remove a few, or create a free account to keep up to 1000.' : error.message,
+      });
+      return;
+    }
+    showToast({
+      type: 'success',
+      title: 'Clipped, in this browser',
+      message: 'A free account keeps your clippings on every device.',
+      action: { label: 'Open saved stories', onClick: () => router.push('/saved') },
+    });
   };
 
   const save = useCallback(async (): Promise<boolean> => {
@@ -86,8 +87,12 @@ export function useArticleActions(article: ActionableArticle, userId: string | n
   }, [userId, article.id, showToast, router]);
 
   const toggleSave = async () => {
-    if (requireLogin('save stories') || busy.save || !userId) return;
-    setBusy((b) => ({ ...b, save: true }));
+    if (!userId) {
+      toggleGuestClip();
+      return;
+    }
+    if (busy) return;
+    setBusy(true);
 
     if (saved) {
       setSaved(false);
@@ -110,7 +115,7 @@ export function useArticleActions(article: ActionableArticle, userId: string | n
       });
     }
 
-    setBusy((b) => ({ ...b, save: false }));
+    setBusy(false);
   };
 
   const share = async () => {
@@ -119,5 +124,5 @@ export function useArticleActions(article: ActionableArticle, userId: string | n
     if (result === 'failed') showToast({ type: 'error', title: 'Could not share this article' });
   };
 
-  return { liked, likeCount, saved, busy, toggleLike, toggleSave, share };
+  return { saved: userId ? saved : guestSaved, busy, toggleSave, share };
 }

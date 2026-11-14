@@ -12,6 +12,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { checkPassword, PasswordStrength } from '@/components/ui/password-strength';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
+import { passwordTooLong } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/client';
 
 export function ForgotPasswordForm() {
@@ -93,6 +94,10 @@ export function UpdatePasswordForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    if (passwordTooLong(password)) {
+      setError('That password is too long. Please use at most 72 characters.');
+      return;
+    }
     if (!checkPassword(password).isAcceptable) {
       setError('Please choose a stronger password (at least 8 characters, mixing letters and numbers).');
       return;
@@ -124,7 +129,7 @@ export function UpdatePasswordForm() {
   if (!hasSession) {
     return (
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-rule">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] border-[3px] border-double border-rule/30 bg-panel">
           <KeyRound className="h-6 w-6 text-muted-foreground" />
         </div>
         <AuthHeading

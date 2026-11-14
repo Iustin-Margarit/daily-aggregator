@@ -3,27 +3,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function FeedLoading() {
   return (
-    <div className="container py-5 sm:py-6">
-      <Skeleton className="h-7 w-64" />
-      <Skeleton className="mt-4 h-[96px] w-full" />
-      <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
-        <div className="space-y-3">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-3/4" />
-          <Skeleton className="aspect-video w-full" />
-        </div>
-        <div className="space-y-6">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-2/3" />
-            </div>
-          ))}
-        </div>
+    <div className="container pt-5 sm:pt-6">
+      <Skeleton className="h-[19rem] w-full rounded-2xl sm:h-[22rem]" />
+      <Skeleton className="mt-8 h-9 w-72" />
+      <div className="mt-5 flex gap-2 overflow-hidden">
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} className="h-9 w-24 shrink-0 rounded-[2px]" />
+        ))}
       </div>
-      <div className="mt-8">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
+        <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
+        <Skeleton className="h-96 w-full rounded-2xl" />
+      </div>
+      <div className="mt-10">
         <ArticleGridSkeleton count={3} />
       </div>
     </div>

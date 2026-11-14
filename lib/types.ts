@@ -25,13 +25,12 @@ export type FeedArticle = {
   image_url: string | null;
   author: string | null;
   published_at: string;
+  /** Minutes to read the original story; null or 0 when unknown. */
+  reading_minutes: number | null;
   source_id: string;
   source_name: string;
   category_id: string;
   category_name: string;
-  like_count: number;
-  comment_count: number;
-  is_liked: boolean;
   is_saved: boolean;
   /** Only from get_feed: number of stories matching the filters. */
   total_count?: number;
@@ -63,17 +62,6 @@ export type FeedFilters = {
   sort: FeedSort;
 };
 
-export type CommentItem = {
-  id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  username: string;
-  avatar_color: string;
-  is_own: boolean;
-  can_delete: boolean;
-};
-
 export type SavedFolder = {
   id: string;
   name: string;
@@ -88,14 +76,12 @@ export type SavedArticle = {
   slug: string;
   image_url: string | null;
   published_at: string;
+  reading_minutes: number | null;
   source_id: string;
   source_name: string;
   source_enabled: boolean;
   category_id: string;
   category_name: string;
-  like_count: number;
-  comment_count: number;
-  is_liked: boolean;
   folder_id: string | null;
   is_read: boolean;
   notes: string | null;

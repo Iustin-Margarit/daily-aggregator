@@ -92,7 +92,7 @@ export function RecentRuns({ runs }: { runs: IngestionRun[] }) {
           <div className="-mx-6 overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">
               <thead>
-                <tr className="label border-b-2 border-rule text-left text-muted-foreground">
+                <tr className="label border-b border-border text-left text-muted-foreground">
                   <th className="px-6 pb-2 font-normal">Status</th>
                   <th className="pb-2 font-normal">Started</th>
                   <th className="pb-2 font-normal">Trigger</th>
@@ -172,16 +172,16 @@ export function CategoryBars({ rows }: { rows: { name: string; count: number }[]
   );
 }
 
-export function TopArticles({ rows }: { rows: { title: string; slug: string; likes: number; comments: number }[] }) {
+export function TopArticles({ rows }: { rows: { title: string; slug: string; saves: number }[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Most engaging stories</CardTitle>
-        <CardDescription>By likes, then comments</CardDescription>
+        <CardTitle>Most saved stories</CardTitle>
+        <CardDescription>By how many readers clipped them</CardDescription>
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No likes or comments yet.</p>
+          <p className="text-sm text-muted-foreground">Nobody has saved a story yet.</p>
         ) : (
           <ol className="space-y-3">
             {rows.map((row, index) => (
@@ -192,7 +192,7 @@ export function TopArticles({ rows }: { rows: { title: string; slug: string; lik
                     {row.title}
                   </Link>
                   <p className="text-xs text-muted-foreground">
-                    {pluralize(row.likes, 'like')} · {pluralize(row.comments, 'comment')}
+                    Saved by {pluralize(row.saves, 'reader')}
                   </p>
                 </div>
               </li>

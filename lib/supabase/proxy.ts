@@ -7,11 +7,12 @@ import { buildContentSecurityPolicy, createNonce } from '@/lib/security-headers'
 const GUEST_ONLY = new Set(['/login', '/signup', '/forgot-password']);
 
 /**
- * Sections that need a session. Everything else is public, so a mistyped link
- * shows the 404 page instead of a login form. Each of these pages also checks
+ * Sections that need a session. Everything else is public: visitors can read
+ * the paper, choose sections and clip stories in their browser (/feed,
+ * /onboarding, /saved) without an account. Each of these pages also checks
  * the session itself; this redirect only adds the `?next=` return path.
  */
-const PRIVATE_SECTIONS = ['/feed', '/saved', '/profile', '/onboarding', '/admin'];
+const PRIVATE_SECTIONS = ['/profile', '/admin'];
 
 function isPrivatePath(pathname: string) {
   return PRIVATE_SECTIONS.some((section) => pathname === section || pathname.startsWith(`${section}/`));
@@ -72,8 +73,14 @@ export async function updateSession(request: NextRequest) {
 
   // Do not run code between createServerClient and getClaims(): it refreshes
   // an expired session and verifies the JWT.
-  const { data } = await supabase.auth.getClaims();
-  const isLoggedIn = Boolean(data?.claims?.sub);
+  // If Supabase cannot be reached, carry on as a visitor rather than fail the request.
+  let isLoggedIn = false;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    isLoggedIn = Boolean(data?.claims?.sub);
+  } catch (error) {
+    console.error('[proxy] could not check the session:', error);
+  }
 
   const redirect = (path: string) => {
     const url = request.nextUrl.clone();

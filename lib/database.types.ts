@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "articles": {
                   Row: {
-                    "author": string | null,"comment_count": number,"created_at": string,"id": string,"image_url": string | null,"like_count": number,"published_at": string,"slug": string,"source_id": string,"summary": string | null,"title": string,"updated_at": string,"url": string
+                    "author": string | null,"created_at": string,"id": string,"image_url": string | null,"published_at": string,"reading_minutes": number | null,"slug": string,"source_id": string,"summary": string | null,"title": string,"updated_at": string,"url": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author"?: string | null,"comment_count"?: number,"created_at"?: string,"id"?: string,"image_url"?: string | null,"like_count"?: number,"published_at"?: string,"slug": string,"source_id": string,"summary"?: string | null,"title": string,"updated_at"?: string,"url": string
+                    "author"?: string | null,"created_at"?: string,"id"?: string,"image_url"?: string | null,"published_at"?: string,"reading_minutes"?: number | null,"slug": string,"source_id": string,"summary"?: string | null,"title": string,"updated_at"?: string,"url": string
                   }
                   Update: {
-                    "author"?: string | null,"comment_count"?: number,"created_at"?: string,"id"?: string,"image_url"?: string | null,"like_count"?: number,"published_at"?: string,"slug"?: string,"source_id"?: string,"summary"?: string | null,"title"?: string,"updated_at"?: string,"url"?: string
+                    "author"?: string | null,"created_at"?: string,"id"?: string,"image_url"?: string | null,"published_at"?: string,"reading_minutes"?: number | null,"slug"?: string,"source_id"?: string,"summary"?: string | null,"title"?: string,"updated_at"?: string,"url"?: string
                   }
                   Relationships: [
                     {
@@ -56,26 +56,6 @@ isOneToOne: false
                   }
                   Relationships: [
                     
-                  ]
-                },"comments": {
-                  Row: {
-                    "article_id": string,"content": string,"created_at": string,"id": string,"updated_at": string,"user_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "article_id": string,"content": string,"created_at"?: string,"id"?: string,"updated_at"?: string,"user_id": string
-                  }
-                  Update: {
-                    "article_id"?: string,"content"?: string,"created_at"?: string,"id"?: string,"updated_at"?: string,"user_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "comments_article_id_fkey"
-      columns: ["article_id"]
-isOneToOne: false
-      referencedRelation: "articles"
-      referencedColumns: ["id"]
-    }
                   ]
                 },"hidden_articles": {
                   Row: {
@@ -111,25 +91,19 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
-                },"likes": {
+                },"muted_keywords": {
                   Row: {
-                    "article_id": string,"liked_at": string,"user_id": string
+                    "created_at": string,"keyword": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "article_id": string,"liked_at"?: string,"user_id": string
+                    "created_at"?: string,"keyword": string,"user_id": string
                   }
                   Update: {
-                    "article_id"?: string,"liked_at"?: string,"user_id"?: string
+                    "created_at"?: string,"keyword"?: string,"user_id"?: string
                   }
                   Relationships: [
-                    {
-      foreignKeyName: "likes_article_id_fkey"
-      columns: ["article_id"]
-isOneToOne: false
-      referencedRelation: "articles"
-      referencedColumns: ["id"]
-    }
+                    
                   ]
                 },"muted_sources": {
                   Row: {
@@ -264,7 +238,7 @@ isOneToOne: false
                            },
 "admin_list_users":
 { Args: Record<PropertyKey, never>; Returns: {
-              "comment_count": number,"created_at": string,"email": string,"has_completed_onboarding": boolean,"id": string,"last_sign_in_at": string,"like_count": number,"role": string,"saved_count": number,"username": string
+              "created_at": string,"email": string,"has_completed_onboarding": boolean,"id": string,"last_sign_in_at": string,"role": string,"saved_count": number,"username": string
             }[]
                            },
 "cleanup_old_articles":
@@ -275,17 +249,12 @@ isOneToOne: false
                            },
 "get_article":
 { Args: { "p_slug_or_id": string }; Returns: {
-              "author": string,"category_id": string,"category_name": string,"comment_count": number,"id": string,"image_url": string,"is_liked": boolean,"is_saved": boolean,"like_count": number,"published_at": string,"slug": string,"source_id": string,"source_name": string,"source_website_url": string,"summary": string,"title": string,"url": string
-            }[]
-                           },
-"get_article_comments":
-{ Args: { "p_article_id": string }; Returns: {
-              "avatar_color": string,"can_delete": boolean,"content": string,"created_at": string,"id": string,"is_own": boolean,"updated_at": string,"username": string
+              "author": string,"category_id": string,"category_name": string,"id": string,"image_url": string,"is_saved": boolean,"published_at": string,"reading_minutes": number,"slug": string,"source_id": string,"source_name": string,"source_website_url": string,"summary": string,"title": string,"url": string
             }[]
                            },
 "get_feed":
 { Args: { "p_as_of"?: string,"p_category_ids"?: (string)[],"p_limit"?: number,"p_offset"?: number,"p_search"?: string,"p_since"?: string,"p_sort"?: string,"p_source_ids"?: (string)[] }; Returns: {
-              "author": string,"category_id": string,"category_name": string,"comment_count": number,"id": string,"image_url": string,"is_liked": boolean,"is_saved": boolean,"like_count": number,"published_at": string,"slug": string,"source_id": string,"source_name": string,"summary": string,"title": string,"total_count": number,"url": string
+              "author": string,"category_id": string,"category_name": string,"id": string,"image_url": string,"is_saved": boolean,"published_at": string,"reading_minutes": number,"slug": string,"source_id": string,"source_name": string,"summary": string,"title": string,"total_count": number,"url": string
             }[]
                            },
 "get_related_articles":
@@ -295,7 +264,7 @@ isOneToOne: false
                            },
 "get_saved_articles":
 { Args: Record<PropertyKey, never>; Returns: {
-              "article_id": string,"category_id": string,"category_name": string,"comment_count": number,"folder_id": string,"image_url": string,"is_liked": boolean,"is_read": boolean,"like_count": number,"notes": string,"published_at": string,"saved_at": string,"slug": string,"source_enabled": boolean,"source_id": string,"source_name": string,"summary": string,"title": string,"url": string
+              "article_id": string,"category_id": string,"category_name": string,"folder_id": string,"image_url": string,"is_read": boolean,"notes": string,"published_at": string,"reading_minutes": number,"saved_at": string,"slug": string,"source_enabled": boolean,"source_id": string,"source_name": string,"summary": string,"title": string,"url": string
             }[]
                            },
 "ingest_articles":

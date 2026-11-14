@@ -2,26 +2,28 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bookmark, Folder, FolderOpen, Pencil, Plus, Search, SearchX, Trash2, X } from 'lucide-react';
+import { FolderOpen, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { FolderDialog } from '@/components/saved/folder-dialog';
 import { NoteDialog } from '@/components/saved/note-dialog';
+import type { SavedBackend } from '@/components/saved/saved-backend';
 import { SavedItem } from '@/components/saved/saved-item';
 import { EmptyState } from '@/components/site/empty-state';
+import { PageHeader } from '@/components/site/page-header';
+import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/native-select';
-import { Switch } from '@/components/ui/switch';
+import { Ornament } from '@/components/site/ornament';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/toast';
-import { createClient } from '@/lib/supabase/client';
 import type { SavedArticle, SavedFolder } from '@/lib/types';
-import { cn } from '@/lib/utils';
 
 /** What the page shows: a folder ('all' = everything), whether read stories are hidden, a search. */
 export type SavedView = { folder: string; hideRead: boolean; q: string };
 
 type SavedManagerProps = {
-  userId: string;
+  /** Where the clippings live: the account, or this browser for a visitor (components/saved/saved-backend.ts). */
+  backend: SavedBackend;
   initialArticles: SavedArticle[];
   initialFolders: SavedFolder[];
   initialView: SavedView;
@@ -42,9 +44,9 @@ function viewToQuery(view: SavedView) {
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const stories = (n: number) => plural(n, 'story', 'stories');
 
-export function SavedManager({ userId, initialArticles, initialFolders, initialView }: SavedManagerProps) {
+export function SavedManager({ backend, initialArticles, initialFolders, initialView }: SavedManagerProps) {
   const { showToast } = useToast();
-  const supabase = useMemo(() => createClient(), []);
+  const guest = backend.kind === 'browser';
 
   const [articles, setArticles] = useState(initialArticles);
   const [folders, setFolders] = useState(initialFolders);
@@ -81,17 +83,13 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
     async (article: SavedArticle, isRead: boolean, quiet = false) => {
       if (article.is_read === isRead) return;
       patchArticle(article.article_id, { is_read: isRead });
-      const { error } = await supabase
-        .from('saved_articles')
-        .update({ is_read: isRead })
-        .eq('user_id', userId)
-        .eq('article_id', article.article_id);
+      const { error } = await backend.setRead(article.article_id, isRead);
       if (error) {
         patchArticle(article.article_id, { is_read: !isRead });
         if (!quiet) fail('Could not update the story', error);
       }
     },
-    [supabase, userId, patchArticle, fail],
+    [backend, patchArticle, fail],
   );
 
   const toggleRead = useCallback((article: SavedArticle) => setRead(article, !article.is_read), [setRead]);
@@ -102,11 +100,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
     async (article: SavedArticle, folderId: string | null, folderName?: string) => {
       const previous = article.folder_id;
       patchArticle(article.article_id, { folder_id: folderId });
-      const { error } = await supabase
-        .from('saved_articles')
-        .update({ folder_id: folderId })
-        .eq('user_id', userId)
-        .eq('article_id', article.article_id);
+      const { error } = await backend.setFolder(article.article_id, folderId);
       if (error) {
         patchArticle(article.article_id, { folder_id: previous });
         fail('Could not move the story', error);
@@ -115,29 +109,22 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
       const name = folderName ?? folders.find((f) => f.id === folderId)?.name;
       showToast({ type: 'success', title: name ? `Moved to “${name}”` : 'Taken out of the folder' });
     },
-    [supabase, userId, patchArticle, fail, folders, showToast],
+    [backend, patchArticle, fail, folders, showToast],
   );
 
   const restore = useCallback(
     async (removed: SavedArticle) => {
-      const { error } = await supabase.from('saved_articles').insert({
-        user_id: userId,
-        article_id: removed.article_id,
-        folder_id: removed.folder_id,
-        is_read: removed.is_read,
-        notes: removed.notes,
-        saved_at: removed.saved_at,
-      });
+      const { error } = await backend.restore(removed);
       if (error) return fail('Could not put the story back', error);
       setArticles((list) => [...list, removed]);
     },
-    [supabase, userId, fail],
+    [backend, fail],
   );
 
   const remove = useCallback(
     async (article: SavedArticle) => {
       setArticles((list) => list.filter((a) => a.article_id !== article.article_id));
-      const { error } = await supabase.from('saved_articles').delete().eq('user_id', userId).eq('article_id', article.article_id);
+      const { error } = await backend.remove(article.article_id);
       if (error) {
         setArticles((list) => [...list, article]);
         fail('Could not remove the story', error);
@@ -149,15 +136,11 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
         action: { label: 'Undo', onClick: () => void restore(article) },
       });
     },
-    [supabase, userId, fail, showToast, restore],
+    [backend, fail, showToast, restore],
   );
 
   const saveNote = async (article: SavedArticle, note: string) => {
-    const { error } = await supabase
-      .from('saved_articles')
-      .update({ notes: note || null })
-      .eq('user_id', userId)
-      .eq('article_id', article.article_id);
+    const { error } = await backend.setNote(article.article_id, note || null);
     if (error) {
       fail('Could not save the note', error);
       return false;
@@ -171,12 +154,12 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
   const submitFolder = async (name: string): Promise<string | null> => {
     if (!folderDialog) return null;
     const { data, error } =
-      folderDialog.mode === 'rename'
-        ? await supabase.from('saved_folders').update({ name }).eq('id', folderDialog.folder.id).select('id, name').single()
-        : await supabase.from('saved_folders').insert({ name, user_id: userId }).select('id, name').single();
-    if (error) {
-      if (error.code === '23505') return 'You already have a folder with that name.';
-      if (error.message.includes('FOLDER_LIMIT_REACHED')) return 'You can have up to 100 folders. Delete one to add another.';
+      folderDialog.mode === 'rename' ? await backend.renameFolder(folderDialog.folder.id, name) : await backend.createFolder(name);
+    if (error || !data) {
+      if (error?.code === '23505') return 'You already have a folder with that name.';
+      if (error?.message.includes('FOLDER_LIMIT_REACHED')) {
+        return guest ? 'This browser holds up to 30 folders. Delete one to add another.' : 'You can have up to 100 folders. Delete one to add another.';
+      }
       return 'Could not save the folder. Please try again.';
     }
     setFolders((list) =>
@@ -190,7 +173,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
   };
 
   const deleteFolder = async (folder: SavedFolder) => {
-    const { error } = await supabase.from('saved_folders').delete().eq('id', folder.id);
+    const { error } = await backend.deleteFolder(folder.id);
     if (error) return fail('Could not delete the folder', error);
     setFolders((list) => list.filter((f) => f.id !== folder.id));
     setArticles((list) => list.map((a) => (a.folder_id === folder.id ? { ...a, folder_id: null } : a)));
@@ -228,31 +211,47 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
   const unreadInView = inView.filter((a) => !a.is_read).length;
   const filtered = view.hideRead || view.q !== '';
 
-  const folderLink = (active: boolean) =>
-    cn(
-      'flex w-full items-center gap-2.5 px-3 py-2.5 text-left font-serif text-base transition-colors',
-      active ? 'bg-foreground text-background' : 'hover:bg-foreground/6',
-    );
-
   return (
     <div className="container py-8 sm:py-10">
-      <header className="border-b-2 border-rule pb-5 text-center">
-        <p className="kicker">Your clippings</p>
-        <h1 className="headline mt-1 text-5xl sm:text-6xl">Saved stories</h1>
-        <p className="mx-auto mt-2 max-w-xl text-lg italic text-muted-foreground">
-          Stories you saved to read later. They stay here until you remove them.
-        </p>
-      </header>
+      <PageHeader
+        kicker="Your clippings"
+        title="Saved stories"
+        engraving="quill"
+        description="Stories you saved to read later. They stay here until you remove them."
+      />
+      <ScrollDivider className="mt-8" />
+
+      {guest && (
+        <aside className="card-paper mt-8 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-label="About these clippings">
+          <div className="flex items-center gap-4">
+            <Ornament name="scissors" className="hidden h-5 sm:block" />
+            <div>
+              <p className="font-display text-[1.1rem] font-semibold">Kept in this browser</p>
+              <p className="text-[0.95rem] italic text-muted-foreground">
+                Your clippings, folders and notes stay on this device. A free account keeps them on every device; they move into it when you sign in.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/login?next=/saved">Log in</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/signup">Create an account</Link>
+            </Button>
+          </div>
+        </aside>
+      )}
 
       {articles.length === 0 ? (
         <div className="mt-10">
           <EmptyState
-            icon={Bookmark}
+            engraving="kitten-sit"
             title="You have not saved any stories yet"
             description={
               <>
-                When you see a story you want to keep, press <strong className="not-italic">Save</strong> under it. It will appear
-                here, even after it has left the front page.
+                When you see a story you want to keep, press <strong>Clip story</strong> under it. It will appear here, even after it
+                has left the front page.
               </>
             }
             action={
@@ -263,61 +262,31 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
           />
         </div>
       ) : (
-        <div className="mt-8 grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
-          {/* Folders: a plain list on large screens, a dropdown on phones. */}
-          <aside className="lg:sticky lg:top-20 lg:self-start">
-            <h2 className="label mb-2 border-b border-rule pb-1.5 text-foreground">Folders</h2>
-
-            <div className="flex gap-2 lg:hidden">
-              <div className="min-w-0 flex-1">
-                <NativeSelect aria-label="Show folder" value={view.folder} onChange={(e) => updateView({ folder: e.target.value })}>
-                  <option value="all">All saved stories ({articles.length})</option>
-                  {folders.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({counts[f.id] ?? 0})
-                    </option>
-                  ))}
-                </NativeSelect>
-              </div>
-              <Button variant="outline" onClick={() => setFolderDialog({ mode: 'create' })}>
-                <Plus /> New folder
-              </Button>
-            </div>
-
-            <nav className="hidden lg:block" aria-label="Folders">
-              <button type="button" className={folderLink(view.folder === 'all')} onClick={() => updateView({ folder: 'all' })}>
-                <Bookmark className="h-4 w-4 shrink-0" />
-                <span className="flex-1">All saved stories</span>
-                <span className="text-sm tabular-nums opacity-70">{articles.length}</span>
+        <div className="mt-8 grid gap-7 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-0">
+          {/* The clippings drawer: the folders as an index down the margin on wide screens, a ribbon on phones. */}
+          <aside className="min-w-0 lg:border-r lg:border-rule/40 lg:pr-8">
+            <p className="label mb-2 hidden text-(--brass-ink) lg:block">Folders</p>
+            <nav aria-label="Folders" className="folder-index">
+              <button type="button" className="dept-tab" aria-pressed={view.folder === 'all'} onClick={() => updateView({ folder: 'all' })}>
+                <span className="folder-name">All saved</span>
+                <span className="tabular-nums tracking-normal opacity-70">{articles.length}</span>
               </button>
-              {folders.map((f) => {
-                const active = view.folder === f.id;
-                const Icon = active ? FolderOpen : Folder;
-                return (
-                  <button key={f.id} type="button" className={folderLink(active)} onClick={() => updateView({ folder: f.id })}>
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                    <span className="text-sm tabular-nums opacity-70">{counts[f.id] ?? 0}</span>
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                className="mt-1 flex w-full items-center gap-2.5 px-3 py-2.5 text-left font-serif text-base text-muted-foreground transition-colors hover:text-foreground"
-                onClick={() => setFolderDialog({ mode: 'create' })}
-              >
-                <Plus className="h-4 w-4" /> New folder
-              </button>
-              {folders.length === 0 && (
-                <p className="mt-2 px-3 text-sm italic text-muted-foreground">Folders are optional. Use them to keep stories in groups.</p>
-              )}
+              {folders.map((f) => (
+                <button key={f.id} type="button" className="dept-tab" aria-pressed={view.folder === f.id} onClick={() => updateView({ folder: f.id })}>
+                  <span className="folder-name max-w-48 truncate">{f.name}</span>
+                  <span className="tabular-nums tracking-normal opacity-70">{counts[f.id] ?? 0}</span>
+                </button>
+              ))}
             </nav>
+            <Button variant="outline" size="sm" className="mt-3 w-full lg:mt-4" onClick={() => setFolderDialog({ mode: 'create' })}>
+              <Plus /> New folder
+            </Button>
           </aside>
 
-          <section className="min-w-0" aria-labelledby="saved-list-heading">
+          <section className="min-w-0 lg:pl-10" aria-labelledby="saved-list-heading">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 id="saved-list-heading" className="headline text-3xl">
+                <h2 id="saved-list-heading" className="headline text-[1.9rem]">
                   {activeFolder ? activeFolder.name : 'All saved stories'}
                 </h2>
                 <p className="mt-1 italic text-muted-foreground">
@@ -337,22 +306,24 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
               )}
             </div>
 
-            <div className="mt-4 flex flex-col gap-4 border-y border-rule py-3 sm:flex-row sm:items-center">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative flex-1">
-                <Search className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <span className="search-glass pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rotate-[-30deg]" aria-hidden="true">
+                  <Ornament name="magnifier" className="block h-[1.45rem]" />
+                </span>
                 <input
                   type="search"
                   value={view.q}
                   onChange={(e) => updateView({ q: e.target.value })}
                   placeholder="Search your saved stories and notes…"
-                  className="h-10 w-full border-0 border-b border-input bg-transparent pl-6 pr-8 font-serif text-[1.05rem] italic placeholder:text-muted-foreground/80 focus:border-rule focus:outline-hidden [&::-webkit-search-cancel-button]:hidden"
+                  className="ledger-field"
                   aria-label="Search saved stories"
                 />
                 {view.q && (
                   <button
                     type="button"
                     onClick={() => updateView({ q: '' })}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -360,7 +331,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
                 )}
               </div>
               <div className="flex items-center gap-2.5">
-                <Switch id="hide-read" checked={view.hideRead} onCheckedChange={(hideRead) => updateView({ hideRead })} />
+                <Checkbox id="hide-read" checked={view.hideRead} onCheckedChange={(hideRead) => updateView({ hideRead: hideRead === true })} />
                 <Label htmlFor="hide-read" className="cursor-pointer">
                   Hide stories I’ve read
                 </Label>
@@ -382,7 +353,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
                   />
                 ) : view.q ? (
                   <EmptyState
-                    icon={SearchX}
+                    engraving="kitten-peer"
                     title={`No saved stories match “${view.q}”`}
                     description="Check the spelling or try fewer words."
                     action={
@@ -393,7 +364,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
                   />
                 ) : (
                   <EmptyState
-                    icon={Bookmark}
+                    engraving="kitten-curious"
                     title="You have read everything here"
                     description="Turn off “Hide stories I’ve read” to see them again."
                     action={
@@ -411,7 +382,7 @@ export function SavedManager({ userId, initialArticles, initialFolders, initialV
                     Showing {visible.length} of {stories(inView.length)}.
                   </p>
                 )}
-                <ul className="divide-y divide-border">
+                <ul className="card-paper mt-4 divide-y divide-dashed divide-border px-4 sm:px-6">
                   {visible.map((article) => (
                     <li key={article.article_id}>
                       <SavedItem

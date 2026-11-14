@@ -20,8 +20,6 @@ export type AdminUser = {
   last_sign_in_at: string | null;
   has_completed_onboarding: boolean;
   saved_count: number;
-  like_count: number;
-  comment_count: number;
 };
 
 export function UsersTable({ initialUsers, currentUserId }: { initialUsers: AdminUser[]; currentUserId: string }) {
@@ -68,10 +66,10 @@ export function UsersTable({ initialUsers, currentUserId }: { initialUsers: Admi
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by email or username" className="pl-9" aria-label="Search users" />
       </div>
 
-      <div className="overflow-x-auto border border-rule bg-card">
+      <div className="card-paper overflow-x-auto">
         <table className="w-full min-w-[760px] text-sm">
           <thead>
-            <tr className="label border-b-2 border-rule text-left text-muted-foreground">
+            <tr className="label border-b border-border text-left text-muted-foreground">
               <th className="px-4 py-2.5 font-normal">Reader</th>
               <th className="px-4 py-2.5 font-normal">Role</th>
               <th className="px-4 py-2.5 font-normal">Joined</th>
@@ -111,8 +109,7 @@ export function UsersTable({ initialUsers, currentUserId }: { initialUsers: Admi
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(user.created_at)}</td>
                   <td className="px-4 py-3 text-muted-foreground">{user.last_sign_in_at ? <TimeAgo date={user.last_sign_in_at} /> : 'Never'}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {pluralize(user.saved_count, 'saved story', 'saved stories')} · {pluralize(user.like_count, 'like')} ·{' '}
-                    {pluralize(user.comment_count, 'letter')}
+                    {pluralize(user.saved_count, 'saved story', 'saved stories')}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button
@@ -146,7 +143,7 @@ export function UsersTable({ initialUsers, currentUserId }: { initialUsers: Admi
         onOpenChange={(open) => !open && setToDelete(null)}
         destructive
         title={`Delete ${toDelete?.email ?? 'this user'}?`}
-        description="Their account, saved stories, likes and letters are permanently removed."
+        description="Their account, saved stories, folders and notes are permanently removed."
         confirmLabel="Delete user"
         onConfirm={remove}
       />

@@ -1,14 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, Newspaper, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Check, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { getCategoryStyle } from '@/lib/category-styles';
 import type { Category, SourceOption } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type SourcePickerProps = {
+type SourceListProps = {
   sources: SourceOption[];
   categories: Category[];
   /** Only sources in these categories are offered (empty = all). */
@@ -17,7 +16,8 @@ type SourcePickerProps = {
   onChange: (ids: string[]) => void;
 };
 
-export function SourcePicker({ sources, categories, visibleCategoryIds, selected, onChange }: SourcePickerProps) {
+/** A checklist of newspapers, grouped by section, with a search box. */
+export function SourceList({ sources, categories, visibleCategoryIds, selected, onChange }: SourceListProps) {
   const [query, setQuery] = useState('');
 
   const groups = useMemo(() => {
@@ -34,72 +34,44 @@ export function SourcePicker({ sources, categories, visibleCategoryIds, selected
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Newspaper />
-          Sources
-          {selected.length > 0 && (
-            <span className="bg-foreground px-1.5 text-[0.65rem] leading-5 text-background">
-              {selected.length}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-72 p-0">
-        <div className="border-b p-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Find a source…"
-              className="h-8 pl-8"
-              aria-label="Find a source"
-            />
-          </div>
-        </div>
-        <div className="max-h-80 overflow-y-auto p-1">
-          {groups.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No sources found.</p>}
-          {groups.map(({ category, sources: groupSources }) => (
-            <div key={category.id} className="py-1">
-              <p className="label px-2 py-1 text-muted-foreground">
-                {category.name}
-              </p>
-              {groupSources.map((source) => {
-                const checked = selected.includes(source.id);
-                return (
-                  <button
-                    key={source.id}
-                    type="button"
-                    role="menuitemcheckbox"
-                    aria-checked={checked}
-                    onClick={() => toggle(source.id)}
-                    className="flex w-full items-center gap-2 px-2 py-1.5 text-left font-serif text-[0.95rem] hover:bg-accent"
+    <div>
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a newspaper…" className="h-10 pl-10" aria-label="Find a newspaper" />
+      </div>
+      <div className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-border/70 bg-background/40 p-1.5">
+        {groups.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No newspapers found.</p>}
+        {groups.map(({ category, sources: groupSources }) => (
+          <div key={category.id} className="py-1" data-section={getCategoryStyle(category.name).key ?? undefined}>
+            <p className="flex items-center gap-2 px-2 py-1 font-label text-[0.78rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              {category.name}
+            </p>
+            {groupSources.map((source) => {
+              const checked = selected.includes(source.id);
+              return (
+                <button
+                  key={source.id}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={checked}
+                  onClick={() => toggle(source.id)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left font-sans text-[0.95rem] hover:bg-accent"
+                >
+                  <span
+                    className={cn(
+                      'flex h-[1.1rem] w-[1.1rem] shrink-0 items-center justify-center rounded-md border',
+                      checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+                    )}
                   >
-                    <span
-                      className={cn(
-                        'flex h-4 w-4 shrink-0 items-center justify-center border',
-                        checked ? 'border-rule bg-foreground text-background' : 'border-input',
-                      )}
-                    >
-                      {checked && <Check className="h-3 w-3" />}
-                    </span>
-                    <span className="truncate">{source.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        {selected.length > 0 && (
-          <div className="border-t p-2">
-            <Button variant="ghost" size="sm" className="w-full" onClick={() => onChange([])}>
-              Show all sources
-            </Button>
+                    {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                  <span className="truncate">{source.name}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </PopoverContent>
-    </Popover>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -203,7 +203,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-rule pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-dashed border-border pb-4">
         <div>
           <p className="kicker">The newsroom</p>
           <h1 className="headline mt-1 text-4xl">Wire services</h1>
@@ -224,7 +224,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
           <h2 id={`cat-${category.id}`} className="label mb-2 flex items-center gap-2 text-foreground">
             {category.name} <span className="text-muted-foreground">({list.length})</span>
           </h2>
-          <div className="overflow-x-auto border border-rule bg-card">
+          <div className="card-paper overflow-x-auto">
             <table className="w-full min-w-[760px] table-fixed text-sm">
               <colgroup>
                 <col className="w-[34%]" />
@@ -324,7 +324,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
             {categories.map((category) => {
               const count = sources.filter((s) => s.category_id === category.id).length;
               return (
-                <span key={category.id} className="label inline-flex items-center gap-1.5 border border-rule py-1 pl-3 pr-1">
+                <span key={category.id} className="inline-flex items-center gap-1.5 rounded-[2px] border-[3px] border-double border-rule/30 bg-card/70 py-0.5 pl-3 pr-1 font-label text-[0.88rem]">
                   {category.name}
                   <span className="text-xs text-muted-foreground">{count}</span>
                   <button

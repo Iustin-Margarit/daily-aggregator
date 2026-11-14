@@ -11,7 +11,7 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b-2 border-rule pb-4">
+      <div className="border-b border-dashed border-border pb-4">
         <p className="kicker">The newsroom</p>
         <h1 className="headline mt-1 text-4xl">Readers</h1>
         <p className="mt-1 italic text-muted-foreground">

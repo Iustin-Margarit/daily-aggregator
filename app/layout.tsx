@@ -1,25 +1,61 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
-import { Oswald, Playfair_Display, Source_Serif_4 } from 'next/font/google';
+import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
+import { prefAttributes } from '@/lib/reader-prefs';
 import { siteConfig } from '@/lib/site';
 import '@/styles/globals.css';
 
-const display = Playfair_Display({ subsets: ['latin', 'latin-ext'], variable: '--font-playfair', display: 'swap' });
+// Fraunces with its 'soft' axis: rounded old-style headlines.
+const display = Fraunces({ subsets: ['latin', 'latin-ext'], axes: ['SOFT', 'opsz'], variable: '--font-fraunces', display: 'swap' });
 const serif = Source_Serif_4({ subsets: ['latin', 'latin-ext'], variable: '--font-source-serif', display: 'swap' });
-const label = Oswald({ subsets: ['latin', 'latin-ext'], variable: '--font-oswald', display: 'swap' });
+// Jost: a 1920s geometric sans for labels, buttons and navigation.
+const label = Jost({ subsets: ['latin', 'latin-ext'], variable: '--font-jost', display: 'swap' });
+// Blackletter for the newspaper title only.
+const masthead = UnifrakturMaguntia({ weight: '400', subsets: ['latin'], variable: '--font-unifraktur', display: 'swap' });
+// Typewriter type for stamps and small notes.
+const typewriter = Special_Elite({ weight: '400', subsets: ['latin'], variable: '--font-special-elite', display: 'swap' });
 
+/**
+ * The site's public address, for absolute links in link previews: NEXT_PUBLIC_SITE_URL
+ * when set (a custom domain), else the Vercel production domain, else localhost.
+ */
+function siteUrl(): URL {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  try {
+    return new URL(explicit || (vercel ? `https://${vercel}` : 'http://localhost:3000'));
+  } catch {
+    return new URL('http://localhost:3000');
+  }
+}
+
+// Link previews use app/opengraph-image.png and app/twitter-image.png (picked up by file name).
 export const metadata: Metadata = {
-  title: { default: siteConfig.masthead, template: `%s · ${siteConfig.masthead}` },
+  metadataBase: siteUrl(),
+  title: { default: `${siteConfig.masthead} · your own morning paper`, template: `%s · ${siteConfig.masthead}` },
   description: siteConfig.description,
-  applicationName: siteConfig.name,
+  applicationName: siteConfig.masthead,
+  openGraph: {
+    type: 'website',
+    siteName: siteConfig.masthead,
+    title: `${siteConfig.masthead}: ${siteConfig.motto.toLowerCase()}`,
+    description: siteConfig.description,
+    locale: 'en_GB',
+    url: '/',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${siteConfig.masthead}: ${siteConfig.motto.toLowerCase()}`,
+    description: siteConfig.description,
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f1ece1' },
-    { media: '(prefers-color-scheme: dark)', color: '#151411' },
+    { media: '(prefers-color-scheme: light)', color: '#efe6d6' },
+    { media: '(prefers-color-scheme: dark)', color: '#141a26' },
   ],
 };
 
@@ -37,11 +73,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang="en"
       suppressHydrationWarning
       data-font-size={fontSize && FONT_SIZES.has(fontSize) ? fontSize : 'medium'}
-      className={`${display.variable} ${serif.variable} ${label.variable}`}
+      // Reading preferences kept on this device (clock, street banner, photographs, columns): lib/reader-prefs.ts.
+      {...prefAttributes((name) => cookieStore.get(name)?.value)}
+      className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable}`}
     >
       <body className="min-h-screen">
         <ThemeProvider nonce={nonce}>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
+            <div className="sheet">{children}</div>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

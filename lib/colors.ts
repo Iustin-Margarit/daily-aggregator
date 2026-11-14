@@ -6,13 +6,13 @@ export const DEFAULT_ACCENT = '#8B1E1E';
 /** Printing-ink colours used for the accent and avatar pickers. */
 export const COLOR_PRESETS = [
   { name: 'Oxblood', value: '#8B1E1E' },
-  { name: 'Crimson', value: '#B91C1C' },
+  { name: 'Vermilion', value: '#B03A2E' },
   { name: 'Burnt orange', value: '#B45309' },
   { name: 'Ochre', value: '#A16207' },
   { name: 'Forest', value: '#2F5233' },
   { name: 'Teal ink', value: '#115E59' },
   { name: 'Navy', value: '#1E3A5F' },
-  { name: 'Royal', value: '#1D4ED8' },
+  { name: 'Cobalt', value: '#2E5090' },
   { name: 'Plum', value: '#5B2A4E' },
   { name: 'Sepia', value: '#7A5230' },
   { name: 'Steel', value: '#3F4E5A' },
@@ -50,7 +50,8 @@ export function isLightColor(hex: string): boolean {
 export function accentVariables(hex: string | null | undefined): React.CSSProperties {
   const base = hex && HEX_COLOR.test(hex) ? hex : DEFAULT_ACCENT;
   const day = isLightColor(base) ? shade(base, 0.45) : base;
-  const night = shade(base, -0.45);
+  // The default oxblood turns a dusty pink when lightened; on the navy night paper a warm rose reads better.
+  const night = base.toUpperCase() === DEFAULT_ACCENT ? '#E6A395' : shade(base, -0.45);
   return { '--accent-day': day, '--accent-night': night } as React.CSSProperties;
 }
 

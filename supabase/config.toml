@@ -273,6 +273,20 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 
+# "Continue with Google". The app shows the button only when this provider is enabled.
+# Local testing: create an OAuth client in Google Cloud (see docs/GOOGLE_SIGN_IN.md) with the
+# redirect URI http://127.0.0.1:58321/auth/v1/callback, set enabled = true here, export the two
+# variables below in the shell and run `supabase stop && supabase start` (keeps the data).
+# The hosted project is configured in the dashboard instead (Authentication > Sign In / Providers).
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+# DO NOT commit the client secret; it is read from the environment.
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
 # You can configure "web3" rate limit in the [auth.rate_limit] section and set up [auth.captcha] if self-hosting.
 [auth.web3.solana]

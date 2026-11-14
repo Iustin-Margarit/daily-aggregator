@@ -1,7 +1,26 @@
 import type { Category, DateRange, FeedFilters, FeedSort } from '@/lib/types';
 
-/** Stories per page of the paper. */
-export const FEED_PAGE_SIZE = 30;
+/**
+ * Stories per page, so every page ends on full rows of three columns:
+ * the front page (page 1 of the plain Latest view) has the lead story,
+ * three under "In other news" and four rows of three; every other page has
+ * five rows of three.
+ */
+export const FRONT_PAGE_SIZE = 16;
+export const FEED_PAGE_SIZE = 15;
+
+/** True when page 1 is laid out as a front page (lead story and sidebar): Latest, without a search. */
+export function hasFrontPage(filters: Pick<FeedFilters, 'sort' | 'search'>): boolean {
+  return filters.sort === 'latest' && !filters.search;
+}
+
+/** Limit and offset of one page (1-based). */
+export function pageWindow(page: number, front: boolean): { limit: number; offset: number } {
+  const p = Math.max(1, page);
+  if (!front) return { limit: FEED_PAGE_SIZE, offset: (p - 1) * FEED_PAGE_SIZE };
+  if (p === 1) return { limit: FRONT_PAGE_SIZE, offset: 0 };
+  return { limit: FEED_PAGE_SIZE, offset: FRONT_PAGE_SIZE + (p - 2) * FEED_PAGE_SIZE };
+}
 
 const RANGES: DateRange[] = ['any', 'today', 'week'];
 const SORTS: FeedSort[] = ['latest', 'for_you'];
@@ -22,8 +41,8 @@ export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string) {
     p_search: filters.search || undefined,
     p_since: sinceFor(filters.range, asOf),
     p_sort: filters.sort,
-    p_limit: FEED_PAGE_SIZE,
-    p_offset: (Math.max(1, page) - 1) * FEED_PAGE_SIZE,
+    p_limit: pageWindow(page, hasFrontPage(filters)).limit,
+    p_offset: pageWindow(page, hasFrontPage(filters)).offset,
     p_as_of: asOf,
   };
 }
@@ -41,8 +60,9 @@ export function pageFromSearchParams(params: SearchParams): number {
 }
 
 /** Number of pages for a total story count (at least 1). */
-export function pageCount(total: number): number {
-  return Math.max(1, Math.ceil(total / FEED_PAGE_SIZE));
+export function pageCount(total: number, front: boolean): number {
+  if (!front) return Math.max(1, Math.ceil(total / FEED_PAGE_SIZE));
+  return total <= FRONT_PAGE_SIZE ? 1 : 1 + Math.ceil((total - FRONT_PAGE_SIZE) / FEED_PAGE_SIZE);
 }
 
 /**

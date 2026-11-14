@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { requestOrigin } from '@/app/auth/request-origin';
+import { callbackErrorCode } from '@/lib/auth';
 import { safeNextPath } from '@/lib/redirect';
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * PKCE flow: Supabase redirects here with ?code=... after the user clicks a
- * confirmation / password-reset link (default email templates).
+ * PKCE flow: Supabase redirects here with ?code=... after "Continue with Google"
+ * and after a confirmation / password-reset link from the default email templates.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,5 +20,6 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=link_invalid`);
+  // No code: Google sign-in cancelled or failed, or an old email link.
+  return NextResponse.redirect(`${origin}/login?error=${callbackErrorCode(searchParams)}`);
 }

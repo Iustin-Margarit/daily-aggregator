@@ -7,8 +7,8 @@ export function FormMessage({ type, children }: { type: 'error' | 'success'; chi
     <div
       role={type === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex gap-2 border border-l-4 bg-card px-3 py-2.5 text-sm',
-        type === 'error' ? 'border-destructive text-destructive' : 'border-rule text-foreground',
+        'flex gap-2.5 rounded-xl px-3.5 py-3 text-[0.92rem]',
+        type === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-panel text-foreground',
       )}
     >
       <Icon className="mt-0.5 h-4 w-4 shrink-0" />
@@ -20,8 +20,8 @@ export function FormMessage({ type, children }: { type: 'error' | 'success'; chi
 export function AuthHeading({ title, description }: { title: string; description?: React.ReactNode }) {
   return (
     <div className="mb-6 space-y-1.5 text-center">
-      <h1 className="headline text-3xl">{title}</h1>
-      {description && <p className="text-sm italic text-muted-foreground">{description}</p>}
+      <h1 className="headline text-[2rem]">{title}</h1>
+      {description && <p className="text-[0.98rem] text-muted-foreground">{description}</p>}
     </div>
   );
 }
@@ -47,5 +47,14 @@ export function friendlyAuthError(error: { message: string; code?: string } | nu
     return 'Too many attempts. Please wait a minute and try again.';
   }
   if (message.includes('fetch')) return 'Could not reach the server. Check your connection and try again.';
-  return error.message;
+  if (error.code === 'signup_disabled' || message.includes('signups not allowed')) {
+    return 'New accounts cannot be created right now. Please try again later.';
+  }
+  if (message.includes('provider is not enabled') || error.code === 'provider_disabled') {
+    return 'This way of signing in is switched off right now. Please use your email instead.';
+  }
+  if (message.includes('72 characters')) return 'That password is too long. Please use at most 72 characters.';
+  // Anything else is a technical message; it goes to the console, not to the reader.
+  console.warn('[auth]', error.code ?? '', error.message);
+  return 'Something went wrong. Please try again in a moment.';
 }

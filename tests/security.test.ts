@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { checkUrlShape, isPrivateAddress, UnsafeUrlError } from '../lib/ingestion/safe-fetch';
 import { safeNextPath } from '../lib/redirect';
 import { buildContentSecurityPolicy, createNonce } from '../lib/security-headers';
-import { isReservedUsername, profileSaveError, validateUsername } from '../lib/validation';
+import { isReservedUsername, normalizeMutedKeyword, profileSaveError, validateUsername } from '../lib/validation';
 
 describe('safe fetch: private address detection', () => {
   it('blocks loopback, private, link-local and reserved IPv4 ranges', () => {
@@ -161,5 +161,20 @@ describe('content security policy', () => {
     assert.ok(policy.includes("'unsafe-eval'"));
     assert.ok(policy.includes('ws://127.0.0.1:58321'));
     assert.ok(!policy.includes('upgrade-insecure-requests'));
+  });
+});
+
+describe('normalizeMutedKeyword', () => {
+  it('stores words in lower case with single spaces', () => {
+    assert.deepEqual(normalizeMutedKeyword('  Royal   Family '), { keyword: 'royal family' });
+    assert.deepEqual(normalizeMutedKeyword('U.S'), { keyword: 'u.s' });
+    assert.deepEqual(normalizeMutedKeyword("O'Brien"), { keyword: "o'brien" });
+    assert.deepEqual(normalizeMutedKeyword('Ζεύς'), { keyword: 'ζεύς' });
+  });
+
+  it('refuses what the database would refuse', () => {
+    for (const bad of ['a', '', 'x'.repeat(41), 'crypto!', '-war', 'war-', '(a|b)*', 'u.s.']) {
+      assert.ok('error' in normalizeMutedKeyword(bad), bad);
+    }
   });
 });

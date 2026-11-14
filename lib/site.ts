@@ -9,7 +9,7 @@ export const siteConfig = {
   tagline: 'Your daily news, curated for you.',
   motto: 'All the news that fits your interests',
   description:
-    'A personalized newspaper: headlines from dozens of trusted publishers, arranged by the sections you care about.',
+    'A personal newspaper in the style of a Victorian broadsheet: headlines from 33 publishers, arranged by the sections you choose. Free to read, no account needed.',
 };
 
 /** "Vol. II · No. 316" - volume counts years since launch, number is the day of the year. */

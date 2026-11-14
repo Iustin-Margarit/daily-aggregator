@@ -1,25 +1,30 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
-import { ExternalLink } from 'lucide-react';
 import { ArticleActionsBar } from '@/components/article/article-actions-bar';
 import { BackLink } from '@/components/article/back-link';
-import { Comments } from '@/components/article/comments';
+import { Dateline } from '@/components/article/dateline';
 import { RelatedArticles } from '@/components/article/related-articles';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
-import { TimeAgo } from '@/components/site/time-ago';
+import { DropCap } from '@/components/articles/drop-cap';
+import { Engraving } from '@/components/site/engraving';
+import { Ornament } from '@/components/site/ornament';
+import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
-import { formatDateTime } from '@/lib/format';
-import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { getCategoryStyle } from '@/lib/category-styles';
+import { formatReadingTime } from '@/lib/format';
+import { createClient, getCurrentUser } from '@/lib/supabase/server';
 import { cleanText, truncate } from '@/lib/text';
-import type { ArticleDetail, CommentItem, RelatedArticle } from '@/lib/types';
+import type { ArticleDetail, RelatedArticle } from '@/lib/types';
 
 type PageProps = { params: Promise<{ id: string }> };
 
 const getArticle = cache(async (slugOrId: string) => {
   const supabase = await createClient();
-  const { data } = await supabase.rpc('get_article', { p_slug_or_id: decodeURIComponent(slugOrId) }).maybeSingle();
+  const { data, error } = await supabase.rpc('get_article', { p_slug_or_id: decodeURIComponent(slugOrId) }).maybeSingle();
+  // The database could not be reached: show "Stop the presses" (app/error.tsx), not a false "not found".
+  if (error) throw new Error(`Could not load the story: ${error.message}`);
   return (data as ArticleDetail | null) ?? null;
 });
 
@@ -42,92 +47,112 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+/**
+ * One story, set as a broadsheet spread on the same 1360px page as the front
+ * page: the headline across the top, then a margin column with the dateline,
+ * the story in a reading column of about 72 characters (photograph, summary
+ * with an illuminated initial and the way on to the full report), and the
+ * story's actions in the right-hand column.
+ */
 export default async function ArticlePage({ params }: PageProps) {
   const { id } = await params;
-  const [article, user, profile] = await Promise.all([getArticle(id), getCurrentUser(), getCurrentProfile()]);
+  const [article, user] = await Promise.all([getArticle(id), getCurrentUser()]);
   if (!article) notFound();
 
   const supabase = await createClient();
-  const [{ data: related }, { data: comments }] = await Promise.all([
-    supabase.rpc('get_related_articles', { p_article_id: article.id, p_limit: 6 }),
-    supabase.rpc('get_article_comments', { p_article_id: article.id }),
-  ]);
+  const { data: related } = await supabase.rpc('get_related_articles', { p_article_id: article.id, p_limit: 6 });
 
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
   const author = article.author ? cleanText(article.author) : null;
-  const articlePath = `/article/${article.slug}`;
+  const readingTime = formatReadingTime(article.reading_minutes);
+  const style = getCategoryStyle(article.category_name);
+
+  const source = article.source_website_url ? (
+    <a href={article.source_website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+      {article.source_name}
+    </a>
+  ) : (
+    article.source_name
+  );
 
   return (
-    <div className="container max-w-5xl py-6 sm:py-8">
+    <div className="container py-6 sm:py-8">
       <BackLink />
 
-      <article className="mt-6">
-        <header className="text-center">
-          <div className="flex items-center justify-center gap-3">
-            <span className="h-px w-10 bg-rule" aria-hidden="true" />
-            <CategoryBadge name={article.category_name} />
-            <span className="h-px w-10 bg-rule" aria-hidden="true" />
+      <article className="card-paper mt-5" data-section={style.key ?? undefined}>
+        <header className="px-5 pb-7 pt-8 text-center sm:px-10 sm:pt-10">
+          <div className="mb-4">
+            <Engraving name={style.engraving} className="h-16 max-w-[9rem] [--engraving-ink:var(--section,var(--engraving-ink))]" />
           </div>
-          <h1 className="headline mx-auto mt-4 max-w-4xl text-[2.2rem] sm:text-5xl lg:text-[3.6rem]">{title}</h1>
-          <div className="mt-6 border-y border-rule py-2">
-            <p className="byline flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-foreground/80">
-              {author && <span>By {author}</span>}
-              {author && <span aria-hidden="true">|</span>}
-              {article.source_website_url ? (
-                <a href={article.source_website_url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                  {article.source_name}
-                </a>
-              ) : (
-                <span>{article.source_name}</span>
-              )}
-              <span aria-hidden="true">|</span>
-              <time dateTime={article.published_at}>{formatDateTime(article.published_at)}</time>
-              <span aria-hidden="true">|</span>
-              <TimeAgo date={article.published_at} />
-            </p>
-          </div>
+          <CategoryBadge name={article.category_name} />
+          <h1 className="headline mx-auto mt-4 max-w-[24ch] text-[2.1rem] sm:text-5xl lg:text-[3.4rem]">{title}</h1>
+          <p className="byline mt-5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[0.95rem] text-foreground/80">
+            {author && <span>By {author}</span>}
+            {author && <span aria-hidden="true">·</span>}
+            <span>{source}</span>
+            {readingTime && <span aria-hidden="true">·</span>}
+            {readingTime && <span>{readingTime}</span>}
+          </p>
         </header>
 
-        <figure className="mt-6">
-          <div className="border border-rule p-2">
-            <ArticleImage src={article.image_url} alt={title} category={article.category_name} width={1600} eager className="aspect-video w-full" />
+        <ScrollDivider className="px-5 sm:px-10" />
+
+        <div className="story-columns px-5 pb-12 pt-7 sm:px-10 lg:pt-9">
+          {/* The margin column: when the story was filed, by whom, and for which desk. */}
+          <aside className="story-date" aria-label="Dateline">
+            <p className="label mb-1 hidden text-(--brass-ink) lg:block">Dateline</p>
+            <Dateline publishedAt={article.published_at} />
+            <div className="mt-6 hidden space-y-5 border-t border-rule/30 pt-5 lg:block">
+              <div>
+                <p className="label text-muted-foreground">Filed by</p>
+                <p className="mt-1 font-display text-[1.1rem] font-semibold leading-snug">{source}</p>
+                {author && <p className="mt-0.5 text-[0.92rem] italic text-muted-foreground">{author}</p>}
+              </div>
+              <div className="border-t border-rule/30 pt-5">
+                <p className="label text-muted-foreground">From the desk of</p>
+                <Engraving name={style.engraving} className="mt-3 h-14 max-w-[7rem] [--engraving-ink:var(--section,var(--engraving-ink))]" />
+                <p className="mt-2 font-display text-[1.1rem] font-semibold text-(--section)">{article.category_name}</p>
+              </div>
+            </div>
+          </aside>
+
+          <div className="story-side">
+            <ArticleActionsBar article={article} userId={user?.id ?? null} />
           </div>
-          <figcaption className="mt-1.5 text-right text-xs italic text-muted-foreground">Photograph via {article.source_name}</figcaption>
-        </figure>
 
-        <div className="mx-auto mt-8 max-w-3xl">
-          <ArticleActionsBar article={article} userId={user?.id ?? null} />
+          <div className="story-main">
+            <figure>
+              <div className="photo-plate">
+                <ArticleImage src={article.image_url} alt={title} category={article.category_name} width={1600} eager className="aspect-video w-full" />
+              </div>
+              <figcaption className="mt-2 text-right font-label text-[0.8rem] italic text-muted-foreground">Photograph via {article.source_name}</figcaption>
+            </figure>
 
-          {summary ? (
-            <p className="news-text dropcap mt-6 text-[1.2rem] leading-relaxed text-foreground/90">{summary}</p>
-          ) : (
-            <p className="mt-6 italic text-muted-foreground">The publisher did not include a summary for this story.</p>
-          )}
+            {summary ? (
+              <DropCap text={summary} className="news-text mt-7 text-[1.2rem] leading-relaxed text-foreground/90" />
+            ) : (
+              <p className="mt-7 italic text-muted-foreground">The publisher did not include a summary for this story.</p>
+            )}
 
-          <div className="paper-box mt-8 px-6 py-7 text-center">
-            <p className="label text-muted-foreground">The story continues</p>
-            <p className="headline mt-2 text-2xl">Read the full report at {article.source_name}</p>
-            <p className="mx-auto mt-2 max-w-md text-sm italic text-muted-foreground">
-              You are reading a summary. The complete article, with all its reporting, is on the publisher’s website.
-            </p>
-            <Button asChild size="lg" className="mt-5">
-              <a href={article.url} target="_blank" rel="noopener noreferrer">
-                Continue reading <ExternalLink />
-              </a>
-            </Button>
+            {/* The way on to the full report, set as a ruled notice at the foot of the column. */}
+            <div className="mt-9 border-y-[3px] border-double border-rule/45 px-4 py-7 text-center sm:px-8">
+              <p className="label text-muted-foreground">The story continues</p>
+              <p className="headline mt-2 text-2xl">Read the full report at {article.source_name}</p>
+              <p className="mx-auto mt-2 max-w-md text-[0.95rem] text-muted-foreground">
+                You are reading a summary. The complete article, with all its reporting, is on the publisher’s website.
+              </p>
+              <Button asChild size="lg" className="group/read mt-5">
+                <a href={article.url} target="_blank" rel="noopener noreferrer">
+                  Continue reading
+                  <Ornament name="fist" className="fist-poke w-[1.45rem] [--ornament-ink:currentColor]" />
+                  <span className="sr-only"> (opens the publisher’s website)</span>
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </article>
-
-      <div className="mx-auto mt-12 max-w-3xl">
-        <Comments
-          articleId={article.id}
-          articlePath={articlePath}
-          initialComments={(comments ?? []) as CommentItem[]}
-          viewer={user && profile ? { id: user.id, username: profile.username, avatarColor: profile.avatar_color } : null}
-        />
-      </div>
 
       <div className="mt-14">
         <RelatedArticles articles={(related ?? []) as RelatedArticle[]} category={article.category_name} />

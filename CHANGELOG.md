@@ -1,5 +1,325 @@
 # Changelog
 
+## Unreleased: "nocturnal broadsheet" interface
+
+### Ready for a free live site (2026-11-14)
+- **No sign-up wall**: visitors read the front page, search, open stories, choose sections with the
+  postage stamps and clip stories (with folders, notes and Print clipping) without an account. Their
+  sections are kept in a cookie and their clippings in the browser (up to 200); signing in or
+  signing up moves both into the account (a new account starts from the sections chosen as a
+  visitor). The header shows Front Page, Saved and Sections to everyone, with a Morning/Night switch
+  for visitors. Only Settings and the admin pages need a login. The landing page leads with
+  "Read today's paper", and its section stamps open the Sections page.
+- **Favicon and link previews**: a blackletter "D" from the masthead's typeface on parchment with a
+  gilt rule (favicon, app icon, Apple touch icon), and a 1200×630 preview card (title, motto,
+  flourish and Penfield's reader) with Open Graph and Twitter tags. Stories keep their own photo
+  as the preview.
+- **Graceful failures**: when the database cannot be reached, the front page shows "The presses
+  jammed" with Try again (no longer the first-run setup message), a story page shows "Stop the
+  presses" instead of a false "not found", the session check falls back to visitor mode, and a
+  last-resort `global-error` page covers the root layout.
+- **Secrets**: `.gitignore` now blocks every `.env*` file except `.env.example`, plus key files; the
+  history holds no secret keys (only public anon keys and a password placeholder), and the built
+  browser code contains no server secret.
+- **Fix** (migration `20261114090647_anon_feed_muted_keywords`): visitors could not load the feed
+  after the muted-words migration (`anon` lacked the table privilege `get_feed` needs; it still
+  sees no rows).
+
+### Crisper pages and a few quiet extras (2026-11-14)
+- **Shorter pages**: the front page has 16 stories (the lead, three under "In other news" and four
+  rows of three), every other page 15 (five rows of three), so the page turn is actually used.
+  When a short last page, or two columns on a tablet, would leave empty slots in the last row, a
+  "Continued on page N" slip (or "Back to the front page") fills them.
+- **On this day**: an almanac box under "In other news" with three anniversaries for today's date
+  from Wikipedia's selected anniversaries (spread across the centuries, gentle ones preferred,
+  credited and linked). The server keeps the list for half a day; if Wikipedia cannot be reached,
+  the box is left out.
+- **Sound** (off by default): a ticket beside Pause on the street banner, with a 1912 gramophone
+  engraving. It plays soft rain on the cobbles, the odd drip and a faint pocket-watch tick-tock,
+  synthesised in the browser with the Web Audio API (no sound files), fading in at low volume. It
+  stops when the reader leaves the front page and stays available for readers who ask for less motion.
+- **Reading time**: "4 min read" on stories and the story page. Feeds carry only summaries, so the
+  ingestion counts the words of the story on the publisher's page when it first reads it (the same
+  visit that finds missing photos), within a time limit; each run also measures up to 60 recent
+  stories that have no reading time yet (400 for `npm run ingest`). Sites that block page reads
+  (e.g. Politico, Forbes, MarketWatch, NPR) show no reading time.
+- **Muted words** (Settings > Sections & papers): stories whose headline or summary contains a
+  muted word, as a whole word, are left off the front page. Up to 50 words.
+- **Print clipping** on saved stories: prints the story as a cut-out newspaper clipping (dashed
+  cutting line with scissors, the paper's name, headline, source, date, reading time, summary and
+  the reader's note), always in dark ink on white paper, or saves it as a PDF.
+- **Database** (migration `20261114085132_reading_time_and_muted_keywords`): `articles.reading_minutes`;
+  a private `muted_keywords` table (row level security: each reader sees and changes only their
+  own; at most 50 per reader); `get_feed` leaves out muted words and, with `get_article` and
+  `get_saved_articles`, returns the reading time.
+
+### A personal paper, not a social network (2026-11-14)
+- **Letters to the editor and Endorse (likes) are gone**, with their public counts. The paper is for
+  one reader: the story actions are **Clip story** and **More** (Read on the publisher's site,
+  Share, Hide this story, Mute the source); the story page has Clip story, Share and More.
+  Saved stories, folders, notes, sections and the reading room are unchanged.
+- **"For you"** now learns from the reader's sections and the stories they save.
+- **Database** (migration `20261114080823_remove_letters_and_likes`): drops `likes`, `comments`,
+  their triggers, rate limit and realtime, and `articles.like_count` / `comment_count`;
+  `get_feed`, `get_article`, `get_saved_articles` and `admin_list_users` return no like or letter
+  columns; `get_article_comments` is removed. The admin dashboard shows saved stories and the most
+  saved stories instead of likes and comments.
+- Wording updated everywhere (Settings, sign-up, onboarding, the visitor page, the footer motto
+  "Read the world · Keep what matters · Read it your way", the admin pages).
+- **The night edition's backdrop** is now a moonlit street instead of the walnut desk: wet slate
+  cobbles (ambientCG PavingStones119, CC0, toned dark navy, with a moonlit sheen from its normal
+  map), evenly lit with no glows. The morning edition keeps the walnut desk by candlelight.
+- **The ribbon bookmark ("Top") is removed.**
+
+### Polish
+- **The motto follows the ribbon**: "All the news that fits your interests" is set along the arch
+  of the engraved ribbon (an SVG text path measured from the engraving), on the front page and the
+  sign-in pages.
+- **A clearer magnifying glass** in the search fields (front page and Saved): printed in strong
+  brass ink with its fine lines thickened a little, and no longer covered by the field itself.
+- **Engraved tab icons** instead of the ✦ by the current tab: a folded broadsheet (Front Page), the
+  quill (Saved), the Penny Black, perforated (Sections) and the printing press (Newsroom, for
+  admins). The phone tab bar uses the same drawings instead of its modern icons.
+- **Brighter section stamps**: every stamp is printed in full, richer colour (its section ink with
+  more colour) with a printed frame line inside the perforations. Pointing at one lifts it off the
+  page with a deeper shadow, inks its frame and brings up the "Choose" ring in its colour. Chosen
+  stamps stay tinted, tilted and franked "Chosen".
+
+### The Reader's Ledger, the reading room and the desk
+- **Settings as the Reader's Ledger**: a nameplate with an old woodcut of a printer's workshop and
+  the reader's own wax seal, more room under the bar, the ledger's contents down a margin column
+  (a ribbon on phones), and each part an entry on ledger paper with a red double margin rule and a
+  folio numeral (`.ledger-sheet`), set in columns on wide screens: Your byline (seal and fields side
+  by side), The printing (edition and type size beside the accent ink), The reading room, Sections
+  & papers (side by side), Signing in (email beside password) and Closing the account.
+- **Wax-seal inks**: the colour pickers are blobs of sealing wax; the chosen one is pressed with a
+  ring and a star and sits a little raised.
+- **Antique fields** (`field-antique`): every input, text box and select is an inset well of vellum
+  with crisp corners and a heavier ruled bottom edge; focused, it turns brass.
+- **The account menu and every menu** are printed slips: double hairline frame, the paper's grain,
+  a brass wash on the highlighted line, a brass ✦ for the chosen option. The account menu shows the
+  reader's seal and byline, then § Settings, the edition (a woodcut sun, the man in the moon, the
+  globe) and Log out with an engraved key. The modern icons are gone.
+- **The reading room** (new, kept on this device like the edition, in cookies so the page is
+  printed the reader's way at once; `lib/reader-prefs.ts`): **the clock** in 12- or 24-hour time
+  (front page and story datelines); **the street under the masthead** moving, still or hidden (the
+  banner's Pause button is the same setting); **news photographs** archival or in natural colours;
+  **text columns** justified or ragged right.
+- **Turning the page**: Previous / Next page (and back / forward) swing the new page in from the
+  side it was turned from, with the shadow of the leaf sweeping across; under half a second, none
+  for readers who ask for less motion.
+- **The desk**: on monitors from 1680px the broadsheet is a little wider (1440px of column). Beside
+  it, a figured walnut desk (ambientCG, CC0) lit by candles just off the page, whose light wavers a
+  little; the sheet lies on a few more sheets whose edges show along its sides and foot.
+- **A ribbon bookmark**: a silk ribbon in the reader's accent ink drops into the sheet's margin once
+  the reader is a screen and a half down; pulling it goes back to the top.
+- **A slim brass scrollbar** in both editions.
+
+### A true broadsheet, on a desk, by lamplight
+- **One broadsheet width on every page**: the front page, Saved, Sections and the story page share
+  the same column, at most 1360px (`container`), and the sheet is exactly that wide (`.sheet`).
+  From 1520px it lies on the dark desk with a margin all round: a midnight desk (#080a0f) under a
+  vellum-slate sheet (#121620) in the night edition, a walnut desk under cream paper by day, with
+  the paper's grain (light fibres at night: the same ambientCG paper, inverted), lamplight from
+  above, an inner vignette and a soft shadow underneath.
+- **Columns that line up**: the lead story and "In other news" stand on the page divided by a
+  full-height column rule; the "Latest dispatches" are set in two or three columns with hairline
+  column rules and a rule between stories (`news-grid` draws them; story cards have no boxes).
+  Photographs, rules, the page buttons and the footer frame now share the same two edges: the grid
+  clips its rules exactly at its edges and nothing in a story reaches outside its column.
+- **The department ribbon**: the ten boxed section tabs became one full-width band between double
+  rules, the departments in small capitals divided by hairlines, the chosen one in brass with an
+  inked brass underline (`.dept-bar`, `.dept-tab`). Filters is the ribbon's end cap. Phones and
+  tablets scroll the ribbon; from 1280px every department shows. Latest | For you is a small
+  ribbon of the same kind, and "For you" has an engraved pen nib instead of the sparkle icon.
+- **Victorian scrollwork** between the zones of a page (masthead, lead story, the columns, the
+  letters): a double hairline each side of an engraved Spencerian flourish, or a smaller tulip
+  flourish (`ScrollDivider`). Section headers are ornate, ═══ ✦ IN OTHER NEWS ✦ ═══, with an
+  engraved Morse telegraph key beside "In other news" and the printing press beside "Latest
+  dispatches" (`SectionHead`).
+- **Corner ornaments only where they are special**: the masthead and the footer colophon
+  (`card-ornate`). Other frames keep the double rule and paper grain (`card-paper`).
+- **Photo plates**: every news photograph sits in a dark recessed mount with a hairline frame (drawn
+  inside its box) and an archival treatment, `saturate(0.68) sepia(0.22) contrast(1.06)` with a
+  dark edge vignette, that clears to full colour when the reader points at the story or focuses
+  one of its links. Touch screens, which cannot point, get only a light touch of it.
+- **Printed story actions**, legible in polished brass and warm parchment (`--action-icon`,
+  `--action-ink`): **Endorse** presses a wax seal (red wax once endorsed) while a real 1902
+  postmark ring strikes round it in a flash of ink; **Clip story** snips brass scissors and runs a
+  dotted "cut here" line under the label, which stamps "Clipped"; **More** points on with a
+  printer's fist. The flashes only play when the reader presses. The story page has the same
+  controls (plus Share with a carrier pigeon and Letters with a quill) instead of modern buttons
+  (`components/articles/story-actions.tsx`).
+- **Printer's fists instead of arrows**: Read dispatch, Previous / Next page, Back to the paper,
+  Continue reading and Create a free account.
+- **Illuminated initials**: the lead story and the story page open with their first letter in
+  brass inside an engraved Victorian frame on tinted vellum (`DropCap`, `.initial`).
+- **The story page as a broadsheet spread**: the headline across the top, then a margin column with
+  the dateline (in the reader's own time), who filed it and the section's desk; the story in a
+  reading column of about 72 characters (photograph, summary, the way on to the full report, then
+  the letters); and the story's actions in a right-hand column that stays in view. Tablets keep the
+  margin column and put the actions above the story; phones stack it all. "More from the desk"
+  is set in columns like the front page.
+- **Saved** has its folders as an index down a margin column (a ribbon on phones) beside the
+  clippings; **Sections** has a margin column (how many are chosen, Select all, the buttons) beside
+  the stamps.
+- **Masthead**: Flamsteed's 1729 star chart of Orion etched faintly behind the title; the clock and
+  tonight's moon are the nameplate's two **ears**, ruled off left and right between the masthead's
+  double rules (side by side under the title on tablets). About every 25 seconds a shooting star
+  crosses the moon's dial.
+- **A livelier town** in the street banner: now and then a **hansom cab** trots past on the road
+  behind the pavement, its near wheel turning at the right speed for its pace (a public-domain
+  drawing, cut into a silhouette and its wheel); **chimney smoke** rises softly from behind
+  Hollar's roofs; the **gas flames gutter** irregularly and their halos breathe; the street mist
+  slowly rises and settles. Transform and opacity only. The **Pause** button (now a printed ticket
+  stub) stills the whole town, the shooting star included, and readers who ask for less motion
+  get a still picture.
+
+The pictures already looked 19th-century; now the interface around them does too. The rounded
+SaaS pills, soft cards, coloured dots and iOS switch are replaced with printed ones, decorated
+with public-domain ornaments (credits in [docs/ASSETS.md](docs/ASSETS.md), files in
+`public/ornaments`).
+
+### Changed
+- **Crisp corners everywhere**: the radius scale is 2-4px; only real circles (clock, moon,
+  swatches) stay round.
+- **Print frames** (`card-paper`, also dialogs and the footer): a double hairline rule, a gilt
+  corner piece in each corner (Rebecca Read's corner ornament, CC0) and the paper's grain.
+- **Ticket-stub buttons**: 3px corners and a second hairline inside the edge; solid buttons are
+  sepia by day and brass by night. A new `stamp` variant prints actions in typewriter capitals in
+  a double-ruled box (Mark as read, Put in a folder, Add a note, Remove on the Saved page).
+- **Ledger tabs** for Front Page | Saved | Sections: small capitals between hairline rules, the
+  current page underlined in brass with a ✦. The phone bar marks it with a brass box.
+- **Section labels** (`section-badge`) are printer's slugs in the section's ink; the coloured
+  section dots are gone. (The boxed archive tabs, `chip`, gave way to the department ribbon.)
+- **Ledger search lines** (`ledger-field`) with an engraved magnifying glass (The Met, CC0)
+  instead of rounded search boxes.
+- **Wax-seal monograms**: the account letter is pressed into sealing wax in the reader's colour.
+- **"English edition"** is set in small capitals beside an engraved globe instead of a flag.
+- **Ledger checkbox** with an inked tick ("Hide stories I've read" replaces its iOS switch); the
+  admin switches are brass slides.
+- **Front page**: the clock and moon tiles are small engraved frames; the clock has brass hands and
+  its second hand ticks with a little spring; etched stars twinkle round the moon. The Top Story
+  badge is a pressed wax seal with a real 1902 postmark ring in it.
+- **Street banner**: moths circle the gas lamps (dark specks by day, lit gold at night) and now
+  and then a carrier pigeon with a letter (Yarrell, 1843) crosses the far sky. Transform and
+  opacity only; they pause with the rest of the banner.
+- **Sections page**: a chosen stamp is franked with a postmark (ring and barred oval from a real
+  1902 duplex cancel) that strikes with a small thump; the others show a faint "Choose" ring.
+  Select all is now a proper button.
+
+### Fixed
+- The empty Saved page told readers to press "Save"; the button is called "Clip story".
+- Deleting a letter to the editor said "Comment deleted".
+- On phones the page buttons under the stories could push the page 6px sideways.
+
+## 2.6.0 - 2026-11-13: "old press" redesign
+
+A new look: an old-school paper that is soft and warm rather than boxy. Cream paper cards with
+rounded corners and soft shadows lie on real newsprint; colour sits between black-and-white and
+modern, from muted section inks, the public-domain prints and the photographs.
+
+### Added
+- **Public-domain artwork** (credits and licences in [docs/ASSETS.md](docs/ASSETS.md)):
+  - **Twelve woodcuts by Edward Penfield**, one for each month, shown in the new **almanac** card
+    with a line about the month and a thought for the day (`MonthAlmanac` in
+    `components/site/almanac.tsx`). It runs across the front page between rows of stories.
+  - **Penfield's reader in a rocking chair (1897)**, in colour, on the landing page and beside the
+    log-in and sign-up forms (the magazine name on the poster was painted out).
+  - **Steinlen's kittens (1898)** as the office cats on empty pages, "not found" pages and the
+    footer, and his colour lithograph **"Winter: Cat on a Cushion"** asleep on the last page
+    ("— 30 —").
+  - **Real paper texture** (ambientCG Paper006, CC0) instead of generated noise.
+  - Engravings from freesvg.org (CC0) for each section, the newsboy, the press, the quill and
+    the motto ribbon, printed in the theme's ink through CSS masks
+    (`components/site/engraving.tsx`).
+- **Front-page masthead card** (`components/site/front-masthead.tsx`): edition line with an
+  "English edition" flag and the date, the blackletter title on its ribbon between two matching
+  tiles (a live station clock with the weekday, and tonight's moon with how much of it is lit), and
+  the street strip along the bottom.
+- **The street banner, a Victorian paper theatre** (`components/site/street-theatre.tsx`,
+  `styles/street-theatre.css`, pictures in `public/street`), built from real prints instead of
+  drawn shapes: Wenceslaus Hollar's etched skyline of London (far, in haze), J. W. Fiske iron
+  railings of 1875 and gas lamps made of a Fiske post and a 19th-century French lantern (middle, with
+  warm halos as the only light), and cut-paper silhouettes by Auguste Edouart (front, on etched
+  cobbles). The planes drift at different speeds; gentlemen walk on jointed paper legs, ladies glide,
+  children skip, people further back stand and chat. Sepia on cream by day, near-black against a
+  slate dusk at night. GPU transforms only; it pauses off screen, stops mid-stride for readers who
+  ask for less motion, and has a Pause button.
+- **Section inks**: every section has its own muted colour (dusty blue, brick, bottle green, teal,
+  violet, rose, ochre, plum) for its label, chip dot and photo placeholder (`data-section` and the
+  `section-badge`, `section-dot` and `stamp` styles in `styles/globals.css`).
+- **Sections as postage stamps** with perforated edges on the landing page and the Sections page;
+  chosen sections are printed in full ink, the rest stay faded.
+- **Bottom tab bar on phones** (Front Page, Saved, Sections), within reach of a thumb.
+- A "Top Story" rubber stamp on the lead photo; `components/site/page-header.tsx` for inner pages.
+- `lib/use-client-value.ts`: `useHydrated()` and `useClientValue()` for values only the browser
+  knows (local time, date, moon, greeting, saved theme).
+
+### Changed
+- **One header on every page**: the small title on the left, the reader's places (Front Page,
+  Saved, Sections) in a pill in the middle, the account on the right. They no longer move between
+  pages. On the front pages the small title appears once the big masthead has scrolled away.
+- **A calmer front page**: one row of section chips (single choice: My sections, Everything or one
+  section), Latest / For you, a search box and one **Filters** button. How recent and which
+  newspapers moved into the Filters dialog. The refresh button, the "By wire" ticker and the
+  "Turn to a section" box were removed.
+- **Story cards**: soft cards with the photo on top, the section label in its ink, and three
+  actions only (Like, Save and a "…" menu with Letters to the editor, Read on the publisher's site,
+  Share, Hide and Mute).
+- **Softer everything**: rounded corners (`--radius-*`), paper shadows, pill buttons in sentence
+  case, rounded fields, menus and dialogs, gentler rules. Fonts: **Fraunces** (soft cut) for
+  headlines and **Jost** for labels replace Playfair Display and Oswald; Source Serif for text and
+  the blackletter title stay.
+- **Night edition**: navy stock with parchment type and gilt (the brown one was disliked).
+- Saved stories: folders are a row of chips, like the sections; the list sits on a card.
+- Article page, letters, sign-in pages, settings, Sections and the Newsroom follow the new style.
+- Colour presets: "Crimson" and "Royal" replaced by "Vermilion" and "Cobalt"; readers who picked
+  the old colours keep them.
+
+### Removed
+- The bright Tailwind badge and gradient classes in `lib/category-styles.ts`.
+- `bulletins.tsx`, `flourish-heading.tsx`, the `ornate` corners and four unused engravings.
+
+### Fixed
+- A hydration warning: the clock's numerals are positioned with rounded numbers, because the
+  server and the browser can differ in the last digits of `sin`/`cos`.
+- Three lint warnings (`react-hooks/set-state-in-effect` in the header and the greeting).
+
+Checked on a production build: landing, front page, Filters, article, saved, settings, Sections
+and log-in, in both editions, at 390, 900 and 1440 px. No console errors, no horizontal scrolling.
+
+## 2.5.0 - 2026-11-13: sign-in review and "Continue with Google"
+
+### Added
+- **"Continue with Google"** on the login and sign-up pages (Supabase OAuth with PKCE, account
+  chooser always shown). The button appears only when Google is enabled in Supabase
+  (`lib/supabase/auth-settings.ts` reads `/auth/v1/settings`, cached five minutes), so it can
+  never lead to an error. Setup steps for Google Cloud and the dashboard:
+  [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md). `[auth.external.google]` added to
+  `supabase/config.toml` (off; secrets from environment variables).
+- Settings for accounts that only use Google: one "How you sign in" card instead of the email and
+  password forms (the server actions refuse those changes too). Deleting such an account needs a
+  Google sign-in from the last 10 minutes (the `amr` claim of the session), otherwise the dialog
+  offers **Confirm with Google** and reopens on the way back (`/profile?delete=confirm`).
+- `lib/auth.ts` with the pure helpers and `tests/auth.test.ts` (8 tests).
+
+### Fixed
+- A cancelled or failed Google sign-in now says "Signing in did not finish" instead of "That link is
+  invalid or has expired" (`/auth/callback` reads Supabase's `error` / `error_code`).
+- Unknown Supabase errors no longer show raw technical text; readers see "Something went wrong.
+  Please try again in a moment." and the details go to the browser console.
+- Passwords longer than 72 bytes (bcrypt's limit) are refused with a plain message at sign-up,
+  password reset and password change, instead of Supabase's technical error.
+- The email templates said "Personalized News Aggregator"; they now say "Daily Aggregator". Paste
+  them into the hosted project again when setting up the templates.
+
+Checked on a production build with Google enabled locally (placeholder credentials): button and
+redirect to Google (client id, Supabase callback, `prompt=select_account`, basic scopes, PKCE
+cookie), cancelled sign-in, expired link, sign-up with a too-long password, password account
+settings and deletion (wrong and right password), Google-only account settings, deletion with an
+old sign-in (asks for Google, account kept) and a fresh one (deleted). No CSP violations.
+
 ## 2.4.0 - 2026-11-13: Next.js 16 and Supabase CLI v3
 
 ### Changed

@@ -1,6 +1,7 @@
+import { GuestImport } from '@/components/saved/guest-import';
 import { FontSizeSync } from '@/components/site/font-size-sync';
 import { SiteFooter } from '@/components/site/site-footer';
-import { SiteHeader, type HeaderUser } from '@/components/site/site-header';
+import { BottomNav, SiteHeader, type HeaderUser } from '@/components/site/site-header';
 import { accentVariables } from '@/lib/colors';
 import { getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
 
@@ -25,8 +26,11 @@ export default async function MainLayout({ children }: { children: React.ReactNo
           {children}
         </main>
         <SiteFooter />
+        <BottomNav user={headerUser} />
       </div>
       {profile && <FontSizeSync value={profile.font_size} />}
+      {/* Clippings kept in this browser before signing in move into the account. */}
+      {user && profile && <GuestImport userId={user.id} />}
     </>
   );
 }

@@ -8,15 +8,27 @@ type SegmentedProps<T extends string> = {
   value: T;
   onChange: (value: T) => void;
   options: SegmentedOption<T>[];
+  /** "boxed" (forms and dialogs) or "ribbon": small capitals between hairline rules, like the front page's departments. */
+  variant?: 'boxed' | 'ribbon';
   className?: string;
   'aria-label'?: string;
 };
 
-/** Small toggle group (e.g. Latest / For you), styled like a printed index. */
-export function Segmented<T extends string>({ value, onChange, options, className, ...rest }: SegmentedProps<T>) {
+/** A row of ledger tabs, one of which is chosen (e.g. Today / This week). */
+export function Segmented<T extends string>({ value, onChange, options, variant = 'boxed', className, ...rest }: SegmentedProps<T>) {
+  const ribbon = variant === 'ribbon';
   return (
-    <div role="radiogroup" aria-label={rest['aria-label']} className={cn('inline-flex h-9 items-stretch border border-rule', className)}>
-      {options.map((option, index) => {
+    <div
+      role="radiogroup"
+      aria-label={rest['aria-label']}
+      className={cn(
+        ribbon
+          ? 'inline-flex items-stretch border-y border-rule/45'
+          : 'inline-flex h-10 items-stretch gap-1 rounded-[3px] border-[3px] border-double border-rule/35 bg-card/70 p-0.5',
+        className,
+      )}
+    >
+      {options.map((option) => {
         const active = option.value === value;
         return (
           <button
@@ -27,9 +39,11 @@ export function Segmented<T extends string>({ value, onChange, options, classNam
             title={option.title}
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 font-label text-[0.7rem] font-medium uppercase tracking-[0.14em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
-              index > 0 && 'border-l border-rule',
-              active ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground',
+              ribbon
+                ? 'dept-tab min-h-10'
+                : 'inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] px-3.5 font-label text-[0.82rem] font-semibold uppercase tracking-[0.08em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+              !ribbon &&
+                (active ? 'bg-(--ink-gold)/18 text-foreground shadow-[inset_0_-2px_0_var(--ink-gold)]' : 'text-muted-foreground hover:bg-foreground/6 hover:text-foreground'),
             )}
           >
             {option.label}

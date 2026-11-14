@@ -38,7 +38,7 @@ export default async function EmailConfirmedPage({
   const isEmailChange = type === 'email_change';
   return (
     <div className="text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center border border-rule">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] border-[3px] border-double border-rule/30 bg-panel">
         <MailCheck className="h-6 w-6" />
       </div>
       <AuthHeading

@@ -6,7 +6,7 @@ import { isSupabaseConfigured } from '@/lib/env';
 export const metadata: Metadata = { title: 'Setup required' };
 
 function Code({ children }: { children: React.ReactNode }) {
-  return <pre className="mt-2 overflow-x-auto border border-rule bg-foreground p-3 font-mono text-[13px] leading-relaxed text-background">{children}</pre>;
+  return <pre className="mt-2 overflow-x-auto rounded-xl bg-foreground p-3.5 font-mono text-[13px] leading-relaxed text-background">{children}</pre>;
 }
 
 const STEPS = [
@@ -49,7 +49,7 @@ export default function SetupPage() {
   return (
     <div className="container max-w-2xl py-12">
       <Logo />
-      <h1 className="headline mt-10 border-t-2 border-rule pt-4 text-4xl">
+      <h1 className="headline mt-10 border-t border-dashed border-border pt-5 text-4xl">
         {configured ? 'Supabase is configured' : 'Almost there - connect a database'}
       </h1>
       <p className="mt-2 italic text-muted-foreground">
@@ -61,7 +61,7 @@ export default function SetupPage() {
         <ol className="mt-8 space-y-6">
           {STEPS.map(({ icon: Icon, title, body }, index) => (
             <li key={title} className="flex gap-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-rule font-display text-lg font-bold">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-primary font-display shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] text-lg font-semibold text-primary-foreground">
                 <Icon className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1 text-sm text-muted-foreground">

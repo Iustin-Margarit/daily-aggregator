@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthHeading, FormMessage, friendlyAuthError } from '@/components/auth/form-message';
+import { GoogleButton, OrDivider } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,9 +16,10 @@ import { createClient } from '@/lib/supabase/client';
 const LINK_ERRORS: Record<string, string> = {
   link_invalid: 'That link is invalid or has expired. Please request a new one.',
   session_expired: 'Your session expired. Please log in again.',
+  sign_in_failed: 'Signing in did not finish. Please try again.',
 };
 
-export function LoginForm() {
+export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get('next'));
@@ -68,6 +70,12 @@ export function LoginForm() {
   return (
     <>
       <AuthHeading title="Log in" description="Welcome back. Your edition is ready." />
+      {googleEnabled && (
+        <>
+          <GoogleButton next={next} />
+          <OrDivider />
+        </>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {error && (
           <FormMessage type="error">

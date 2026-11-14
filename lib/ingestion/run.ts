@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import { canResizeImage } from '@/lib/images';
-import { findPreviewImage } from '@/lib/ingestion/enrich';
+import { inspectPage } from '@/lib/ingestion/enrich';
 import { probeImageSize } from '@/lib/ingestion/image-size';
 import { fetchFeed } from '@/lib/ingestion/fetch-feed';
 import { normalizeItem, type NormalizedArticle } from '@/lib/ingestion/normalize';
@@ -50,8 +50,12 @@ export type IngestionOptions = {
   retentionDays?: number;
   /** Items kept per source per run (newest first). */
   maxItemsPerSource?: number;
-  /** Max new articles per run whose image is checked / looked up. */
-  maxImageLookups?: number;
+  /** Max new articles per run whose page is read (photo fixes and reading time). */
+  maxPageLookups?: number;
+  /** Older articles (last 3 days) without a reading time that are measured per run. */
+  maxBackfill?: number;
+  /** Time for reading article pages; lookups not started by then wait for the next run. */
+  pageBudgetMs?: number;
   log?: (message: string) => void;
 };
 
@@ -166,23 +170,33 @@ async function isUsableImage(url: string): Promise<boolean> {
 }
 
 /**
- * Image fixes for newly inserted articles:
- *  - no image in the feed  -> use the article page's og:image
- *  - huge original (e.g. 8000px) on a CDN we cannot resize -> og:image, or no image
+ * Reads the page of each article once:
+ *  - the reading time of the story (articles.reading_minutes; 0 = unknown)
+ *  - new articles only (`fixImages`):
+ *    - no image in the feed  -> use the article page's og:image
+ *    - huge original (e.g. 8000px) on a CDN we cannot resize -> og:image, or no image
+ * Lookups not started before the deadline are left for the next run (their
+ * reading time stays null, so the backfill picks them up).
  */
-async function fixImages(supabase: ServiceClient, articles: NewArticle[], limit: number) {
-  const stats = { added: 0, replaced: 0, removed: 0 };
-  await mapWithConcurrency(articles.slice(0, limit), 8, async (article) => {
-    if (article.image_url && (await isUsableImage(article.image_url))) return;
+async function readPages(supabase: ServiceClient, articles: NewArticle[], options: { fixImages: boolean; deadline: number }) {
+  const stats = { measured: 0, timed: 0, added: 0, replaced: 0, removed: 0 };
+  await mapWithConcurrency(articles, 8, async (article) => {
+    if (Date.now() > options.deadline) return;
+    const imageOk =
+      !options.fixImages || (article.image_url !== null && (canResizeImage(article.image_url) || (await isUsableImage(article.image_url))));
+    const page = await inspectPage(article.url);
+    let image = article.image_url;
+    if (!imageOk) image = page.image && page.image !== article.image_url && (await isUsableImage(page.image)) ? page.image : null;
 
-    const preview = await findPreviewImage(article.url);
-    const next = preview && preview !== article.image_url && (await isUsableImage(preview)) ? preview : null;
-    if (next === article.image_url) return;
-
-    const { error } = await supabase.from('articles').update({ image_url: next }).eq('id', article.id);
+    const patch: { reading_minutes: number; image_url?: string | null } = { reading_minutes: page.readingMinutes };
+    if (image !== article.image_url) patch.image_url = image;
+    const { error } = await supabase.from('articles').update(patch).eq('id', article.id);
     if (error) return;
+    stats.measured++;
+    if (page.readingMinutes > 0) stats.timed++;
+    if (image === article.image_url) return;
     if (!article.image_url) stats.added++;
-    else if (next) stats.replaced++;
+    else if (image) stats.replaced++;
     else stats.removed++;
   });
   return stats;
@@ -240,12 +254,29 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
     });
 
     const fresh = results.flatMap((r) => r.newArticles);
-    const toCheck = fresh.filter((a) => !a.image_url || !canResizeImage(a.image_url));
-    if (toCheck.length > 0) {
-      const images = await fixImages(supabase, toCheck, options.maxImageLookups ?? 300);
+    const deadline = Date.now() + (options.pageBudgetMs ?? 25_000);
+    const toRead = fresh.slice(0, options.maxPageLookups ?? 300);
+    if (toRead.length > 0) {
+      const pages = await readPages(supabase, toRead, { fixImages: true, deadline });
       log(
-        `Images: checked ${Math.min(toCheck.length, options.maxImageLookups ?? 300)}, added ${images.added}, replaced ${images.replaced} oversized, removed ${images.removed}.`,
+        `Pages: read ${pages.measured} of ${fresh.length} new stories, ${pages.timed} with a reading time; images added ${pages.added}, replaced ${pages.replaced} oversized, removed ${pages.removed}.`,
       );
+    }
+
+    // Recent stories from earlier runs that have no reading time yet.
+    const backfill = options.maxBackfill ?? 60;
+    if (backfill > 0 && Date.now() < deadline) {
+      const { data: older } = await supabase
+        .from('articles')
+        .select('id, url, image_url')
+        .is('reading_minutes', null)
+        .gte('created_at', new Date(Date.now() - 3 * 86_400_000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(backfill);
+      if (older?.length) {
+        const pages = await readPages(supabase, older, { fixImages: false, deadline });
+        log(`Reading time: measured ${pages.measured} older stories, ${pages.timed} with a reading time.`);
+      }
     }
 
     // Cleanup only on full runs so a single-source refresh stays fast.

@@ -11,7 +11,7 @@ More screenshots: [article](docs/screenshots/article.jpg) · [saved stories](doc
 [newsroom dashboard](docs/screenshots/admin.jpg)
 
 Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and **Supabase**
-(Postgres, Auth, Realtime).
+(Postgres, Auth).
 
 ## Features
 
@@ -19,17 +19,25 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 - Personalized feed of 8 topics (World, Politics, Business, Technology, Science, Health, Sports,
   Entertainment) from 33 RSS sources, refreshed every hour.
 - **Latest** or **For you** ranking. "For you" boosts the topics you picked and the
-  topics and sources of articles you like and save.
+  topics and sources of articles you save.
 - Search (every word must match), time range, topic and source filters. Filters live in the URL, so
   they survive reloads and can be bookmarked.
-- A front page with a lead story, an "In Other News" column and ruled columns of headlines, split
-  into numbered pages of 30 stories (`?page=N`, back/forward buttons work). Images for ~95% of
+- A front page with a lead story, an "In Other News" column with an "On this day" almanac box
+  (three anniversaries from Wikipedia, cached for the day) and ruled columns of headlines, split
+  into numbered pages of 16 stories, then 15 (`?page=N`, back/forward buttons work). Images for ~95% of
   stories (from the feed, or the article's preview image).
 - Images are requested from each publisher's CDN at the size they are shown, so scrolling stays
   smooth even when a feed links to 12000-pixel originals.
-- Article pages with summary, link to the full story, related stories and live "Letters to the
-  Editor" (comments update in real time). Article links are public, so sharing works for anyone.
-- Hide a story, or mute a source entirely (manage muted sources in your profile).
+- Article pages with summary, link to the full story and related stories. Article links are
+  public, so sharing works for anyone. The paper is personal: there are no public comments,
+  likes or counts.
+- Hide a story, mute a source entirely, or mute words (Settings > Sections & papers): stories that
+  mention a muted word are left off the front page.
+- A reading time ("4 min read") on stories, counted from the words on the publisher's page when the
+  story is fetched.
+- **Print clipping** on saved stories: a cut-out newspaper clipping with your note, for paper or PDF.
+- An optional ambient **Sound** on the street banner (soft rain and a pocket watch, made in the
+  browser; off by default).
 
 **Saved stories**
 - Press **Save** under any story to keep it. Saved stories stay until you remove them, even after
@@ -41,6 +49,8 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 
 **Account**
 - Email and password sign-up with confirmation, password reset and email change.
+- Optional "Continue with Google" (appears once Google is switched on in Supabase; see
+  [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
 - Onboarding to pick topics (skippable), editable later.
 - Settings: byline (username) and avatar ink, Morning / Night / device edition (light, dark,
   system), type size, accent ink for section labels, muted
@@ -101,10 +111,13 @@ sends (confirmations, password resets) at http://127.0.0.1:58324.
    - *Authentication > Email Templates* (recommended): paste the templates from
      [`supabase/templates`](supabase/templates). They link to `/auth/confirm`, which works even when
      the email is opened in another browser.
+   - Optional: *Authentication > Sign In / Providers > Google* for "Continue with Google"; the
+     Google Cloud steps are in [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md).
 4. **Deploy to Vercel** (import the GitHub repo) and set the environment variables from
    [`.env.example`](.env.example): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET`. New Supabase projects may show *publishable* and
-   *secret* keys instead of anon and service_role; both formats work.
+   *secret* keys instead of anon and service_role; both formats work. Link previews use the
+   production domain automatically; set `NEXT_PUBLIC_SITE_URL` only for a custom domain.
 5. Sign up on the deployed site, then promote yourself: run
    `select public.promote_to_admin('you@example.com');` in the Supabase SQL editor.
 
@@ -122,15 +135,36 @@ Any one of these is enough:
 Anything else can call the endpoint too:
 `curl -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/cron/ingest`.
 
+### Staying online on free plans ($0)
+
+- **Vercel Hobby** allows a cron job once a day; `vercel.json` runs `/api/cron/ingest` at 06:00 UTC.
+  Each run writes to Postgres, which also keeps the **free Supabase project from pausing** (Supabase
+  pauses free projects after a week without activity). Set `CRON_SECRET` in Vercel, or the cron is
+  refused and nothing touches the database.
+- Between cron runs the paper refreshes itself when people open the front page (at most hourly,
+  `INGESTION_INTERVAL_MINUTES`), and the optional GitHub Actions schedule adds a fetch every 2 hours.
+  GitHub turns scheduled workflows off after 60 days without commits; re-enable it in the Actions tab.
+- **The database never fills up**: every full fetch deletes unsaved articles older than
+  `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 33 feeds is
+  roughly 30,000 short rows, well under the free 500 MB.
+- Photos are loaded straight from each publisher's CDN, so they use none of Vercel's image or
+  bandwidth allowance beyond the page itself.
+
+### Visitors without an account
+
+Everyone can read, search, open stories, choose sections (kept in a cookie) and clip stories, with
+folders, notes and Print clipping (kept in the browser's storage, up to 200). An account adds the
+same things on every device, muted words and Settings; when a visitor signs in or signs up, their
+sections and clippings move into the account. Only Settings and the admin pages need a login.
+
 ## Security
 
 What the app does to keep readers and the server safe:
 
 - **Database rules (Row Level Security)** on every table, written in the migrations: readers can
-  only see and change their own saved stories, likes, notes and settings. On top of that, each
+  only see and change their own saved stories, folders, notes and settings. On top of that, each
   table only allows the exact columns a reader may touch (for example, nobody can change their own
-  role or another reader's comment, and guests cannot see feed addresses or error details, or
-  which account wrote a letter). New tables and functions start locked: nobody can use them until
+  role, and guests cannot see feed addresses or error details). New tables and functions start locked: nobody can use them until
   a migration grants access on purpose.
 - **Admin rights** are checked by the database itself, not only by the pages.
 - **Feeds cannot reach the server's own network.** Feed, article and image addresses come from
@@ -140,11 +174,12 @@ What the app does to keep readers and the server safe:
   inline or injected scripts can run), HSTS, no framing, no sniffing, and session cookies marked
   `Secure` on HTTPS.
 - **Accounts**: passwords need 8+ characters with letters and numbers; deleting an account asks
-  for the password again (the server checks it; the browser cannot delete an account by itself); the sign-up form does not reveal whether an email is already registered;
+  for the password again (the server checks it; the browser cannot delete an account by itself),
+  or, for an account that only uses Google, a Google sign-in from the last 10 minutes; the sign-up form does not reveal whether an email is already registered;
   login links can only send you to pages on this site; staff-like usernames (admin, editor,
   moderator, ...) are reserved.
-- **Abuse limits**: at most 5 letters per minute (60 per hour) per reader, 100 folders and 1000
-  saved stories per reader, search limited to 100 characters.
+- **Abuse limits**: 100 folders and 1000 saved stories per reader, search limited to 100
+  characters.
 - **Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are only read on the server and are
   never sent to the browser. `/api/cron/ingest` refuses requests without the secret.
 - **Only the APIs the app uses are on**: the GraphQL endpoint is switched off.
@@ -173,7 +208,7 @@ RSS / Atom feeds ──> lib/ingestion (fetch, parse, normalize, dedupe, find im
                         ▼
                  Supabase Postgres ──> RPC functions (get_feed, get_article, ...)
                         ▲                        │  row level security
-                        │ Realtime (comments)    ▼
+                        │                        ▼
                  Next.js App Router (server components + client components)
 ```
 
@@ -184,10 +219,10 @@ RSS / Atom feeds ──> lib/ingestion (fetch, parse, normalize, dedupe, find im
   are removed unless someone saved them.
 - **Database**: all schema, policies and functions are in
   [`supabase/migrations`](supabase/migrations). Every table uses row level security. Users can only
-  read and change their own data and cannot change their own role (enforced by a trigger). Like and comment counts are kept by triggers, so likes stay private.
+  read and change their own data and cannot change their own role (enforced by a trigger).
 - **Auth**: Supabase Auth with `@supabase/ssr` cookies. The proxy (`proxy.ts`) refreshes the session and
-  protects private pages. `/auth/callback` (PKCE) and `/auth/confirm` (token hash) complete
-  email links.
+  protects private pages. `/auth/callback` (PKCE) completes Google sign-in and
+  default email links; `/auth/confirm` (token hash) completes the links from `supabase/templates`.
 
 ### Project structure
 
@@ -229,8 +264,6 @@ tests/                   unit tests (node:test)
   not run them at the same time).
 - **The app shows "connect a database"**: `.env.local` is missing or incomplete. Restart
   `npm run dev` after editing it.
-- **Comments do not update live after `npm run db:reset`**: the local API gateway sometimes keeps a
-  stale connection. Run `npm run db:stop` and then `npm run db:start`.
 - **Supabase CLI v3** commands work on the **local** database unless you add `--remote` (for
   example `supabase db push --remote`). The project needs CLI v3; v2 rejects `[local_smtp]` in
   `supabase/config.toml`.
