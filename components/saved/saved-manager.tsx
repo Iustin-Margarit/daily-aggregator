@@ -13,6 +13,7 @@ import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Label } from '@/components/ui/label';
+import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/toast';
@@ -214,7 +215,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
   return (
     <div className="container py-8 sm:py-10">
       <PageHeader
-        kicker="Your clippings"
+        kicker="Kept for later"
         title="Saved stories"
         engraving="quill"
         description="Stories you saved to read later. They stay here until you remove them."
@@ -224,11 +225,11 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       {guest && (
         <aside className="card-paper mt-8 flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-label="About these clippings">
           <div className="flex items-center gap-4">
-            <Ornament name="scissors" className="hidden h-5 sm:block" />
+            <Engraving name="quill" className="hidden h-9 sm:block" />
             <div>
               <p className="font-display text-[1.1rem] font-semibold">Kept in this browser</p>
               <p className="text-[0.95rem] italic text-muted-foreground">
-                Your clippings, folders and notes stay on this device. A free account keeps them on every device; they move into it when you sign in.
+                Your saved stories, folders and notes stay on this device. A free account keeps them on every device; they move into it when you sign in.
               </p>
             </div>
           </div>
@@ -250,7 +251,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
             title="You have not saved any stories yet"
             description={
               <>
-                When you see a story you want to keep, press <strong>Clip story</strong> under it. It will appear here, even after it
+                When you see a story you want to keep, press <strong>Save</strong> under it. It will appear here, even after it
                 has left the front page.
               </>
             }

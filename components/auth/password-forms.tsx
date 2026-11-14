@@ -39,7 +39,7 @@ export function ForgotPasswordForm() {
       {sent ? (
         <div className="space-y-4">
           <FormMessage type="success">
-            If an account exists for <strong>{email}</strong>, a reset link is on its way. It expires in one hour.
+            If an account exists for <strong>{email}</strong>, a reset link is on its way. It expires in one hour. Can’t find it? Look in your Spam folder.
           </FormMessage>
           <Button variant="outline" asChild className="w-full">
             <Link href="/login">Back to login</Link>

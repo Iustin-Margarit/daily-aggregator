@@ -43,7 +43,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       }
       showToast({
         type: 'success',
-        title: 'Removed from your clippings',
+        title: 'Removed from your saved stories',
         action: { label: 'Undo', onClick: () => void addGuestClipping(toClipping(article)) },
       });
       return;
@@ -53,15 +53,15 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       const full = error.message === 'SAVED_LIMIT_REACHED';
       showToast({
         type: 'error',
-        title: full ? 'This browser holds 200 clippings' : 'Could not clip the story',
+        title: full ? 'This browser holds 200 saved stories' : 'Could not save the story',
         message: full ? 'Remove a few, or create a free account to keep up to 1000.' : error.message,
       });
       return;
     }
     showToast({
       type: 'success',
-      title: 'Clipped, in this browser',
-      message: 'A free account keeps your clippings on every device.',
+      title: 'Saved, in this browser',
+      message: 'A free account keeps your saved stories on every device.',
       action: { label: 'Open saved stories', onClick: () => router.push('/saved') },
     });
   };

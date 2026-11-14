@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useId, useSyncExternalStore } from 'react';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import type { OnThisDay } from '@/lib/on-this-day';
@@ -54,9 +54,10 @@ export function AlmanacTile({
 }) {
   if (layout === 'ear') {
     return (
-      <div className={cn('flex flex-col items-center justify-center gap-2 px-3 py-5 text-center', className)}>
+      <div className={cn('flex flex-col items-center justify-center gap-2 px-3 py-3 text-center', className)}>
         <p className="section-head w-full whitespace-nowrap font-label text-[0.68rem] tracking-[0.18em] text-muted-foreground">{label}</p>
-        <div className="flex h-[4.6rem] w-[4.6rem] items-center justify-center">{picture}</div>
+        {/* Both instruments stand on the same line in the same box, so the lines under them stay level across the masthead. */}
+        <div className="flex h-[10rem] items-end justify-center">{picture}</div>
         <div className="leading-tight">
           <p className="font-display text-[1.08rem] font-semibold">{value}</p>
           <p className="mt-0.5 font-label text-[0.8rem] text-muted-foreground">{note}</p>
@@ -66,7 +67,7 @@ export function AlmanacTile({
   }
   return (
     <div className={cn('flex items-center gap-3 px-4', className)}>
-      <div className="flex h-[3.75rem] w-[3.75rem] shrink-0 items-center justify-center">{picture}</div>
+      <div className="flex h-[5.6rem] shrink-0 items-center justify-center">{picture}</div>
       <div className="min-w-0 leading-tight">
         <p className="font-label text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
         <p className="truncate font-display text-[1rem] font-semibold">{value}</p>
@@ -78,17 +79,72 @@ export function AlmanacTile({
 
 // ---------------------------------------------------------------- clock
 
-const NUMERALS = ['XII', 'I', 'II', 'III', 'IIII', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+/** The enamel dial's hours; the small seconds dial sits where VI would be, as on most watches of the day. */
+const NUMERALS = ['XII', 'I', 'II', 'III', 'IV', 'V', '', 'VII', 'VIII', 'IX', 'X', 'XI'];
+/** The small seconds dial, in place of VI. */
+const SUB = { cy: 70, r: 9 };
 
-/** Turns a clock hand about the dial's centre with a CSS transform, so it can ease from one position to the next. */
-function handStyle(degrees: number): React.CSSProperties {
-  return { transform: `rotate(${degrees.toFixed(2)}deg)`, transformOrigin: '50px 50px' };
+/** Turns a hand about a point of the dial with a CSS transform, so it can ease from one position to the next. */
+function handStyle(degrees: number, originY = 50): React.CSSProperties {
+  return { transform: `rotate(${degrees.toFixed(2)}deg)`, transformOrigin: `50px ${originY}px` };
+}
+
+/*
+ * The watch case is a pocket watch from the United Watch & Jewelry Company's
+ * 1911 catalogue (public/ornaments/watch-case.webp, docs/ASSETS.md): bow,
+ * crown and engraved bezel, with the dial cut away. These are its pixels.
+ */
+const CASE = { width: 911, height: 1312, cx: 454.5, cy: 857, dial: 344 };
+/** The engraved bezel alone (watch-bezel.webp), which frames the moon: its outer and inner radius, out of 50. */
+const BEZEL = { outer: 49.8, inner: 37.9 };
+
+/** A unique id for an SVG pattern or mask (the clock and moon are on the page twice: the ear and the tablet row). */
+function useSvgId(name: string) {
+  return `${useId().replace(/[^\w-]/g, '')}-${name}`;
+}
+
+/** An ink mask (black on transparent) for use inside an SVG: paint anything through it. */
+function InkMask({ id, href, x = 0, y = 0, width, height }: { id: string; href: string; x?: number; y?: number; width: number; height: number }) {
+  return (
+    <mask id={id} maskUnits="userSpaceOnUse" x={x} y={y} width={width} height={height} style={{ maskType: 'alpha' }}>
+      <image href={href} x={x} y={y} width={width} height={height} preserveAspectRatio="none" />
+    </mask>
+  );
+}
+
+/** Polished brass, lit from the upper left: the cases of both instruments. */
+function BrassGradient({ id }: { id: string }) {
+  return (
+    <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stopColor="var(--brass-hi)" />
+      <stop offset="0.55" stopColor="var(--brass-mid)" />
+      <stop offset="1" stopColor="var(--brass-lo)" />
+    </linearGradient>
+  );
 }
 
 /**
- * A station clock with Roman numerals, a brass rim and brass hands. The angles
- * count up through the day (not round each minute), so the second hand's
- * springy tick never spins backwards at the top of the dial.
+ * A Breguet hand pointing to twelve: a fine shaft, the open "moon" ring near
+ * the end, and a slender point. `ring` is the ring's distance from the centre.
+ */
+function BreguetHand({ ring, size, tip, width }: { ring: number; size: number; tip: number; width: number }) {
+  const ringY = 50 - ring;
+  const w = width / 2;
+  return (
+    <>
+      <path d={`M${50 - w} 53 L${50 - w / 2.4} ${ringY + size} L${50 + w / 2.4} ${ringY + size} L${50 + w} 53Z`} />
+      <circle cx="50" cy={ringY} r={size} fill="none" stroke="var(--dial-hand)" strokeWidth={size * 0.42} />
+      <path d={`M${50 - w * 1.1} ${ringY - size + 0.3} Q${50 - w / 3} ${ringY - size - (tip - size) * 0.45} 50 ${50 - tip} Q${50 + w / 3} ${ringY - size - (tip - size) * 0.45} ${50 + w * 1.1} ${ringY - size + 0.3}Z`} />
+    </>
+  );
+}
+
+/**
+ * A Victorian pocket watch: the real engraved case of a 1911 catalogue watch
+ * in brass, round a cream enamel dial (deep blue enamel in the night edition)
+ * with Roman hours, a minute track, blued-steel Breguet hands and a small
+ * seconds dial. The angles count up through the day (not round each minute),
+ * so a hand's springy tick never spins it backwards at the top of the dial.
  */
 export function Clock({ className }: { className?: string }) {
   const now = useNow();
@@ -100,51 +156,90 @@ export function Clock({ className }: { className?: string }) {
   const daySeconds = date ? date.getHours() * 3600 + date.getMinutes() * 60 + seconds : 0;
   const clock = useReaderPref('clock');
   const label = date ? `The time is ${formatClock(date, clock)}` : 'Clock';
+  const caseMask = useSvgId('case');
+  const brass = useSvgId('brass');
+  const enamel = useSvgId('enamel');
+  const glass = useSvgId('glass');
+  const { width, height, cx, cy, dial } = CASE;
 
   return (
-    <svg viewBox="0 0 100 100" className={cn('shrink-0', className)} role="img" aria-label={label}>
-      <circle cx="50" cy="50" r="48" fill="var(--ink-gold)" />
-      <circle cx="50" cy="50" r="44.5" fill="hsl(var(--card))" stroke="hsl(var(--foreground) / 0.7)" strokeWidth="0.8" />
-      {Array.from({ length: 60 }, (_, i) => (
-        <line
-          key={i}
-          x1="50"
-          y1={i % 5 === 0 ? 7 : 7.5}
-          x2="50"
-          y2={i % 5 === 0 ? 11 : 9}
-          stroke="hsl(var(--foreground))"
-          strokeWidth={i % 5 === 0 ? 1.3 : 0.5}
-          strokeLinecap="round"
-          transform={`rotate(${i * 6} 50 50)`}
-        />
-      ))}
-      {NUMERALS.map((numeral, i) => {
-        const angle = (i * 30 * Math.PI) / 180;
-        // Rounded: Node and the browser can differ in the last digits of sin/cos, which breaks hydration.
-        return (
-          <text
-            key={numeral}
-            x={(50 + Math.sin(angle) * 31).toFixed(2)}
-            y={(50 - Math.cos(angle) * 31 + 3).toFixed(2)}
-            textAnchor="middle"
-            fill="hsl(var(--foreground))"
-            style={{ fontFamily: 'var(--font-fraunces)', fontSize: 8.4, fontWeight: 600 }}
-          >
-            {numeral}
-          </text>
-        );
-      })}
-      {date && (
-        <g fill="var(--ink-gold)" stroke="hsl(var(--foreground))" strokeWidth="0.5" strokeLinejoin="round">
-          <path className="clock-hand" d="M48.6 52 49.2 30 47 27.5 50 22 53 27.5 50.8 30 51.4 52Z" style={handStyle(hours * 30)} />
-          <path className="clock-hand" d="M49.1 53 49.6 16 50 12 50.4 16 50.9 53Z" style={handStyle(minutes * 6)} />
-          <g className="clock-second" style={handStyle(daySeconds * 6)} fill="var(--ink-accent)" stroke="none">
-            <path d="M49.65 60 49.8 13h.4l.15 47Z" />
-            <circle cx="50" cy="58" r="1.8" />
-          </g>
-          <circle cx="50" cy="50" r="2.6" />
+    <svg viewBox={`0 0 ${width} ${height}`} className={cn('aspect-[911/1312] shrink-0', className)} role="img" aria-label={label}>
+      <defs>
+        <InkMask id={caseMask} href="/ornaments/watch-case.webp" width={width} height={height} />
+        <BrassGradient id={brass} />
+        <radialGradient id={enamel} cx="0.5" cy="0.45" r="0.55">
+          <stop offset="0.6" stopColor="var(--dial-face)" />
+          <stop offset="1" stopColor="var(--dial-face-edge)" />
+        </radialGradient>
+        {/* The light on the watch glass, top left. */}
+        <radialGradient id={glass} cx="0.3" cy="0.22" r="0.5">
+          <stop offset="0" style={{ stopColor: '#fff', stopOpacity: 'var(--dial-glint)' }} />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={cx} cy={cy} r={dial + 4} fill={`url(#${enamel})`} />
+      <svg x={cx - dial} y={cy - dial} width={dial * 2} height={dial * 2} viewBox="0 0 100 100" overflow="visible">
+        {/* The minute track between two fine rules, with a heavier mark every five minutes. */}
+        <g stroke="var(--dial-ink)" fill="none">
+          <circle cx="50" cy="50" r="46.6" strokeWidth="0.45" />
+          <circle cx="50" cy="50" r="42.4" strokeWidth="0.35" />
+          {Array.from({ length: 60 }, (_, i) => (
+            <line
+              key={i}
+              x1="50"
+              y1={i % 5 === 0 ? 3.4 : 3.6}
+              x2="50"
+              y2={i % 5 === 0 ? 7.6 : 7.2}
+              strokeWidth={i % 5 === 0 ? 1.1 : 0.4}
+              transform={`rotate(${i * 6} 50 50)`}
+            />
+          ))}
         </g>
-      )}
+        {NUMERALS.map((numeral, i) => {
+          if (!numeral) return null;
+          const angle = (i * 30 * Math.PI) / 180;
+          // Rounded: Node and the browser can differ in the last digits of sin/cos, which breaks hydration.
+          return (
+            <text
+              key={numeral}
+              x={(50 + Math.sin(angle) * 32.8).toFixed(2)}
+              y={(50 - Math.cos(angle) * 32.8 + 3.4).toFixed(2)}
+              textAnchor="middle"
+              fill="var(--dial-ink)"
+              style={{ fontFamily: 'var(--font-fraunces)', fontSize: 10, fontWeight: 600, letterSpacing: -0.3 }}
+            >
+              {numeral}
+            </text>
+          );
+        })}
+        {/* The small seconds dial. */}
+        <g stroke="var(--dial-ink)" fill="none">
+          <circle cx="50" cy={SUB.cy} r={SUB.r} strokeWidth="0.35" />
+          {Array.from({ length: 12 }, (_, i) => (
+            <line key={i} x1="50" y1={SUB.cy - SUB.r} x2="50" y2={SUB.cy - SUB.r + (i % 3 === 0 ? 2 : 1.3)} strokeWidth={i % 3 === 0 ? 0.6 : 0.35} transform={`rotate(${i * 30} 50 ${SUB.cy})`} />
+          ))}
+        </g>
+        {date && (
+          <g fill="var(--dial-hand)">
+            <g className="clock-second" style={handStyle(daySeconds * 6, SUB.cy)}>
+              <path d={`M49.78 ${SUB.cy + 1.9} 49.86 ${SUB.cy - SUB.r + 0.8}h.28l.08 ${SUB.r + 1.1}Z`} />
+              <circle cx="50" cy={SUB.cy} r="0.95" />
+            </g>
+            <g className="clock-hand" style={handStyle(hours * 30)}>
+              <BreguetHand ring={20.5} size={3.1} tip={28.5} width={2.2} />
+            </g>
+            <g className="clock-hand" style={handStyle(minutes * 6)}>
+              <BreguetHand ring={33.5} size={2.45} tip={44} width={1.7} />
+            </g>
+            <circle cx="50" cy="50" r="2.5" />
+            <circle cx="50" cy="50" r="0.85" fill="var(--brass-hi)" />
+          </g>
+        )}
+        <circle cx="50" cy="50" r="50" fill={`url(#${glass})`} />
+      </svg>
+      {/* The engraved case, printed in brass, with a brass hairline round it. */}
+      <rect width={width} height={height} fill={`url(#${brass})`} mask={`url(#${caseMask})`} />
+      <circle cx={cx} cy={cy} r="458" fill="none" stroke="var(--brass-mid)" strokeOpacity="0.55" strokeWidth="3" />
     </svg>
   );
 }
@@ -165,7 +260,7 @@ export function WeekdayText({ className }: { className?: string }) {
 
 /** The clock for the masthead: its left ear, or a row on tablets. */
 export function ClockTile({ className, layout }: { className?: string; layout?: 'ear' | 'row' }) {
-  return <AlmanacTile className={className} layout={layout} picture={<Clock className="h-full w-full" />} label="Local time" value={<ClockText />} note={<WeekdayText />} />;
+  return <AlmanacTile className={className} layout={layout} picture={<Clock className="h-full w-auto" />} label="Local time" value={<ClockText />} note={<WeekdayText />} />;
 }
 
 // ---------------------------------------------------------------- moon
@@ -199,52 +294,121 @@ export function moonIllumination(age: number): number {
   return (1 - Math.cos((2 * Math.PI * age) / SYNODIC_MONTH)) / 2;
 }
 
-/** Where the etched stars sit round the moon (percent of the dial) and when each one twinkles. */
+/** Where the engraved stars sit on the almanac dial, between the degree ring and the moon (percent of the dial), and when each one twinkles. */
 const STARS = [
-  { left: 6, top: 14, size: 22, delay: 0 },
-  { left: 73, top: 5, size: 18, delay: 1.3 },
-  { left: 75, top: 68, size: 20, delay: 2.4 },
-  { left: 10, top: 70, size: 16, delay: 3.1 },
+  { left: 29.4, top: 29.8, size: 6.2, delay: 0 },
+  { left: 71, top: 30.6, size: 4.8, delay: 1.3 },
+  { left: 70.2, top: 70.8, size: 5.6, delay: 2.4 },
+  { left: 30.2, top: 69.6, size: 4.4, delay: 3.1 },
 ];
 
-/** Today's moon, with the lit part drawn from its age, in a patch of night sky with twinkling stars and the odd shooting star. */
+/** The moon's radius on the almanac dial (out of 50). */
+const MOON_R = 25.5;
+
+/**
+ * Tonight's moon as an almanac dial: Claude Mellan's engraved full moon (1635)
+ * in the same engraved brass bezel as the watch, ringed by a fine degree scale
+ * and twinkling engraved stars, with the dark part of the moon laid over it in
+ * hatched ink from the moon's age. Now and then a shooting star streaks past.
+ */
 export function Moon({ className }: { className?: string }) {
   const now = useNow();
+  const engraving = useSvgId('moon');
+  const bezel = useSvgId('bezel');
+  const brass = useSvgId('brass');
+  const hatch = useSvgId('hatch');
+  const sky = useSvgId('sky');
+  const trail = useSvgId('trail');
   // Whole hours are enough; the shape barely changes within a day.
   const age = now === null ? null : moonAge(new Date(Math.floor(now / 3600) * 3_600_000));
-  const r = 14;
+  const r = MOON_R;
+  const c = 50;
+  let shade: React.ReactNode = null;
   if (age !== null) {
     const angle = (2 * Math.PI * age) / SYNODIC_MONTH;
     const waxing = age < SYNODIC_MONTH / 2;
     const rx = Math.abs(Math.cos(angle)) * r;
     const crescent = Math.cos(angle) > 0;
-    // Right half plus or minus half an ellipse; mirrored when waning.
-    const lit = `M25 ${25 - r}A${r} ${r} 0 0 1 25 ${25 + r}A${rx.toFixed(2)} ${r} 0 0 ${crescent ? 0 : 1} 25 ${25 - r}Z`;
-    return (
-      <span className={cn('relative inline-block shrink-0', className)}>
-        <svg viewBox="0 0 50 50" className="h-full w-full" role="img" aria-label={`Tonight: ${moonPhaseName(age).toLowerCase()}`}>
-          <circle cx="25" cy="25" r="24" fill="hsl(var(--foreground) / 0.09)" stroke="hsl(var(--foreground) / 0.35)" strokeWidth="0.6" />
-          <circle cx="25" cy="25" r="22.2" fill="none" stroke="hsl(var(--foreground) / 0.2)" strokeWidth="0.4" />
-          <circle cx="25" cy="25" r={r} fill="hsl(var(--foreground) / 0.16)" />
-          <path d={lit} fill="var(--ink-gold)" transform={waxing ? undefined : 'matrix(-1 0 0 1 50 0)'} />
-          <circle cx="25" cy="25" r={r} fill="none" stroke="hsl(var(--foreground) / 0.45)" strokeWidth="0.6" />
-        </svg>
-        {/* Now and then (about every 25 seconds) a shooting star crosses the dial. */}
-        <span className="moon-sky" aria-hidden="true">
-          <span className="shooting-star" />
-        </span>
-        {STARS.map((star) => (
-          <Ornament
-            key={star.left}
-            name="star"
-            className="moon-star absolute"
-            style={{ left: `${star.left}%`, top: `${star.top}%`, width: `${star.size}%`, animationDelay: `${star.delay}s` }}
-          />
-        ))}
-      </span>
+    // The dark part: the left half, plus or minus half an ellipse (the terminator); mirrored when waning.
+    const d = `M${c} ${c - r}A${r} ${r} 0 0 0 ${c} ${c + r}A${rx.toFixed(2)} ${r} 0 0 ${crescent ? 0 : 1} ${c} ${c - r}Z`;
+    shade = (
+      <g transform={waxing ? undefined : `matrix(-1 0 0 1 ${2 * c} 0)`}>
+        <path d={d} fill="var(--moon-shade)" fillOpacity="var(--moon-shade-alpha)" />
+        <path d={d} fill={`url(#${hatch})`} />
+      </g>
     );
   }
-  return <span className={cn('inline-block shrink-0', className)} aria-hidden="true" />;
+  return (
+    <span className={cn('relative inline-block aspect-square shrink-0', className)}>
+      <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={age === null ? 'The moon' : `The moon tonight: ${moonPhaseName(age).toLowerCase()}`}>
+        <defs>
+          <InkMask id={engraving} href="/ornaments/moon-engraving.webp" x={c - r} y={c - r} width={2 * r} height={2 * r} />
+          <InkMask id={bezel} href="/ornaments/watch-bezel.webp" width={100} height={100} />
+          <BrassGradient id={brass} />
+          <clipPath id={sky}>
+            <circle cx={c} cy={c} r={BEZEL.inner} />
+          </clipPath>
+          {/* The shooting star: a bright head with a fading tail behind it. */}
+          <linearGradient id={trail} gradientUnits="userSpaceOnUse" x1="-24" y1="0" x2="0" y2="0">
+            <stop offset="0" stopColor="var(--meteor)" stopOpacity="0" />
+            <stop offset="1" stopColor="var(--meteor)" />
+          </linearGradient>
+          {/* Engraver's hatching for the moon's dark side. */}
+          <pattern id={hatch} width="1.35" height="1.35" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)">
+            <line x1="0" y1="0.3" x2="1.35" y2="0.3" stroke="var(--moon-shade)" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        {/* The sky of the dial, and its degree ring: a mark every 5 degrees, longer every 30. */}
+        <circle cx={c} cy={c} r={BEZEL.inner + 0.6} fill="var(--almanac-sky)" />
+        <g stroke="var(--almanac-line)" fill="none">
+          <circle cx={c} cy={c} r="36.4" strokeWidth="0.35" />
+          <circle cx={c} cy={c} r="32.6" strokeWidth="0.3" />
+          {Array.from({ length: 72 }, (_, i) => (
+            <line
+              key={i}
+              x1={c}
+              y1={c - 32.6}
+              x2={c}
+              y2={i % 6 === 0 ? c - 36.4 : i % 2 === 0 ? c - 34.9 : c - 34}
+              strokeWidth={i % 6 === 0 ? 0.6 : 0.3}
+              transform={`rotate(${i * 5} ${c} ${c})`}
+            />
+          ))}
+        </g>
+        {/* Now and then (about every 22 seconds) a shooting star streaks across the sky above the moon. */}
+        {age !== null && (
+          <g clipPath={`url(#${sky})`} aria-hidden="true">
+            <g transform="translate(9 13) rotate(10)">
+              <g className="shooting-star">
+                <line x1="-24" y1="0" x2="0" y2="0" stroke={`url(#${trail})`} strokeWidth="1.25" strokeLinecap="round" />
+                <circle r="1" fill="var(--meteor)" />
+              </g>
+            </g>
+          </g>
+        )}
+        {/* The moon: its lit face, Mellan's engraving printed on it, and tonight's shadow. */}
+        <circle cx={c} cy={c} r={r} fill="var(--moon-lit)" />
+        <rect x={c - r} y={c - r} width={2 * r} height={2 * r} fill="var(--moon-ink)" mask={`url(#${engraving})`} />
+        {shade}
+        <circle cx={c} cy={c} r={r} fill="none" stroke="var(--almanac-line)" strokeWidth="0.4" />
+        {/* The engraved brass bezel, the same as the watch's, with a brass hairline round it. */}
+        <rect width="100" height="100" fill={`url(#${brass})`} mask={`url(#${bezel})`} />
+        <circle cx={c} cy={c} r={BEZEL.outer + 0.35} fill="none" stroke="var(--brass-mid)" strokeOpacity="0.55" strokeWidth="0.33" />
+      </svg>
+      {age !== null && (
+        <>
+          {STARS.map((star) => (
+            <Ornament
+              key={star.left}
+              name="star"
+              className="moon-star absolute [--ornament-ink:var(--almanac-star)]"
+              style={{ left: `${star.left - star.size / 2}%`, top: `${star.top - star.size / 2}%`, width: `${star.size}%`, animationDelay: `${star.delay}s` }}
+            />
+          ))}
+        </>
+      )}
+    </span>
+  );
 }
 
 export function MoonText({ className }: { className?: string }) {
@@ -259,9 +423,12 @@ export function MoonLitText({ className }: { className?: string }) {
   return <span className={className}>{lit === null ? ' ' : `${lit}% lit`}</span>;
 }
 
-/** Tonight's moon for the masthead: its right ear, or a row on tablets. */
+/**
+ * The moon for the masthead: its right ear, or a row on tablets. "Lunar
+ * almanac" reads right in both editions (morning and night alike).
+ */
 export function MoonTile({ className, layout }: { className?: string; layout?: 'ear' | 'row' }) {
-  return <AlmanacTile className={className} layout={layout} picture={<Moon className="h-full w-full" />} label="Tonight’s sky" value={<MoonText />} note={<MoonLitText />} />;
+  return <AlmanacTile className={className} layout={layout} picture={<Moon className={layout === 'ear' ? 'h-[78%] w-auto' : 'h-full w-auto'} />} label="Lunar almanac" value={<MoonText />} note={<MoonLitText />} />;
 }
 
 // ---------------------------------------------------------------- month

@@ -83,7 +83,7 @@ export async function updateEmail(_prev: ActionResult | null, formData: FormData
         : 'Could not start the email change. Check the address and try again.',
     );
   }
-  return done(`Check ${email} (and your current inbox) for confirmation links.`);
+  return done(`Check ${email} (and your current inbox) for confirmation links. Not there? Look in Spam.`);
 }
 
 export async function updatePassword(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

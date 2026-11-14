@@ -32,6 +32,8 @@ const ORNAMENTS = {
   // The main tabs: a folded broadsheet (Front Page) and the Penny Black, perforated (Sections).
   broadsheet: [136, 108],
   stamp: [132, 154],
+  // A funnel from A. Pforr's US patent drawing (1875): the front page's Filters button.
+  funnel: [110, 160],
 } as const;
 
 export type OrnamentName = keyof typeof ORNAMENTS;

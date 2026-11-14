@@ -56,6 +56,12 @@ export type IngestionOptions = {
   maxBackfill?: number;
   /** Time for reading article pages; lookups not started by then wait for the next run. */
   pageBudgetMs?: number;
+  /**
+   * Time for the whole run, so it ends inside the host's limit for one request
+   * (Vercel stops functions at 60 s): page reads stop early when the feeds were
+   * slow. Default 45 s, except for the command line (no limit).
+   */
+  timeBudgetMs?: number;
   log?: (message: string) => void;
 };
 
@@ -232,6 +238,16 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
   }
 
   try {
+    // Old stories are removed first, so the database cannot keep growing even
+    // if a slow run is stopped by the host's time limit before it finishes.
+    // Only on full runs, so a single-source refresh stays fast.
+    let deleted = 0;
+    if (!options.sourceIds?.length) {
+      const { data, error } = await supabase.rpc('cleanup_old_articles', { p_retention_days: retentionDays });
+      if (error) log(`Cleanup failed: ${error.message}`);
+      deleted = data ?? 0;
+    }
+
     let query = supabase
       .from('sources')
       .select('id, name, rss_url, website_url, consecutive_failures')
@@ -243,7 +259,14 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
     if (sourcesError) throw new Error(`Could not load sources: ${sourcesError.message}`);
 
     log(`Fetching ${sources.length} source(s)…`);
-    const results = await mapWithConcurrency(sources, options.concurrency ?? 6, async (source) => {
+    const timeBudget = options.timeBudgetMs ?? (options.trigger === 'cli' ? Infinity : 45_000);
+    // A feed may take up to 15 s (fetch-feed.ts): none is started after this, so the run ends in time.
+    const lastFeedStart = started + timeBudget - 15_000;
+    const results = await mapWithConcurrency(sources, options.concurrency ?? 6, async (source): Promise<InternalSourceResult> => {
+      if (Date.now() > lastFeedStart) {
+        // Left for the next run; not counted as a failure of the feed.
+        return { sourceId: source.id, name: source.name, ok: true, found: 0, inserted: 0, durationMs: 0, newArticles: [] };
+      }
       const result = await ingestSource(supabase, source, { retentionDays, maxItemsPerSource });
       log(
         result.ok
@@ -254,7 +277,7 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
     });
 
     const fresh = results.flatMap((r) => r.newArticles);
-    const deadline = Date.now() + (options.pageBudgetMs ?? 25_000);
+    const deadline = Math.min(Date.now() + (options.pageBudgetMs ?? 25_000), started + timeBudget);
     const toRead = fresh.slice(0, options.maxPageLookups ?? 300);
     if (toRead.length > 0) {
       const pages = await readPages(supabase, toRead, { fixImages: true, deadline });
@@ -277,14 +300,6 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
         const pages = await readPages(supabase, older, { fixImages: false, deadline });
         log(`Reading time: measured ${pages.measured} older stories, ${pages.timed} with a reading time.`);
       }
-    }
-
-    // Cleanup only on full runs so a single-source refresh stays fast.
-    let deleted = 0;
-    if (!options.sourceIds?.length) {
-      const { data, error } = await supabase.rpc('cleanup_old_articles', { p_retention_days: retentionDays });
-      if (error) log(`Cleanup failed: ${error.message}`);
-      deleted = data ?? 0;
     }
 
     const failed = results.filter((r) => !r.ok);

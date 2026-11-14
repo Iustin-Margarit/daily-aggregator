@@ -98,9 +98,13 @@ Small pieces for the interface, printed in brass or ink through CSS masks
 | `initial-frame.webp` | A square Victorian frame (OpenClipart's "Ornamental Frame") round the illuminated initial | [freesvg.org](https://freesvg.org/1511991464) | CC0 |
 | `sun.webp` | The cut lines of an old woodcut sun with a face (the yellow fill left out): the morning edition | [freesvg.org](https://freesvg.org/old-woodcut-sun-vector-image) | CC0 |
 | `moon.webp` | Johnny Automatic's man in the moon, from an old sheet-music cover, made solid: the night edition | [freesvg.org](https://freesvg.org/johnny-automatic-man-in-the-moon) | CC0 |
+| `watch-case.webp` | A gentleman's pocket watch with an engraved nickel case, from the United Watch & Jewelry Company catalogue (1911): its bow, crown and engraved bezel, with the dial cut away, printed in brass round the masthead's live watch dial | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Pocket_Watch_for_Young_Men_with_Engraved_Nickel_Case.png) | Public domain |
+| `watch-bezel.webp` | The same watch's engraved bezel on its own, framing the lunar almanac so the two masthead instruments match | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Pocket_Watch_for_Young_Men_with_Engraved_Nickel_Case.png) | Public domain |
+| `moon-engraving.webp` | Claude Mellan, *Full Moon* (1635, engraved for Peiresc and Gassendi; Metropolitan Museum of Art), the disc only: the lunar almanac's moon, with tonight's shadow laid over it | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Full_moon_by_Claude_Mellan_1635.jpg) | CC0 |
 | `key.webp` | A skeleton key: Log out | [freesvg.org](https://freesvg.org/skeleton-key) | CC0 |
 | `broadsheet.webp` | A folded newspaper with a turned corner (OpenClipartVectors), its greys made into ink: the Front Page tab | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Newspaper-154444.svg) | CC0 |
 | `gramophone.webp` | A horn gramophone ("Style 7 Genuine Gramophone") from a 1912 catalogue: the banner's Sound ticket | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Style_7_Genuine_Gramophone.svg) | Public domain |
+| `funnel.webp` | A funnel from August Pforr's US patent No. 159,445 (1875), cut from the drawing without its handles, reference letters and pencil notes: the front page's Filters button | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:August_Pforr_Funnel_-_DPLA_-_f46a3b1a4557a6ffa42b91f9f709b9b4_(page_1).jpg) | Public domain |
 | `stamp.webp` | The Penny Black (General Post Office, 1840), its scan trimmed and perforated along every edge for this site: the Sections tab | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Penny_black.jpg) | Public domain |
 
 ## Texture (`public/textures`)
@@ -126,8 +130,22 @@ links each entry to its article and credits Wikipedia under the list.
 
 ## Sound
 
-The banner's ambient sound (rain, drips and a pocket watch) is synthesised in the browser with the
-Web Audio API (`lib/ambience.ts`); there are no sound files.
+The banner's ambient sound, a calm 1890s promenade (`lib/ambience.ts`), is made from real field
+recordings in `public/sounds/street`, all released under CC0 on [Freesound](https://freesound.org).
+They were cut from the Freesound previews, filtered (no rumble below the cut-off), mixed down to mono,
+loudness-matched (EBU R128) and saved as small MP3s; the beds were crossfaded into seamless loops. The
+browser places the passers-by on the street, and the carriage follows the cab across the banner.
+
+| File | Source (Freesound, CC0) | Cut |
+|---|---|---|
+| `people.mp3` | [People Ambience In The Old Town](https://freesound.org/s/725605/) by WhiteNoiseSleeper | 4:25-5:29, folded into a 62 s loop, above 140 Hz |
+| `birds.mp3` | [birds chirping in the suburbs in a calm afternoon](https://freesound.org/s/727712/) by Simonus18 | 0:00-1:04, folded into a 62 s loop, above 500 Hz |
+| `carriage.mp3` | [G52-07-Horse Drawn Carriage](https://freesound.org/s/437076/) by craigsmith | 0:08-0:41.6 (the steady trot), folded into a 32 s loop |
+| `steps-1.mp3`, `steps-2.mp3` | [2 persons walking on stonefloor](https://freesound.org/s/220335/) by Reikun | 0:02-0:20 and 0:24-0:42 |
+| `steps-3.mp3` | [Three People Walking on Concrete](https://freesound.org/s/789609/) by ZackSoundLab | 0:00-0:09.5 |
+| `voices.mp3` | [Medium Crowd Walla](https://freesound.org/s/867051/) by IENBA | 0:01.5-0:18.5 |
+| `pigeon.mp3` | [pigeon walking and cooing](https://freesound.org/s/701282/) by 5ro4 | 0:09-0:24.5 |
+| `wings.mp3` | [pigeons_fly away_ wing flaps_CsG](https://freesound.org/s/528250/) by csaszi | 0:00-0:03.3 |
 
 ## Icons and link preview (`app/`)
 
@@ -139,6 +157,6 @@ Penfield's reader (1897, public domain), both credited above.
 
 ## Drawn for this project
 
-The clock face, the moon's phase, the shooting star, the perforated stamp edges, the candlelight
+The watch's enamel dial, numerals and Breguet hands, the almanac's degree ring and the moon's shadow, the shooting star, the perforated stamp edges, the candlelight
 on the desk, the moonlight and gas lamp on the cobbles are drawn in SVG/CSS for this site; the "Top Story" seal is set in type on the wax seal and postmark ring above. The fonts (Fraunces, Jost, Source Serif 4, UnifrakturMaguntia, Special Elite)
 come from Google Fonts under the SIL Open Font License and are self-hosted by next/font.

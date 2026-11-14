@@ -188,7 +188,7 @@ What the app does to keep readers and the server safe:
 - **Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are only read on the server and are
   never sent to the browser. `/api/cron/ingest` refuses requests without the secret.
 - **Only the APIs the app uses are on**: the GraphQL endpoint is switched off.
-- **Dependencies**: `npm audit --omit=dev` is clean; Dependabot opens weekly update pull requests.
+- **Dependencies**: `npm audit --omit=dev` is clean. GitHub's Dependabot alerts report known vulnerabilities; updates are applied by hand and tested before they are committed.
 
 ### Checklist before going live
 

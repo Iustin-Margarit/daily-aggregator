@@ -63,8 +63,8 @@ export function GuestImport({ userId }: { userId: string }) {
       if (moved > 0) {
         showToast({
           type: 'success',
-          title: `${moved} ${moved === 1 ? 'clipping' : 'clippings'} moved into your account`,
-          message: 'The stories you clipped before signing in are in Saved, on every device.',
+          title: `${moved} saved ${moved === 1 ? 'story' : 'stories'} moved into your account`,
+          message: 'The stories you saved before signing in are in Saved, on every device.',
           action: { label: 'Open saved stories', onClick: () => router.push('/saved') },
         });
         router.refresh();

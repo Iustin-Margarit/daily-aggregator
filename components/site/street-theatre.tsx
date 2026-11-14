@@ -4,7 +4,7 @@ import '@/styles/street-theatre.css';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { Ornament } from '@/components/site/ornament';
-import { isAmbiencePlaying, setAmbience, subscribeAmbience } from '@/lib/ambience';
+import { isAmbiencePlaying, setAmbience, setAmbiencePaused, setAmbienceStage, setAmbienceStageInView, subscribeAmbience } from '@/lib/ambience';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cn } from '@/lib/utils';
 
@@ -208,24 +208,28 @@ function Lane({ walker }: { walker: Walker }) {
 // ---------------------------------------------------------------- sound
 
 /**
- * The "Sound" ticket beside Pause: soft rain on the cobbles and a faint pocket
- * watch, made in the browser (lib/ambience.ts). Off whenever a page loads, and
- * it stops when the reader leaves the front page (the ticket goes with the street).
+ * The "Sound" ticket beside Pause: a calm 1890s promenade, with footsteps,
+ * passing chatter, birds by day, and the carriage heard as the cab crosses
+ * (real recordings, lib/ambience.ts). Off whenever a page loads; Pause holds
+ * it. It keeps playing on the other pages, where the corner ticket
+ * (sound-ticket.tsx) turns it off.
  */
-function SoundToggle() {
+function SoundToggle({ paused }: { paused: boolean }) {
   const playing = useSyncExternalStore(subscribeAmbience, isAmbiencePlaying, () => false);
-  useEffect(() => () => setAmbience(false), []);
+  useEffect(() => setAmbiencePaused(paused), [paused]);
+  // Leaving the front page lets the sound play on: Pause only holds it while the banner is here.
+  useEffect(() => () => setAmbiencePaused(false), []);
   return (
     <button
       type="button"
       className="st-toggle st-sound"
       onClick={() => setAmbience(!playing)}
       aria-pressed={playing}
-      title={playing ? 'Stop the rain and the ticking watch' : 'Play soft rain on the cobbles and a ticking pocket watch, quietly'}
+      title={playing ? 'Victorian street ambience (playing): click to stop' : 'Victorian street ambience'}
     >
       <Ornament name="gramophone" className="h-[1.05rem] [--ornament-ink:currentColor]" />
       Sound
-      <span className="sr-only">: rain and a ticking watch</span>
+      <span className="sr-only">: Victorian street ambience</span>
     </button>
   );
 }
@@ -257,12 +261,18 @@ export function StreetTheatre({ className }: { className?: string }) {
       if (height > 0) element.style.setProperty('--span', Math.max(width / height, 6).toFixed(3));
     });
     // No animation work while the banner is scrolled out of view.
-    const visibility = new IntersectionObserver(([entry]) => element.classList.toggle('st-offscreen', !entry.isIntersecting));
+    const visibility = new IntersectionObserver(([entry]) => {
+      element.classList.toggle('st-offscreen', !entry.isIntersecting);
+      setAmbienceStageInView(entry.isIntersecting);
+    });
     resize.observe(element);
     visibility.observe(element);
+    // The sound follows the cab and the pigeon.
+    setAmbienceStage(element);
     return () => {
       resize.disconnect();
       visibility.disconnect();
+      setAmbienceStage(null);
     };
   }, []);
 
@@ -358,7 +368,7 @@ export function StreetTheatre({ className }: { className?: string }) {
         <div className="st-vignette" />
       </div>
       <div className="st-controls">
-        <SoundToggle />
+        <SoundToggle paused={paused} />
         <button
           type="button"
           className="st-toggle st-motion"

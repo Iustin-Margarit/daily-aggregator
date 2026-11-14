@@ -14,8 +14,8 @@ import type { FeedArticle } from '@/lib/types';
 
 const OFFER = [
   'Only the sections you choose, from postage stamps',
-  'Clip stories to read later, in folders with your own notes',
-  'Print a clipping, or save it as a PDF',
+  'Save stories to read later, in folders with your own notes',
+  'Print a saved story, or keep it as a PDF',
   'A morning and a night edition, larger print and other comforts',
 ];
 
@@ -83,7 +83,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
             </Button>
           </div>
           <p className="mt-4 text-[0.95rem] italic text-muted-foreground">
-            Read, search and clip without signing up; your clippings stay in this browser.{' '}
+            Read, search and save stories without signing up; they stay in this browser.{' '}
             <Link href="/signup" className="font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2">
               A free account
             </Link>{' '}

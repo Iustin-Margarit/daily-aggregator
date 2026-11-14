@@ -63,7 +63,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
       setError(friendlyAuthError(resendError));
     } else {
       setError(null);
-      setNotice('We sent you a new confirmation link.');
+      setNotice('We sent you a new confirmation link. Can’t find it? Look in your Spam folder.');
     }
   };
 

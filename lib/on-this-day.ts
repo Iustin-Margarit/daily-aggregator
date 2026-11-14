@@ -28,6 +28,11 @@ type FeedEvent = {
 /** Wars, disasters and crimes are left out when there are enough gentler anniversaries: this is a calm paper. */
 const GRIM = /\b(kill|killed|killing|murder|massacre|genocide|crash|crashed|bomb|bombing|attack|attacked|died|dead|death|executed|execution|terror|war|shooting|shot|assassinat|holocaust|ghetto|disaster|explosion|sank|fire)/i;
 
+/** Only a plain https link from the feed is kept (never javascript: or any other scheme). */
+function safeLink(value: unknown): string | null {
+  return typeof value === 'string' && /^https:\/\//i.test(value) ? value : null;
+}
+
 function clean(text: string): string {
   return text
     .replace(/\s*\((?:pictured|depicted|shown)[^)]*\)/gi, '')
@@ -42,7 +47,7 @@ function clean(text: string): string {
 export function pickEvents(feed: FeedEvent[], count = 3): HistoryEvent[] {
   const events = feed
     .filter((event): event is FeedEvent & { year: number; text: string } => typeof event.year === 'number' && typeof event.text === 'string')
-    .map((event) => ({ year: event.year, text: clean(event.text), url: event.pages?.[0]?.content_urls?.desktop?.page ?? null }))
+    .map((event) => ({ year: event.year, text: clean(event.text), url: safeLink(event.pages?.[0]?.content_urls?.desktop?.page) }))
     .filter((event) => event.text.length > 20 && event.text.length <= 220);
   const gentle = events.filter((event) => !GRIM.test(event.text));
   const pool = (gentle.length >= count ? gentle : events).sort((a, b) => a.year - b.year);

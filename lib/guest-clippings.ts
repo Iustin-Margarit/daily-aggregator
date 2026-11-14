@@ -33,7 +33,7 @@ function parse(raw: string | null): GuestClippings {
   try {
     const value = JSON.parse(raw) as Partial<GuestClippings>;
     const articles = Array.isArray(value.articles)
-      ? value.articles.filter((a): a is SavedArticle => typeof a?.article_id === 'string' && typeof a?.title === 'string' && typeof a?.slug === 'string')
+      ? value.articles.filter((a): a is SavedArticle => typeof a?.article_id === 'string' && typeof a?.title === 'string' && typeof a?.slug === 'string' && typeof a?.url === 'string' && /^https?:\/\//i.test(a.url))
       : [];
     const folders = Array.isArray(value.folders)
       ? value.folders.filter((f): f is SavedFolder => typeof f?.id === 'string' && typeof f?.name === 'string')

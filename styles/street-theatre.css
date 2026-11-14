@@ -690,7 +690,8 @@
   border: 3px double hsl(var(--rule) / 0.5);
   transition:
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    box-shadow 0.6s ease;
 }
 .st-toggle:hover {
   color: var(--brass-ink);
@@ -704,12 +705,50 @@
   width: 0.75rem;
   height: 0.75rem;
 }
-/* Sound on: the ticket is inked in brass with a gilt double rule, and the gramophone gently rocks. */
+/*
+ * Sound on: the ticket is inked in brass with a gilt double rule, glows softly
+ * like a lit window, and the gramophone gently rocks. Paused, the glow dims.
+ */
 .st-sound[aria-pressed='true'] {
   color: var(--brass-ink);
   border-color: var(--ink-gold);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ink-gold) 35%, transparent),
+    0 0 0.7rem 0.1rem color-mix(in srgb, var(--ink-gold) 45%, transparent);
+}
+:root[data-banner='still'] .st-sound[aria-pressed='true'] {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink-gold) 25%, transparent);
 }
 .st-sound[aria-pressed='true'] .ornament-mask {
+  animation: st-gramophone 2.4s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+/*
+ * The corner ticket (components/site/sound-ticket.tsx): while the sound plays
+ * and the banner is out of sight, it waits bottom left, lit like the banner's
+ * ticket, a little larger and clear of the phone tab bar.
+ */
+.st-float {
+  position: fixed;
+  left: 1rem;
+  bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  z-index: 45;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--brass-ink);
+  background: hsl(var(--card));
+  border-color: var(--ink-gold);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ink-gold) 35%, transparent),
+    0 0 0.7rem 0.1rem color-mix(in srgb, var(--ink-gold) 45%, transparent),
+    0 4px 14px rgb(0 0 0 / 0.18);
+}
+@media (width >= 48rem) {
+  .st-float {
+    bottom: 1.25rem;
+  }
+}
+.st-float .ornament-mask {
   animation: st-gramophone 2.4s ease-in-out infinite;
   transform-origin: 50% 90%;
 }
@@ -733,7 +772,8 @@
   .st-motion {
     display: none;
   }
-  .st-sound[aria-pressed='true'] .ornament-mask {
+  .st-sound[aria-pressed='true'] .ornament-mask,
+  .st-float .ornament-mask {
     animation: none;
   }
 }

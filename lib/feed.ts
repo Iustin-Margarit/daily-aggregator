@@ -24,6 +24,7 @@ export function pageWindow(page: number, front: boolean): { limit: number; offse
 
 const RANGES: DateRange[] = ['any', 'today', 'week'];
 const SORTS: FeedSort[] = ['latest', 'for_you'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Oldest published_at for a date range, or undefined for the default 30-day window. */
 export function sinceFor(range: DateRange, asOf: string): string | undefined {
@@ -89,7 +90,8 @@ export function filtersFromSearchParams(
 
   return {
     categoryIds,
-    sourceIds: sources ? sources.split(',').filter(Boolean) : [],
+    // Only well-formed ids (a malformed link would make the database query fail), and not too many.
+    sourceIds: sources ? sources.split(',').filter((id) => UUID.test(id)).slice(0, 100) : [],
     search: (first(params.q) ?? '').trim().slice(0, 100),
     range: range && RANGES.includes(range) ? range : 'any',
     sort: sort && SORTS.includes(sort) ? sort : 'latest',

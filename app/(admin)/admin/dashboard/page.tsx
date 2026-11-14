@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           detail={stats.sources_failing > 0 ? `${stats.sources_failing} failing - check Wire services` : 'All enabled sources healthy'}
           tone={stats.sources_failing > 0 ? 'warning' : 'default'}
         />
-        <StatTile icon={Bookmark} label="Saved stories" value={stats.saves_total} detail="Clippings kept by all readers" />
+        <StatTile icon={Bookmark} label="Saved stories" value={stats.saves_total} detail="Kept by all readers" />
       </div>
 
       <RecentRuns runs={stats.recent_runs} />

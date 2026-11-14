@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
+import { SoundTicket } from '@/components/site/sound-ticket';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import { prefAttributes } from '@/lib/reader-prefs';
@@ -82,6 +83,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ToastProvider>
             {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
             <div className="sheet">{children}</div>
+            {/* Stop the street sound from any page once the banner is out of sight. */}
+            <SoundTicket />
           </ToastProvider>
         </ThemeProvider>
       </body>

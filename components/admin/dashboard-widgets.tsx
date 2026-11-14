@@ -177,7 +177,7 @@ export function TopArticles({ rows }: { rows: { title: string; slug: string; sav
     <Card>
       <CardHeader>
         <CardTitle>Most saved stories</CardTitle>
-        <CardDescription>By how many readers clipped them</CardDescription>
+        <CardDescription>By how many readers saved them</CardDescription>
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (

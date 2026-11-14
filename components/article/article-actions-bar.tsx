@@ -2,7 +2,7 @@
 
 import { EyeOff, VolumeX } from 'lucide-react';
 import { hideArticle, muteSource } from '@/components/articles/moderation';
-import { ActionDivider, actionClass, ClipButton, MoreButton } from '@/components/articles/story-actions';
+import { ActionDivider, actionClass, MoreButton, SaveButton } from '@/components/articles/story-actions';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -11,7 +11,7 @@ import type { ArticleDetail } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 /**
- * The story page's printed actions: Clip story, as under every story on the
+ * The story page's printed actions: Save, as under every story on the
  * front page, plus Share. A row on phones
  * and tablets; on wide screens a list in the page's right-hand column, ruled
  * between the lines, that stays in view while the reader scrolls.
@@ -53,7 +53,7 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
     <div className="xl:sticky xl:top-24">
       <p className="label mb-1 hidden text-muted-foreground xl:block">This story</p>
       <div className="flex flex-wrap items-center gap-x-1 border-y border-rule/30 py-1 xl:flex-col xl:items-stretch xl:border-b-0 xl:py-0">
-        <ClipButton saved={saved} disabled={busy} onToggle={toggleSave} className={line} />
+        <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className={line} />
         {divider}
         <button type="button" onClick={share} className={cn(actionClass, line)} title="Share this story with someone">
           {/* A carrier pigeon with its letter (Yarrell, 1843). */}

@@ -23,8 +23,8 @@ const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((
 
 /**
  * The few controls of the front page: the department ribbon (one full-width
- * band of sections between double rules) and, pinned at its end, a "Filters"
- * button for the rarer choices (how recent, which newspapers).
+ * band of sections between double rules) and, set apart at its right, a boxed
+ * "Filters" button for the rarer choices (how recent, which newspapers).
  */
 export function FeedToolbar({ filters, onChange, categories, sources, preferredCategoryIds }: FeedToolbarProps) {
   /** Shows one set of sections; newspaper choices outside them are dropped. */
@@ -39,7 +39,7 @@ export function FeedToolbar({ filters, onChange, categories, sources, preferredC
   const showingMine = preferredCategoryIds.length > 0 && sameIds(filters.categoryIds, preferredCategoryIds);
 
   return (
-    <div className="flex items-stretch">
+    <div className="flex items-stretch gap-3 sm:gap-5">
       {/* Phones and tablets scroll the ribbon sideways; from 1280px every department shows (styles: .dept-bar). */}
       <nav aria-label="Sections" className="dept-bar min-w-0 flex-1">
         {preferredCategoryIds.length > 0 && (
@@ -138,12 +138,10 @@ function FilterDialog({ filters, onChange, categories, sources }: Omit<FeedToolb
   const active = (filters.range !== 'any' ? 1 : 0) + (filters.sourceIds.length > 0 ? 1 : 0);
   return (
     <Dialog>
-      {/* The ribbon's end cap: the same double rules, a double hairline before it, and the number of filters in use. */}
+      {/* An action, not a section: a boxed ticket with a funnel, apart from the ribbon (styles: .filter-ticket). */}
       <DialogTrigger asChild>
-        <button
-          type="button"
-          className="dept-tab border-y-[3px] border-double border-rule/60 pl-4 text-foreground before:absolute before:inset-y-2.5 before:left-0 before:w-[4px] before:border-x before:border-rule/50"
-        >
+        <button type="button" className="filter-ticket">
+          <Ornament name="funnel" className="h-[1.3rem]" />
           Filters
           {active > 0 && (
             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-[2px] bg-primary px-1.5 text-[0.72rem] tracking-normal text-primary-foreground">

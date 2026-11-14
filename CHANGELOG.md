@@ -2,6 +2,31 @@
 
 ## Unreleased: "nocturnal broadsheet" interface
 
+### Instruments, street sound, Save and safer sign-up (2026-11-14, later)
+- **Masthead ears as engraved instruments**: the clock is a real pocket-watch case from a 1911
+  jeweller's catalogue (public domain) round a live enamel dial (cream by day, deep blue by night)
+  with Roman hours, Breguet hands and a small seconds dial; the moon is a "Lunar almanac": Claude
+  Mellan's engraved full moon (1635, CC0) in the same engraved bezel, with tonight's phase hatched
+  over it, a degree ring, twinkling stars and the occasional shooting star (now visible in both
+  editions).
+- **Street sound rebuilt** from real CC0 field recordings (no wind, no drones): footsteps, the
+  occasional passing conversation, birds and pigeons by day, and hooves with wooden wheels that
+  follow the cab across the banner. Quieter overall; once switched on it keeps playing while the
+  reader moves around the site, with a "Stop sound" ticket in the corner (still off on every visit).
+- **Save, not Clip**: every story's button now says Save / Saved with the quill of the Saved tab,
+  and the messages around it say "saved stories". "Print clipping" keeps its name.
+- **Masthead title** glows softly when pointed at; **Filters** is a boxed ticket with an engraved
+  funnel, set apart from the section ribbon.
+- **Email**: sign-up confirmation is on again, sent through the paper's own Gmail address; the
+  confirmation, password-reset and email-change emails are restyled as printed notices, and every
+  "check your inbox" message now mentions the Spam folder.
+- **Reliability**: old stories are removed at the start of each news run (so a run cut short by the
+  host's time limit still cleans up), runs stay inside a 45-second budget, malformed `?sources=`
+  links no longer break the front page, and links from outside feeds and browser storage are kept to
+  http(s). The database runs on Postgres 17.
+- **Dependabot** no longer opens update pull requests (only security alerts); updates are applied
+  and tested by hand.
+
 ### Ready for a free live site (2026-11-14)
 - **No sign-up wall**: visitors read the front page, search, open stories, choose sections with the
   postage stamps and clip stories (with folders, notes and Print clipping) without an account. Their

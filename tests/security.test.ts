@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { checkUrlShape, isPrivateAddress, UnsafeUrlError } from '../lib/ingestion/safe-fetch';
+import { filtersFromSearchParams } from '../lib/feed';
+import { pickEvents } from '../lib/on-this-day';
 import { safeNextPath } from '../lib/redirect';
 import { buildContentSecurityPolicy, createNonce } from '../lib/security-headers';
 import { isReservedUsername, normalizeMutedKeyword, profileSaveError, validateUsername } from '../lib/validation';
@@ -176,5 +178,31 @@ describe('normalizeMutedKeyword', () => {
     for (const bad of ['a', '', 'x'.repeat(41), 'crypto!', '-war', 'war-', '(a|b)*', 'u.s.']) {
       assert.ok('error' in normalizeMutedKeyword(bad), bad);
     }
+  });
+});
+
+describe('untrusted input from links and outside feeds', () => {
+  it('keeps only well-formed source ids from ?sources= (a bad one used to break the feed query)', () => {
+    const good = '0b1d2c3e-4f50-4a6b-8c7d-9e0f1a2b3c4d';
+    const filters = filtersFromSearchParams({ sources: `${good},nope,'; drop table articles;--` }, [], []);
+    assert.deepEqual(filters.sourceIds, [good]);
+    const many = Array.from({ length: 150 }, () => good).join(',');
+    assert.equal(filtersFromSearchParams({ sources: many }, [], []).sourceIds.length, 100);
+  });
+
+  it('drops non-https links from the "On this day" feed', () => {
+    const text = (n: number) => `A long enough event description for number ${n} in history.`;
+    const link = (page: string) => [{ content_urls: { desktop: { page } } }];
+    const events = pickEvents(
+      [
+        { year: 1800, text: text(1), pages: link('javascript:alert(1)') },
+        { year: 1900, text: text(2), pages: link('https://en.wikipedia.org/wiki/Example') },
+      ],
+      2,
+    );
+    assert.deepEqual(
+      events.map((event) => event.url),
+      [null, 'https://en.wikipedia.org/wiki/Example'],
+    );
   });
 });

@@ -781,6 +781,44 @@
  * place, a second hand that ticks with a little spring, and etched stars
  * twinkling round the moon.
  */
+:root {
+  /* The engraved brass of the watch case and the moon's bezel. */
+  --brass-hi: #c9a65c;
+  --brass-mid: #a07c34;
+  --brass-lo: #6e521d;
+  /* Cream enamel, sepia print and blued-steel hands. */
+  --dial-face: #fcf7ea;
+  --dial-face-edge: #eadcbd;
+  --dial-ink: hsl(26 30% 16%);
+  --dial-hand: #1f3657;
+  --dial-glint: 0.55;
+  /* The almanac dial: a parchment sky, a pale moon printed in sepia, its dark side hatched in deep sepia. */
+  --almanac-sky: #e3d1a9;
+  --almanac-line: hsl(26 30% 22% / 0.75);
+  --almanac-star: #8a6526;
+  --moon-lit: #fffbef;
+  --moon-ink: hsl(28 34% 26% / 0.9);
+  --moon-shade: #2a1f15;
+  --moon-shade-alpha: 0.6;
+}
+.dark {
+  --brass-hi: #f0d595;
+  --brass-mid: #d4b06a;
+  --brass-lo: #9a7838;
+  /* Deep blue enamel with gilt print and gilt hands. */
+  --dial-face: #18213a;
+  --dial-face-edge: #0c1222;
+  --dial-ink: #e3c98e;
+  --dial-hand: #ecd08f;
+  --dial-glint: 0.12;
+  --almanac-sky: #0a0e19;
+  --almanac-line: rgb(212 176 106 / 0.6);
+  --almanac-star: var(--ink-gold);
+  --moon-lit: #efe5c8;
+  --moon-ink: rgb(42 38 34 / 0.85);
+  --moon-shade: #03050a;
+  --moon-shade-alpha: 0.8;
+}
 .clock-hand {
   transition: transform 0.6s ease-out;
 }
@@ -1016,52 +1054,9 @@ article:focus-within .photo-plate::after,
 }
 
 /*
- * Printed story actions (components/articles/story-actions.tsx). Clipping
- * makes the scissors snip and runs a dotted "cut here" line under the label.
- * The printer's fist pokes towards "Read dispatch". The snip only plays when
- * the reader presses.
+ * Printed story actions (components/articles/story-actions.tsx). Saving
+ * stamps the label "Saved"; the printer's fist pokes towards "Read dispatch".
  */
-.cut-line {
-  position: absolute;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.3rem;
-  border-top: 1.5px dashed var(--action-icon);
-  pointer-events: none;
-  opacity: 0;
-  animation: cut-line 0.8s ease-out;
-}
-@keyframes cut-line {
-  0% {
-    opacity: 1;
-    clip-path: inset(0 100% 0 0);
-  }
-  55% {
-    opacity: 1;
-    clip-path: inset(0 0 0 0);
-  }
-  100% {
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-  }
-}
-.scissors-snip {
-  animation: scissors-snip 0.45s ease-out;
-}
-@keyframes scissors-snip {
-  0% {
-    transform: translateX(-3px) scaleY(1);
-  }
-  25% {
-    transform: translateX(0) scaleY(0.45);
-  }
-  50% {
-    transform: translateX(2px) scaleY(1);
-  }
-  75% {
-    transform: translateX(3px) scaleY(0.45);
-  }
-}
 .clip-stamp {
   animation: clip-stamp 0.35s cubic-bezier(0.2, 1.5, 0.4, 1);
 }
@@ -1078,6 +1073,35 @@ article:focus-within .photo-plate::after,
 @keyframes fist-poke {
   50% {
     transform: translateX(5px);
+  }
+}
+
+/*
+ * The title when pointed at: a soft warm glow round the letters (components/site/logo.tsx).
+ * Morning edition: a faint sunlit gilt halo behind the ink. Night edition: candlelight.
+ */
+.masthead-glow {
+  text-shadow:
+    0 0 0.1em hsl(42 90% 55% / 0),
+    0 0 0.45em hsl(38 90% 55% / 0);
+  transition: text-shadow 0.5s ease;
+  &:hover,
+  &:focus-visible {
+    text-shadow:
+      0 0 0.1em hsl(42 90% 55% / 0.45),
+      0 0 0.45em hsl(38 90% 58% / 0.3);
+  }
+}
+.dark .masthead-glow:hover,
+.dark .masthead-glow:focus-visible {
+  text-shadow:
+    0 0 0.08em hsl(40 95% 68% / 0.5),
+    0 0 0.35em hsl(36 90% 55% / 0.38),
+    0 0 0.9em hsl(30 85% 45% / 0.25);
+}
+@media (prefers-reduced-motion: reduce) {
+  .masthead-glow {
+    transition: none;
   }
 }
 
@@ -1099,13 +1123,9 @@ article:focus-within .photo-plate::after,
   .photo-plate::after {
     transition: none;
   }
-  .scissors-snip,
   .clip-stamp,
   .group\/read:hover .fist-poke {
     animation: none;
-  }
-  .cut-line {
-    display: none;
   }
 }
 
@@ -1243,6 +1263,41 @@ article:focus-within .photo-plate::after,
   @media (width >= 1280px) {
     .dept-bar > .dept-tab {
       flex: 1 1 auto;
+    }
+  }
+  /*
+   * The Filters button, set apart at the ribbon's right end so it never reads
+   * as one more section: a boxed ticket in a double rule with Pforr's funnel
+   * in brass, the type in full ink.
+   */
+  .filter-ticket {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.8rem 0.95rem;
+    border: 3px double hsl(var(--rule) / 0.6);
+    border-radius: 3px;
+    background: hsl(var(--card) / 0.55);
+    font-family: var(--font-jost), ui-sans-serif, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: hsl(var(--foreground));
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      box-shadow 0.2s;
+    &:hover {
+      color: var(--brass-ink);
+      border-color: var(--ink-gold);
+      box-shadow: 0 1px 0.4rem hsl(var(--foreground) / 0.12);
+    }
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
     }
   }
 
@@ -1400,42 +1455,34 @@ article:focus-within .photo-plate::after,
 }
 
 /*
- * Tonight's sky: now and then (about every 25 seconds) a shooting star
- * streaks across the moon's dial (components/site/almanac.tsx).
+ * The lunar almanac: now and then (about every 22 seconds) a shooting star
+ * streaks across the dial's sky above the moon (components/site/almanac.tsx).
+ * Dark brass on the parchment sky by day, starlight by night.
  */
-.moon-sky {
-  position: absolute;
-  inset: 4%;
-  overflow: hidden;
-  border-radius: 9999px;
-  pointer-events: none;
+:root {
+  --meteor: #6e4f1a;
+}
+.dark {
+  --meteor: #fff3d2;
 }
 .shooting-star {
-  position: absolute;
-  left: 6%;
-  top: 22%;
-  width: 50%;
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink-gold) 55%, #fff));
-  box-shadow: 0 0 4px color-mix(in oklab, var(--ink-gold) 60%, transparent);
   opacity: 0;
-  transform: rotate(26deg) translateX(-130%);
-  animation: shooting-star 25s linear -17s infinite;
+  animation: shooting-star 22s linear -14s infinite;
 }
 @keyframes shooting-star {
   0%,
-  88% {
+  86% {
     opacity: 0;
-    transform: rotate(26deg) translateX(-130%);
+    transform: translateX(0);
   }
-  89% {
+  87%,
+  92% {
     opacity: 1;
   }
-  92.5%,
+  93.5%,
   100% {
     opacity: 0;
-    transform: rotate(26deg) translateX(230%);
+    transform: translateX(118px);
   }
 }
 /* The street's Pause button (banner: Still) stills the whole town, sky included. */

@@ -78,8 +78,8 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
           description={
             <>
               We sent a confirmation link to <span className="font-medium text-foreground">{sentTo}</span>. Click it to
-              finish creating your account. If you already have an account with this address, no new email is sent - log
-              in instead.
+              finish creating your account. Can’t find it? Look in your Spam folder and mark it “Not spam”. If you
+              already have an account with this address, no new email is sent - log in instead.
             </>
           }
         />

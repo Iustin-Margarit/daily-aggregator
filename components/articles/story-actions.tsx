@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, useState } from 'react';
+import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { cn } from '@/lib/utils';
 
@@ -19,10 +20,10 @@ export function ActionDivider({ className }: { className?: string }) {
 }
 
 /**
- * Clip story (save): brass scissors. Clipping snips them and runs a dotted
- * "cut here" line under the label, which is stamped "Clipped".
+ * Save: the engraved quill of the Saved tab, so the button and the page it
+ * fills look alike. Saving stamps the label "Saved".
  */
-export function ClipButton({
+export function SaveButton({
   saved,
   disabled,
   onToggle,
@@ -33,30 +34,32 @@ export function ClipButton({
   onToggle: () => void;
   className?: string;
 }) {
-  const [cuts, setCuts] = useState(0);
-  const cut = cuts > 0 && saved;
+  const [stamps, setStamps] = useState(0);
+  const stamp = stamps > 0 && saved;
   return (
     <button
       type="button"
       onClick={() => {
-        if (!saved) setCuts((n) => n + 1);
+        if (!saved) setStamps((n) => n + 1);
         onToggle();
       }}
       disabled={disabled}
       aria-pressed={saved}
-      aria-label={saved ? 'Clipped: remove from saved stories' : 'Clip story: save it for later'}
-      title={saved ? 'In your clippings (Saved). Press to remove.' : 'Clip this story to read later (Saved)'}
+      aria-label={saved ? 'Saved: remove from saved stories' : 'Save this story for later'}
+      title={saved ? 'In your saved stories. Press to remove.' : 'Save this story to read later'}
       className={cn(actionClass, saved && 'text-(--brass-ink)', className)}
     >
-      <Ornament key={cuts} name="scissors" className={cn('h-[0.74rem]', cut && 'scissors-snip')} />
+      {/* A hairline shadow thickens the quill's fine lines, as on the Saved tab. */}
+      <span className="inline-flex drop-shadow-[0_0_0.4px_var(--action-icon)]" aria-hidden="true">
+        <Engraving name="quill" className="-my-1 h-[1.4rem] [--engraving-ink:var(--action-icon)]" />
+      </span>
       {saved ? (
-        <span key="clipped" className={cn('inline-block', cut && 'clip-stamp')}>
-          Clipped
+        <span key="saved" className={cn('inline-block', stamp && 'clip-stamp')}>
+          Saved
         </span>
       ) : (
-        'Clip story'
+        'Save'
       )}
-      {cut && <span key={`cut-${cuts}`} className="cut-line" aria-hidden="true" />}
     </button>
   );
 }

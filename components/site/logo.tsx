@@ -4,16 +4,10 @@ import { Engraving } from '@/components/site/engraving';
 import { siteConfig } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
-/** The newspaper title in blackletter, as a link. Size it with a text-* class. */
+/** The newspaper title in blackletter, as a link; it glows softly when pointed at (styles: .masthead-glow). Size it with a text-* class. */
 export function Masthead({ href = '/', className }: { href?: string; className?: string }) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        'inline-block font-masthead font-normal leading-[1.05] tracking-normal decoration-1 underline-offset-8 hover:underline',
-        className,
-      )}
-    >
+    <Link href={href} className={cn('masthead-glow inline-block font-masthead font-normal leading-[1.05] tracking-normal', className)}>
       {siteConfig.masthead}
     </Link>
   );

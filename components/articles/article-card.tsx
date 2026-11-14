@@ -6,7 +6,7 @@ import { EyeOff, Share2, SquareArrowOutUpRight, VolumeX } from 'lucide-react';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { DropCap } from '@/components/articles/drop-cap';
-import { ActionDivider, ClipButton, MoreButton } from '@/components/articles/story-actions';
+import { ActionDivider, MoreButton, SaveButton } from '@/components/articles/story-actions';
 import { TopStoryStamp } from '@/components/articles/top-story-stamp';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
@@ -36,7 +36,7 @@ type ArticleCardProps = {
 };
 
 /**
- * Clip story (save) and More: two things to press, no more
+ * Save and More: two things to press, no more
  * (components/articles/story-actions.tsx). The first one starts flush with
  * the text above it.
  */
@@ -44,7 +44,7 @@ function StoryActions({ article, userId, onHide, onMuteSource }: Omit<ArticleCar
   const { saved, busy, toggleSave, share } = useArticleActions(article, userId);
   return (
     <div className="flex flex-wrap items-center gap-x-1">
-      <ClipButton saved={saved} disabled={busy} onToggle={toggleSave} className="pl-0" />
+      <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className="pl-0" />
       <ActionDivider />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

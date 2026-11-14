@@ -34,7 +34,7 @@ export function friendlyAuthError(error: { message: string; code?: string } | nu
     return 'Incorrect email or password.';
   }
   if (error.code === 'email_not_confirmed' || message.includes('email not confirmed')) {
-    return 'Please confirm your email address first. Check your inbox for the confirmation link.';
+    return 'Please confirm your email address first. Check your inbox (and your Spam folder) for the confirmation link.';
   }
   if (error.code === 'user_already_exists' || message.includes('already registered')) {
     return 'An account with this email already exists. Try logging in instead.';
