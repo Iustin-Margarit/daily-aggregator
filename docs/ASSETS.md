@@ -131,7 +131,10 @@ dark slate navy, with a cold sheen from its normal map where the stones face the
 The "On this day" box on the front page quotes three entries a day from Wikipedia's
 [selected anniversaries](https://en.wikipedia.org/wiki/Wikipedia:Selected_anniversaries), fetched from
 the Wikimedia feed API (`/api/rest_v1/feed/onthisday/selected`). The text is CC BY-SA 4.0; the box
-links each entry to its article and credits Wikipedia under the list.
+links each entry to its article and credits Wikipedia under the list. Each edition reads its own
+Wikipedia; Romanian Wikipedia has no such feed, so the Romanian edition reads the "Evenimente" list of
+the day's own article (for example [14 noiembrie](https://ro.wikipedia.org/wiki/14_noiembrie), through
+the MediaWiki API) and credits and links that article.
 
 ## Sound
 
@@ -163,5 +166,15 @@ Penfield's reader (1897, public domain), both credited above.
 ## Drawn for this project
 
 The watch's enamel dial, numerals and Breguet hands, the almanac's degree ring and the moon's shadow, the shooting star, the perforated stamp edges, the candlelight
-on the desk, the moonlight and gas lamp on the cobbles are drawn in SVG/CSS for this site; the "Top Story" seal is set in type on the wax seal and postmark ring above. The fonts (Fraunces, Jost, Source Serif 4, UnifrakturMaguntia, Special Elite)
-come from Google Fonts under the SIL Open Font License and are self-hosted by next/font.
+on the desk, the moonlight and gas lamp on the cobbles are drawn in SVG/CSS for this site; the "Top Story" seal is set in type on the wax seal and postmark ring above. The fonts come from Google Fonts and are self-hosted by next/font: Fraunces, Jost, Source Serif 4 and
+UnifrakturMaguntia under the SIL Open Font License, Special Elite (Astigmatic) under the Apache License
+2.0.
+
+Special Elite has no Romanian Ș ș Ț ț (comma below), so `app/fonts/special-elite-ro.woff2` (4 KB, Apache
+2.0, licence beside it) adds them: each is the font's own S, s, T or t with its own combining comma
+below, placed as the designer placed it on the font's Ţ ţ; Ă ă are copied unchanged. The file's version
+string says it is a modified copy. It is used only for those six letters (`unicode-range`).
+
+The small flags behind the edition stamps (`components/site/edition-stamp.tsx`) are the official
+national flags (public domain; Spain's plain civil flag, without the arms), drawn as SVG from their
+official proportions and printed in muted inks.

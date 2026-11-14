@@ -11,6 +11,7 @@ import { unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
 import { LEDGER_INDEX, type LedgerEntryId } from '@/components/profile/ledger-index';
 import { CategoryBadge } from '@/components/articles/category-badge';
+import { EditionMark } from '@/components/site/edition-stamp';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Ornament, type OrnamentName } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
@@ -178,7 +179,7 @@ const choiceCard = (active: boolean) =>
     active ? 'border-(--ink-gold) bg-(--ink-gold)/14' : 'border-rule/35 bg-card/50 hover:border-rule/60',
   );
 
-/** The language of the paper, as four cards with their ink-stamp monograms; applies at once on this device. */
+/** The language of the paper, as a card per edition with its stamp and flag; applies at once on this device. */
 function LanguageChoice() {
   const { t, locale } = useI18n();
   const { change, pending } = useChangeLocale();
@@ -186,21 +187,21 @@ function LanguageChoice() {
   return (
     <div>
       <SubHead>{w.language}</SubHead>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4" role="radiogroup" aria-label={w.language} aria-busy={pending}>
+      {/* Five cards: two a row on phones (the last one spans both), three on tablets, all five on a wide screen. */}
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5" role="radiogroup" aria-label={w.language} aria-busy={pending}>
         {LOCALES.map((code: Locale) => {
           const info = LOCALE_INFO[code];
           const active = code === locale;
           return (
-            <button key={code} type="button" role="radio" aria-checked={active} onClick={() => !active && change(code)} className={choiceCard(active)}>
-              <span
-                className={cn(
-                  'inline-flex h-9 w-9 -rotate-6 items-center justify-center rounded-full border-[3px] border-double font-typewriter text-[0.78rem] tracking-[0.04em]',
-                  active ? 'border-(--ink-accent) bg-(--ink-accent) text-card shadow-[inset_0_0_0_2px_hsl(var(--card))]' : 'border-current text-muted-foreground',
-                )}
-                aria-hidden="true"
-              >
-                {info.monogram}
-              </span>
+            <button
+              key={code}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => !active && change(code)}
+              className={cn(choiceCard(active), 'edition-card last:odd:col-span-2 sm:last:odd:col-span-1')}
+            >
+              <EditionMark code={code} active={active} className="edition-mark-card mb-0.5" />
               <span lang={info.htmlLang} className="font-display text-[1rem] font-semibold leading-tight text-balance">
                 {info.edition}
               </span>

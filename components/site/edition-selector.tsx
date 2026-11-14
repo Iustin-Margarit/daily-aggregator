@@ -3,6 +3,7 @@
 import '@/styles/editions.css';
 import { useRef } from 'react';
 import * as Menu from '@radix-ui/react-dropdown-menu';
+import { EditionMark } from '@/components/site/edition-stamp';
 import { Ornament } from '@/components/site/ornament';
 import { Spinner } from '@/components/ui/spinner';
 import { isLocale, LOCALE_INFO, LOCALES } from '@/lib/i18n/config';
@@ -12,7 +13,8 @@ import { cn } from '@/lib/utils';
 /**
  * The Editions selector: the language of the paper, chosen from a printed
  * dispatch slip (styles/editions.css). Every edition is listed in its own
- * language with a typed ink-stamp monogram; the one in hand is inked solid and
+ * language with a typed ink-stamp monogram struck over its country's flag
+ * (components/site/edition-stamp.tsx); the one in hand is inked solid and
  * pointed at by a printer's fist. Changing it reprints the page at once and is
  * remembered on this device (lib/i18n/client.tsx).
  *
@@ -40,9 +42,7 @@ export function EditionSelector({ align = 'end', className }: { align?: 'start' 
         onKeyDown={() => (byPointer.current = false)}
         className={cn('edition-seal-button inline-flex', className)}
       >
-        <span className="edition-stamp" aria-hidden="true">
-          {info.monogram}
-        </span>
+        <EditionMark code={locale} />
         {pending ? <Spinner className="h-3 w-3" /> : <span className="edition-caret" aria-hidden="true">▾</span>}
       </Menu.Trigger>
       <Menu.Portal>
@@ -69,9 +69,7 @@ export function EditionSelector({ align = 'end', className }: { align?: 'start' 
               const edition = LOCALE_INFO[code];
               return (
                 <Menu.RadioItem key={code} value={code} className="edition-row">
-                  <span className="edition-stamp" aria-hidden="true">
-                    {edition.monogram}
-                  </span>
+                  <EditionMark code={code} />
                   <span className="min-w-0 flex-1">
                     <span lang={edition.htmlLang} className="block font-display text-[1.05rem] font-semibold leading-tight">
                       {edition.edition}

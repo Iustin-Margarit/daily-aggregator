@@ -5,7 +5,7 @@
  * puts the cookie back if it is ever cleared. News stories themselves keep the
  * language they were written in; only the paper around them is translated.
  */
-export const LOCALES = ['en', 'fr', 'es', 'de'] as const;
+export const LOCALES = ['en', 'fr', 'es', 'de', 'ro'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = 'en';
@@ -34,4 +34,5 @@ export const LOCALE_INFO: Record<Locale, LocaleInfo> = {
   fr: { edition: 'Édition française', monogram: 'FR', htmlLang: 'fr', tag: 'fr-FR', ogLocale: 'fr_FR' },
   es: { edition: 'Edición española', monogram: 'ES', htmlLang: 'es', tag: 'es-ES', ogLocale: 'es_ES' },
   de: { edition: 'Deutsche Ausgabe', monogram: 'DE', htmlLang: 'de', tag: 'de-DE', ogLocale: 'de_DE' },
+  ro: { edition: 'Ediția română', monogram: 'RO', htmlLang: 'ro', tag: 'ro-RO', ogLocale: 'ro_RO' },
 };

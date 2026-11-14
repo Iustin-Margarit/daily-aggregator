@@ -238,7 +238,7 @@ function EditionToggle() {
 function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string }) {
   const { t } = useI18n();
   return (
-    <nav aria-label={t.nav.main} className="hidden h-10 items-stretch border-y border-rule/30 md:flex">
+    <nav aria-label={t.nav.main} className="hidden h-10 items-stretch border-y border-rule/30 lg:flex">
       {navItems(user).map(({ href, icon }, index) => {
         const active = isActive(href, pathname);
         return (
@@ -248,7 +248,7 @@ function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative flex items-center gap-2 whitespace-nowrap px-2.5 font-label text-[0.84rem] font-semibold uppercase tracking-[0.1em] lg:px-4 lg:tracking-[0.12em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                'relative flex items-center gap-2 whitespace-nowrap px-4 font-label text-[0.84rem] font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                 active
                   ? 'text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:border-y after:border-(--ink-gold)'
                   : 'text-muted-foreground hover:text-foreground',
@@ -274,7 +274,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
   return (
     <header className="paper sticky top-0 z-40 border-b border-border/60">
       {/* Phones: a 3.5rem bar and a one-line title small enough to sit beside the account (about 8.9 times its font size wide). */}
-      <div className="container grid h-14 grid-cols-[1fr_auto] items-center gap-3 sm:h-16 sm:gap-4 md:grid-cols-[1fr_auto_1fr]">
+      <div className="container grid h-14 grid-cols-[1fr_auto] items-center gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[1fr_auto_1fr]">
         <div className="min-w-0">
           {bigMasthead && (
             <div className="sm:hidden">
@@ -301,11 +301,11 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <Button asChild variant="ghost" size="sm" className="h-10 px-2 text-[0.95rem] sm:px-4">
                 <Link href="/login">{t.nav.logIn}</Link>
               </Button>
-              {/* Tablets also show the tabs in the middle, so the button takes its short name there. */}
-              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] sm:inline-flex md:max-lg:px-4">
+              {/* Below desktop width the button takes its short name, leaving room for the title. */}
+              <Button asChild size="sm" className="hidden h-10 px-4 text-[0.95rem] sm:inline-flex lg:px-5">
                 <Link href="/signup">
-                  <span className="md:max-lg:hidden">{t.nav.signUp}</span>
-                  <span className="hidden md:max-lg:inline">{t.nav.signUpShort}</span>
+                  <span className="max-lg:hidden">{t.nav.signUp}</span>
+                  <span className="lg:hidden">{t.nav.signUpShort}</span>
                 </Link>
               </Button>
             </>
@@ -316,17 +316,20 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
   );
 }
 
-/** On phones the reader's places sit at the bottom of the screen, within reach of a thumb. */
+/**
+ * On phones and tablets the reader's places sit at the bottom of the screen, within reach of a thumb
+ * (the header only has room for them, beside the title and the account, from 1024px).
+ */
 export function BottomNav({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
   const items = navItems(user);
   const { t } = useI18n();
   return (
     <>
-      <div className="h-[4.5rem] md:hidden" aria-hidden="true" />
+      <div className="h-[4.5rem] lg:hidden" aria-hidden="true" />
       <nav
         aria-label={t.nav.main}
-        className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <div className={cn('mx-auto grid h-16 max-w-md', items.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
           {items.map(({ href, icon }) => {

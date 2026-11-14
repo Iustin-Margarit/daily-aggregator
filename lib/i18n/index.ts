@@ -4,8 +4,10 @@ import de from '@/lib/i18n/dictionaries/de';
 import en, { type Dictionary } from '@/lib/i18n/dictionaries/en';
 import es from '@/lib/i18n/dictionaries/es';
 import fr from '@/lib/i18n/dictionaries/fr';
+import ro from '@/lib/i18n/dictionaries/ro';
+import type { Plural } from '@/lib/i18n/dictionaries/en';
 
-export type { Dictionary } from '@/lib/i18n/dictionaries/en';
+export type { Dictionary, Plural } from '@/lib/i18n/dictionaries/en';
 export type { Locale } from '@/lib/i18n/config';
 
 /*
@@ -15,9 +17,8 @@ export type { Locale } from '@/lib/i18n/config';
  * (lib/i18n/client.tsx).
  */
 
-export const DICTIONARIES: Record<Locale, Dictionary> = { en, fr, es, de };
+export const DICTIONARIES: Record<Locale, Dictionary> = { en, fr, es, de, ro };
 
-export type Plural = { one: string; other: string };
 type Vars = Record<string, string | number>;
 
 /** Fills `{name}` placeholders; unknown ones are left as they are. */
@@ -59,8 +60,15 @@ function makeTranslator(locale: Locale) {
     fmt,
     rich,
     number: (n: number) => numbers.format(n),
-    /** Picks the plural form for `n` (French counts 0 as singular, as it should) and fills `{n}`. */
-    plural: (forms: Plural, n: number, vars: Vars = {}) => fmt(plurals.select(n) === 'one' ? forms.one : forms.other, { ...vars, n: numbers.format(n) }),
+    /**
+     * Picks the plural form for `n` and fills `{n}`. French counts 0 as singular, as it should;
+     * Romanian has a third form, `few` (0, 2-19: "3 articole"), while 20 and up take `other` ("20 de articole").
+     */
+    plural: (forms: Plural, n: number, vars: Vars = {}) => {
+      const category = plurals.select(n);
+      const form = category === 'one' ? forms.one : (category === 'few' && forms.few) || forms.other;
+      return fmt(form, { ...vars, n: numbers.format(n) });
+    },
     /** "World, Science and Health", "Monde, Sciences et Santé", ... */
     list: (items: string[]) => lists.format(items),
     dates: {

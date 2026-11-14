@@ -67,7 +67,7 @@ const es: Dictionary = {
     note: 'Las páginas del periódico, las fechas y el almanaque cambian de idioma. Las noticias se mantienen en el idioma en que se escribieron.',
     trigger: 'Edición: {edition}. Elegir otro idioma',
     current: 'edición actual',
-    gloss: { en: 'En inglés', fr: 'En francés', es: 'En español', de: 'En alemán' },
+    gloss: { en: 'En inglés', fr: 'En francés', es: 'En español', de: 'En alemán', ro: 'En rumano' },
   },
 
   masthead: {
@@ -88,6 +88,7 @@ const es: Dictionary = {
     phases: ['Luna nueva', 'Luna creciente', 'Cuarto creciente', 'Gibosa creciente', 'Luna llena', 'Gibosa menguante', 'Cuarto menguante', 'Luna menguante'],
     title: 'El almanaque',
     thought: 'Pensamiento del día',
+    quoted: '«{text}»',
     woodcutFor: 'Un grabado para {month}',
     months: [
       { name: 'Enero', note: 'Cascabeles de trineo en el camino real y un año nuevo por leer.' },
@@ -173,7 +174,7 @@ const es: Dictionary = {
     justNow: 'ahora mismo',
     minutes: 'hace {n} min',
     hours: 'hace {n} h',
-    days: 'hace {n} d',
+    days: { one: 'hace {n} d', other: 'hace {n} d' },
     readingTime: '{n} min de lectura',
   },
 

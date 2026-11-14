@@ -4,9 +4,16 @@
  * that their keys, lists and {placeholders} match).
  *
  * - `{name}` is filled in by fmt(); in rich() it can be a link or bold text.
- * - `{ one, other }` pairs are plurals, chosen with Intl.PluralRules.
+ * - `plural(one, other)` pairs are plurals, chosen with Intl.PluralRules. Another
+ *   edition may add a `few` form where its grammar has one (Romanian: one / few /
+ *   other, "1 articol", "3 articole", "20 de articole").
  * - The masthead title, "The Daily Aggregator", is never translated.
  */
+
+/** A count's forms; `few` only in editions whose language has that form (Intl.PluralRules). */
+export type Plural = { one: string; few?: string; other: string };
+const plural = (one: string, other: string): Plural => ({ one, other });
+
 const en = {
   meta: {
     titleDefault: 'your own morning paper',
@@ -74,7 +81,7 @@ const en = {
     note: 'The paper’s pages, dates and almanac change language. News stories keep the language they were written in.',
     trigger: 'Edition: {edition}. Choose another language',
     current: 'current edition',
-    gloss: { en: 'In English', fr: 'In French', es: 'In Spanish', de: 'In German' },
+    gloss: { en: 'In English', fr: 'In French', es: 'In Spanish', de: 'In German', ro: 'In Romanian' },
   },
 
   masthead: {
@@ -95,6 +102,8 @@ const en = {
     phases: ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'],
     title: 'The almanac',
     thought: 'Thought for the day',
+    /** The thought in the language's own quotation marks. */
+    quoted: '“{text}”',
     woodcutFor: 'A woodcut for {month}',
     months: [
       { name: 'January', note: 'Sleigh bells on the high road and a fresh year to read.' },
@@ -183,7 +192,7 @@ const en = {
     justNow: 'just now',
     minutes: '{n}m ago',
     hours: '{n}h ago',
-    days: '{n}d ago',
+    days: plural('{n}d ago', '{n}d ago'),
     readingTime: '{n} min read',
   },
 
@@ -272,8 +281,8 @@ const en = {
     showEverything: 'Show everything',
     editSections: 'Edit my sections',
     pageN: 'Page {n}',
-    storyCount: { one: '{n} story', other: '{n} stories' },
-    pageCount: { one: '{n} page', other: '{n} pages' },
+    storyCount: plural('{n} story', '{n} stories'),
+    pageCount: plural('{n} page', '{n} pages'),
   },
 
   toolbar: {
@@ -375,9 +384,9 @@ const en = {
     allSaved: 'All saved',
     newFolder: 'New folder',
     allSavedStories: 'All saved stories',
-    storyCount: { one: '{n} story', other: '{n} stories' },
+    storyCount: plural('{n} story', '{n} stories'),
     allRead: 'all read',
-    notRead: { one: '{n} not read yet', other: '{n} not read yet' },
+    notRead: plural('{n} not read yet', '{n} not read yet'),
     renameFolder: 'Rename folder',
     deleteFolder: 'Delete folder',
     search: 'Search your saved stories and notes…',
@@ -452,7 +461,7 @@ const en = {
       myNote: 'My note',
       clipped: 'Clipped {date}',
     },
-    imported: { one: '{n} saved story moved into your account', other: '{n} saved stories moved into your account' },
+    imported: plural('{n} saved story moved into your account', '{n} saved stories moved into your account'),
     importedNote: 'The stories you saved before signing in are in Saved, on every device.',
   },
 
@@ -466,20 +475,20 @@ const en = {
     descriptionGuest: 'Press the stamps to choose what your front page shows. Your choice is kept in this browser; a free account keeps it everywhere.',
     description: 'Your front page shows these sections under “My sections”. You can still read every section there.',
     skip: 'Skip for now',
-    continueWith: { one: 'Continue with {n} section', other: 'Continue with {n} sections' },
+    continueWith: plural('Continue with {n} section', 'Continue with {n} sections'),
     continueAll: 'Continue with every section',
     save: 'Save sections',
     byline: 'Your byline (username)',
     bylineHint: 'Shown at the top of your paper. You can change it later.',
     inYourPaper: 'In your paper',
     everySection: 'Every section',
-    countOf: { one: '{n} of {total} sections', other: '{n} of {total} sections' },
+    countOf: plural('{n} of {total} sections', '{n} of {total} sections'),
     noneYet: 'No section chosen yet, so your paper includes them all.',
     pressStamp: 'Press a stamp to add or remove it.',
     clearAll: 'Clear all',
     selectAll: 'Select all',
     legend: 'Sections',
-    newspapers: { one: '{n} newspaper', other: '{n} newspapers' },
+    newspapers: plural('{n} newspaper', '{n} newspapers'),
     /** Typed in a small postmark ring: one short word. */
     chosen: 'CHOSEN',
     choose: 'CHOOSE',

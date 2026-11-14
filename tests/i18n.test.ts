@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { formatReadingTime, formatRelativeTime } from '../lib/format';
 import { DICTIONARIES, fmt, translator } from '../lib/i18n';
 import { isLocale, LOCALES } from '../lib/i18n/config';
-import { pickEvents } from '../lib/on-this-day';
+import { parseDateArticle, pickEvents } from '../lib/on-this-day';
 import { formatClock, prefAttributes } from '../lib/reader-prefs';
 import { editionLabel } from '../lib/site';
 import { normalizeMutedKeyword, validateUsername } from '../lib/validation';
@@ -25,9 +25,16 @@ describe('edition dictionaries', () => {
 
   for (const locale of LOCALES.filter((l) => l !== 'en')) {
     const other = leaves(DICTIONARIES[locale] as unknown as Tree);
+    // A plural may add a `few` form (Romanian); it sits beside the English `one` and `other`.
+    const few = [...other.keys()].filter((path) => path.endsWith('.few'));
 
     it(`${locale} has exactly the English keys and list lengths`, () => {
-      assert.deepEqual([...other.keys()].sort(), [...english.keys()].sort());
+      assert.deepEqual([...other.keys()].filter((path) => !few.includes(path)).sort(), [...english.keys()].sort());
+      for (const path of few) assert.ok(english.has(path.replace(/\.few$/, '.other')), `${locale} ${path} is not a plural`);
+    });
+
+    it(`${locale} keeps the placeholders of a plural in its few form`, () => {
+      for (const path of few) assert.deepEqual(placeholders(other.get(path) ?? ''), placeholders(english.get(path.replace(/\.few$/, '.other')) ?? ''), `${locale} ${path}`);
     });
 
     it(`${locale} keeps every {placeholder} of the English text`, () => {
@@ -49,6 +56,22 @@ describe('edition dictionaries', () => {
       assert.ok(!/ [:;?!»]/.test(text) && !/« /.test(text), `fr ${path}: ${text}`);
     }
   });
+
+  it('Romanian uses comma-below ș ț and „…” quotes', () => {
+    for (const [path, text] of leaves(DICTIONARIES.ro as unknown as Tree)) {
+      if (typeof text !== 'string') continue;
+      assert.ok(!/[şţŞŢ]/.test(text), `ro ${path} has a cedilla: ${text}`);
+      assert.ok(!/["«»“]/.test(text), `ro ${path} has the wrong quotes: ${text}`);
+    }
+  });
+
+  it('Romanian takes "de" from 20 up in every count that can reach it', () => {
+    const ro = DICTIONARIES.ro;
+    for (const forms of [ro.feed.storyCount, ro.feed.pageCount, ro.saved.storyCount, ro.saved.notRead, ro.saved.imported, ro.onboarding.newspapers]) {
+      assert.ok(forms.few && !forms.few.includes(' de '), forms.few);
+      assert.ok(forms.other.includes('{n} de '), forms.other);
+    }
+  });
 });
 
 describe('translator', () => {
@@ -60,6 +83,12 @@ describe('translator', () => {
     assert.equal(translator('fr').plural(forms, 0), '0 one');
     assert.equal(translator('es').plural(forms, 0), '0 other');
     assert.equal(translator('de').plural(forms, 2), '2 other');
+    // Romanian: one, few (0 and 2-19, also 101-119) and other (20 and up, with "de").
+    const ro = { one: '{n} articol', few: '{n} articole', other: '{n} de articole' };
+    assert.deepEqual([1, 0, 3, 19, 20, 100, 101, 120].map((n) => translator('ro').plural(ro, n)), [
+      '1 articol', '0 articole', '3 articole', '19 articole', '20 de articole', '100 de articole', '101 articole', '120 de articole',
+    ]);
+    assert.equal(translator('ro').plural(forms, 3), '3 other');
   });
 
   it('joins lists with the edition’s own "and"', () => {
@@ -67,6 +96,7 @@ describe('translator', () => {
     assert.equal(translator('fr').list(['Monde', 'Sciences', 'Santé']), 'Monde, Sciences et Santé');
     assert.equal(translator('es').list(['Política', 'Salud']), 'Política y Salud');
     assert.equal(translator('de').list(['Welt', 'Sport']), 'Welt und Sport');
+    assert.equal(translator('ro').list(['Externe', 'Sport', 'Sănătate']), 'Externe, Sport și Sănătate');
   });
 
   it('prints dates in the edition’s language, a dateline starting with a capital', () => {
@@ -75,6 +105,8 @@ describe('translator', () => {
     assert.equal(translator('fr').dates.masthead(date), 'Samedi 14 novembre 2026');
     assert.equal(translator('es').dates.masthead(date), 'Sábado, 14 de noviembre de 2026');
     assert.equal(translator('de').dates.masthead(date), 'Samstag, 14. November 2026');
+    assert.equal(translator('ro').dates.masthead(date), 'Sâmbătă, 14 noiembrie 2026');
+    assert.equal(translator('ro').dates.dayMonth(date), '14 noiembrie');
     assert.equal(translator('fr').dates.weekday(date), 'Samedi');
   });
 
@@ -92,6 +124,8 @@ describe('edition-aware helpers', () => {
     assert.equal(formatRelativeTime('2026-11-12T07:00:00Z', now, 'es'), 'hace 5 h');
     assert.equal(formatRelativeTime('2026-11-10T12:00:00Z', now, 'de'), 'vor 2 Tg.');
     assert.equal(formatRelativeTime('2026-11-12T11:59:40Z', now, 'fr'), 'à l’instant');
+    assert.equal(formatRelativeTime('2026-11-11T12:00:00Z', now, 'ro'), 'acum 1 zi');
+    assert.equal(formatRelativeTime('2026-11-09T12:00:00Z', now, 'ro'), 'acum 3 zile');
   });
 
   it('writes the reading time in each language', () => {
@@ -104,11 +138,13 @@ describe('edition-aware helpers', () => {
     assert.equal(editionLabel(day), 'Vol. II · No. 318');
     assert.equal(editionLabel(day, DICTIONARIES.fr.masthead.volNo), 'Vol. II · N° 318');
     assert.equal(editionLabel(day, DICTIONARIES.de.masthead.volNo), 'Jg. II · Nr. 318');
+    assert.equal(editionLabel(day, DICTIONARIES.ro.masthead.volNo), 'Anul II · Nr. 318');
   });
 
   it('reads the time on a 24-hour clock in the continental editions unless the reader chose otherwise', () => {
     assert.equal(prefAttributes(() => undefined, 'fr')['data-clock'], '24');
     assert.equal(prefAttributes(() => undefined, 'en')['data-clock'], '12');
+    assert.equal(prefAttributes(() => undefined, 'ro')['data-clock'], '24');
     assert.equal(prefAttributes((name) => (name === 'pref-clock' ? '12' : undefined), 'de')['data-clock'], '12');
     assert.equal(formatClock(new Date(2026, 10, 12, 15, 42), '24', 'fr'), '15:42');
   });
@@ -129,6 +165,30 @@ describe('edition-aware helpers', () => {
     assert.equal(events.length, 3);
     assert.ok(events.every((event) => !/guerre/.test(event.text)));
     assert.ok(events[0].text.startsWith('Inauguration'));
+  });
+
+  it('reads the Romanian anniversaries from the date article, as plain text', () => {
+    const wikitext = [
+      '[[File:Nellie Bly.jpg|thumb|1889: Nellie Bly]]',
+      '== Evenimente ==',
+      '* [[1305]]: [[Clement al V-lea]] devine primul papă cu reședința la [[Avignon]].',
+      '* [[1832]]: Primul tramvai din America, la [[New York (oraș)|New York]].<ref>Sursă</ref>',
+      "* [[1922]]: În Marea Britanie începe să emită '''BBC'''.",
+      '* [[1950]]: Un eveniment cu {{format|ascuns}} rămâne pe dinafară.',
+      '** un rând de sub alt an',
+      '== Nașteri ==',
+      '* [[1907]]: [[Astrid Lindgren]], scriitoare suedeză',
+    ].join('\n');
+    const events = parseDateArticle(wikitext);
+    assert.deepEqual(events.map((event) => [event.year, event.text]), [
+      [1305, 'Clement al V-lea devine primul papă cu reședința la Avignon.'],
+      [1832, 'Primul tramvai din America, la New York.'],
+      [1922, 'În Marea Britanie începe să emită BBC.'],
+    ]);
+    assert.equal(events[0].pages?.[0].content_urls?.desktop?.page, 'https://ro.wikipedia.org/wiki/Clement_al_V-lea');
+    assert.equal(events[1].pages?.[0].content_urls?.desktop?.page, 'https://ro.wikipedia.org/wiki/New_York_(ora%C8%99)');
+    assert.deepEqual(events[2].pages, []);
+    assert.ok(pickEvents([{ year: 1940, text: 'Începe un război lung între două țări vecine.' }, ...events], 3, 'ro').every((event) => event.year !== 1940));
   });
 
   it('only accepts the editions it knows', () => {

@@ -15,7 +15,7 @@ export function formatRelativeTime(date: string | Date, now: number = Date.now()
   if (diff < MINUTE) return words.justNow;
   if (diff < HOUR) return fmt(words.minutes, { n: Math.floor(diff / MINUTE) });
   if (diff < DAY) return fmt(words.hours, { n: Math.floor(diff / HOUR) });
-  if (diff < 7 * DAY) return fmt(words.days, { n: Math.floor(diff / DAY) });
+  if (diff < 7 * DAY) return translator(locale).plural(words.days, Math.floor(diff / DAY));
 
   const value = new Date(time);
   const sameYear = value.getFullYear() === new Date(now).getFullYear();

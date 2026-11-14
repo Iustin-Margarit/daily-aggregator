@@ -68,7 +68,7 @@ const de: Dictionary = {
     note: 'Seiten, Daten und Almanach der Zeitung wechseln die Sprache. Die Nachrichten bleiben in der Sprache, in der sie geschrieben wurden.',
     trigger: 'Ausgabe: {edition}. Andere Sprache wählen',
     current: 'aktuelle Ausgabe',
-    gloss: { en: 'Auf Englisch', fr: 'Auf Französisch', es: 'Auf Spanisch', de: 'Auf Deutsch' },
+    gloss: { en: 'Auf Englisch', fr: 'Auf Französisch', es: 'Auf Spanisch', de: 'Auf Deutsch', ro: 'Auf Rumänisch' },
   },
 
   masthead: {
@@ -89,6 +89,7 @@ const de: Dictionary = {
     phases: ['Neumond', 'Zunehmende Sichel', 'Erstes Viertel', 'Zunehmender Mond', 'Vollmond', 'Abnehmender Mond', 'Letztes Viertel', 'Abnehmende Sichel'],
     title: 'Der Almanach',
     thought: 'Gedanke des Tages',
+    quoted: '„{text}“',
     woodcutFor: 'Ein Holzschnitt für den {month}',
     months: [
       { name: 'Januar', note: 'Schlittenglocken auf der Landstraße und ein neues Jahr zum Lesen.' },
@@ -174,7 +175,7 @@ const de: Dictionary = {
     justNow: 'gerade eben',
     minutes: 'vor {n} Min.',
     hours: 'vor {n} Std.',
-    days: 'vor {n} Tg.',
+    days: { one: 'vor {n} Tg.', other: 'vor {n} Tg.' },
     readingTime: '{n} Min. Lesezeit',
   },
 

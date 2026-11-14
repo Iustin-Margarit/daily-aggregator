@@ -1,7 +1,7 @@
 /*
  * The Editions selector (components/site/edition-selector.tsx): the language
  * of the paper, chosen from a printed dispatch slip. Each edition carries an
- * ink-stamp monogram (EN, FR, ES, DE) in a double ring, set slightly askew as
+ * ink-stamp monogram (EN, FR, ES, DE, RO) in a double ring, struck over its flag, set slightly askew as
  * a hand stamp would be; the edition in hand is inked solid and pointed at
  * by a printer's fist.
  */
@@ -49,9 +49,60 @@
   }
 }
 
+/*
+ * The stamp struck over its country's flag (components/site/edition-stamp.tsx): a small printed
+ * flag tucked behind the ring like a postage stamp under a postmark, in muted period inks
+ * (printed into the paper by day, dimmed on the night stock), a little brighter when pointed at.
+ */
+.edition-mark {
+  --flag-red: #a8493d;
+  --flag-blue: #3d5479;
+  --flag-navy: #32436a;
+  --flag-white: #f6eedc;
+  --flag-yellow: #cfa84e;
+  --flag-gold: #c39540;
+  --flag-black: #3a3029;
+  --flag-opacity: 0.62;
+  --flag-blend: multiply;
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  isolation: isolate;
+}
+.dark .edition-mark {
+  --flag-red: #b4645a;
+  --flag-blue: #6479a3;
+  --flag-navy: #4f6290;
+  --flag-white: #cfc6b3;
+  --flag-yellow: #cfb069;
+  --flag-gold: #c7a25c;
+  --flag-black: #0b0d13;
+  --flag-opacity: 0.6;
+  --flag-blend: normal;
+}
+.edition-flag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 125%;
+  aspect-ratio: 3 / 2;
+  translate: -50% -50%;
+  rotate: 5deg;
+  opacity: var(--flag-opacity);
+  mix-blend-mode: var(--flag-blend);
+  transition: opacity 0.2s;
+}
+.edition-row[data-highlighted] .edition-flag,
+.edition-seal-button:hover .edition-flag,
+.edition-seal-button[data-state='open'] .edition-flag,
+.edition-card:hover .edition-flag {
+  opacity: calc(var(--flag-opacity) + 0.2);
+}
+
 /* An ink-stamp monogram: typewriter capitals in a double ring, pressed a little askew. */
 .edition-stamp {
   --edition-ink: hsl(var(--muted-foreground));
+  position: relative;
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -60,8 +111,10 @@
   height: 2.2rem;
   border: 3px double var(--edition-ink);
   border-radius: 50%;
+  /* A wash of paper behind the letters, so the flag never muddies them. */
+  background: radial-gradient(ellipse 60% 42% at 50% 50%, hsl(var(--card) / 0.85), hsl(var(--card) / 0.5) 70%, transparent);
   color: var(--edition-ink);
-  font-family: var(--font-special-elite), 'Courier New', monospace;
+  font-family: var(--font-typewriter);
   font-size: 0.74rem;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -79,6 +132,21 @@
   height: 2rem;
   font-size: 0.7rem;
 }
+/* Settings > The printing: one card per edition; the chosen one's stamp is inked solid. */
+.edition-mark-card .edition-stamp {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.78rem;
+  transform: rotate(-6deg);
+}
+.edition-mark-card[data-active] .edition-stamp {
+  --edition-ink: var(--ink-accent);
+  background: var(--ink-accent);
+  color: hsl(var(--card));
+  box-shadow: inset 0 0 0 2px hsl(var(--card));
+  text-shadow: none;
+}
+
 /* Phones: the stamp alone, a little smaller, so the bar keeps room for the title. */
 @media (width < 40rem) {
   .edition-seal-button {

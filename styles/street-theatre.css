@@ -764,7 +764,7 @@
     0 0 0.7rem 0.1rem color-mix(in srgb, var(--ink-gold) 45%, transparent),
     0 4px 14px rgb(0 0 0 / 0.18);
 }
-@media (width >= 48rem) {
+@media (width >= 64rem) {
   .st-float {
     bottom: 1.25rem;
   }

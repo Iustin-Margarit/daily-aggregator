@@ -41,12 +41,12 @@ export function TopStoryStamp({ className }: { className?: string }) {
           { fill: 'rgb(255 236 214 / 0.86)', dy: 0 },
         ].map(({ fill, dy }) => (
           <g key={dy} fill={fill} transform={`translate(0 ${dy})`}>
-            <text style={{ fontFamily: 'var(--font-special-elite)', fontSize: 8.2, letterSpacing: 0.6 }}>
+            <text style={{ fontFamily: 'var(--font-typewriter)', fontSize: 8.2, letterSpacing: 0.6 }}>
               <textPath href={`#${ring}`} startOffset="2%" textLength="150" lengthAdjust="spacing">
                 {t.story.topStamp}
               </textPath>
             </text>
-            <text x="50" y="47" textAnchor="middle" style={{ fontFamily: 'var(--font-special-elite)', fontSize: 7, letterSpacing: 1 }}>
+            <text x="50" y="47" textAnchor="middle" style={{ fontFamily: 'var(--font-typewriter)', fontSize: 7, letterSpacing: 1 }}>
               {t.story.topStampNo}
             </text>
             <text

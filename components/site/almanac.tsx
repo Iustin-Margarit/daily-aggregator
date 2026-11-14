@@ -470,7 +470,7 @@ export function MonthAlmanac({ className, wide = false }: { className?: string; 
         <p className="mt-1 text-[0.95rem] italic text-muted-foreground">{note}</p>
         <div className="ornament mx-auto my-4 w-3/4" />
         <p className="label text-muted-foreground">{t.almanac.thought}</p>
-        <blockquote className={cn('mt-1.5 font-display leading-snug', wide ? 'text-[1.3rem]' : 'text-[1.1rem]')}>“{thought.text}”</blockquote>
+        <blockquote className={cn('mt-1.5 font-display leading-snug', wide ? 'text-[1.3rem]' : 'text-[1.1rem]')}>{fmt(t.almanac.quoted, { text: thought.text })}</blockquote>
         <p className="mt-1 font-label text-[0.82rem] text-muted-foreground">{thought.by}</p>
       </div>
     </section>

@@ -47,26 +47,28 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
           <span className="-scale-x-100">
             <Ornament name="fist" className="fist-poke block w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
           </span>
-          <span className="hidden sm:inline">{previous}</span>
-          <span className="sm:hidden">{prev}</span>
+          <span className="hidden lg:inline">{previous}</span>
+          <span className="lg:hidden">{prev}</span>
         </a>
       ) : (
         // Keeps the page numbers centred: as wide as the "Previous page" link would be.
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-4')} aria-hidden="true">
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
-          <span className="hidden sm:inline">{previous}</span>
-          <span className="sm:hidden">{prev}</span>
+          <span className="hidden lg:inline">{previous}</span>
+          <span className="lg:hidden">{prev}</span>
         </span>
       )}
 
+      {/* Below 768px only the page you are on sits between Previous and Next (the whole row does not fit),
+          and the buttons keep their short names until 1024px. */}
       <ol className="flex items-center gap-0.5 sm:gap-1">
         {visiblePages(page, pages).map((p, index) =>
           p === 'gap' ? (
-            <li key={`gap-${index}`} className="w-6 text-center text-muted-foreground" aria-hidden="true">
+            <li key={`gap-${index}`} className="w-6 text-center text-muted-foreground max-md:hidden" aria-hidden="true">
               …
             </li>
           ) : (
-            <li key={p} className={cn(Math.abs(p - page) > 1 && p !== 1 && p !== pages && 'hidden sm:block')}>
+            <li key={p} className={cn(p !== page && 'max-md:hidden')}>
               <a
                 href={hrefFor(p)}
                 onClick={go(p)}
@@ -87,15 +89,15 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
 
       {page < pages ? (
         <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
-          <span className="hidden sm:inline">{next}</span>
-          <span className="sm:hidden">{nextShort}</span>
+          <span className="hidden lg:inline">{next}</span>
+          <span className="lg:hidden">{nextShort}</span>
           {/* A printer's fist pointing on (☞). */}
           <Ornament name="fist" className="fist-poke w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:currentColor]" />
         </a>
       ) : (
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-5')} aria-hidden="true">
-          <span className="hidden sm:inline">{next}</span>
-          <span className="sm:hidden">{nextShort}</span>
+          <span className="hidden lg:inline">{next}</span>
+          <span className="lg:hidden">{nextShort}</span>
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
         </span>
       )}

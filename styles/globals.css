@@ -57,8 +57,9 @@
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   /* UnifrakturMaguntia: the blackletter newspaper title, and nothing else. */
   --font-masthead: var(--font-unifraktur), var(--font-fraunces), ui-serif, Georgia, serif;
-  /* Special Elite: typewriter type for stamps and small notes. */
-  --font-typewriter: var(--font-special-elite), ui-monospace, 'Courier New', monospace;
+  /* Special Elite: typewriter type for stamps and small notes. Its Romanian supplement (Ă ă Ș ș Ț ț
+   * only, app/layout.tsx) comes first so those letters never fall back to another face mid-word. */
+  --font-typewriter: var(--font-special-elite-ro), var(--font-special-elite), ui-monospace, 'Courier New', monospace;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -1721,7 +1722,7 @@ article:focus-within .photo-plate::after,
 }
 .print-clipping-note-text {
   margin-top: 0.08cm;
-  font-family: var(--font-special-elite), 'Courier New', monospace;
+  font-family: var(--font-typewriter);
   font-size: 10.5pt;
   line-height: 1.45;
   white-space: pre-line;

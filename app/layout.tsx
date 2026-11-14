@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
+import localFont from 'next/font/local';
 import { SoundTicket } from '@/components/site/sound-ticket';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
@@ -20,6 +21,18 @@ const label = Jost({ subsets: ['latin', 'latin-ext'], variable: '--font-jost', d
 const masthead = UnifrakturMaguntia({ weight: '400', subsets: ['latin'], variable: '--font-unifraktur', display: 'swap' });
 // Typewriter type for stamps and small notes.
 const typewriter = Special_Elite({ weight: '400', subsets: ['latin'], variable: '--font-special-elite', display: 'swap' });
+// Special Elite has no comma-below Ș ș Ț ț: this 4 KB supplement adds them (with Ă ă), composed from the
+// font's own letters (app/fonts, Apache 2.0). It comes first in --font-typewriter but only covers those
+// letters (unicode-range), so it is fetched only when a page prints them, in the Romanian edition.
+const typewriterRo = localFont({
+  src: './fonts/special-elite-ro.woff2',
+  weight: '400',
+  variable: '--font-special-elite-ro',
+  display: 'swap',
+  preload: false,
+  adjustFontFallback: false,
+  declarations: [{ prop: 'unicode-range', value: 'U+0102-0103, U+0218-021B' }],
+});
 
 /**
  * The site's public address, for absolute links in link previews: NEXT_PUBLIC_SITE_URL
@@ -84,7 +97,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-font-size={fontSize && FONT_SIZES.has(fontSize) ? fontSize : 'medium'}
       // Reading preferences kept on this device (clock, street banner, photographs, columns): lib/reader-prefs.ts.
       {...prefAttributes((name) => cookieStore.get(name)?.value, locale)}
-      className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable}`}
+      className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable} ${typewriterRo.variable}`}
     >
       <body className="min-h-screen">
         <ThemeProvider nonce={nonce}>

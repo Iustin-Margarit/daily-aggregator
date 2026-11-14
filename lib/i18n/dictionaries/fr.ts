@@ -68,7 +68,7 @@ const fr: Dictionary = {
     note: 'Les pages du journal, les dates et l’almanach changent de langue. Les articles gardent la langue dans laquelle ils ont été écrits.',
     trigger: 'Édition : {edition}. Choisir une autre langue',
     current: 'édition en cours',
-    gloss: { en: 'En anglais', fr: 'En français', es: 'En espagnol', de: 'En allemand' },
+    gloss: { en: 'En anglais', fr: 'En français', es: 'En espagnol', de: 'En allemand', ro: 'En roumain' },
   },
 
   masthead: {
@@ -98,6 +98,7 @@ const fr: Dictionary = {
     ],
     title: 'L’almanach',
     thought: 'Pensée du jour',
+    quoted: '« {text} »',
     woodcutFor: 'Une gravure pour le mois de {month}',
     months: [
       { name: 'Janvier', note: 'Des grelots sur la grand-route et une année toute neuve à lire.' },
@@ -183,7 +184,7 @@ const fr: Dictionary = {
     justNow: 'à l’instant',
     minutes: 'il y a {n} min',
     hours: 'il y a {n} h',
-    days: 'il y a {n} j',
+    days: { one: 'il y a {n} j', other: 'il y a {n} j' },
     readingTime: '{n} min de lecture',
   },
 
