@@ -20,8 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { isLocale, LOCALE_INFO, LOCALES } from '@/lib/i18n/config';
-import { useChangeLocale, useI18n } from '@/lib/i18n/client';
+import { useI18n } from '@/lib/i18n/client';
 import { editionLabel } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
@@ -151,14 +150,13 @@ const EDITIONS: { value: 'light' | 'dark' | 'system'; mark: OrnamentName }[] = [
 /**
  * The account menu, printed like the rest of the paper: the reader's seal and
  * byline at its head, then Settings (§, the printer's mark for a section), the
- * edition (the woodcut sun, the man in the moon, the globe), its language
- * (each edition's ink-stamp monogram) and Log out (a key).
+ * edition (the woodcut sun, the man in the moon, the globe) and Log out (a key).
+ * The language is the stamp beside it in the bar (EditionSelector).
  */
 function AccountMenu({ user }: { user: HeaderUser }) {
   const signOut = useSignOut();
   const { theme, setTheme } = useTheme();
-  const { t, locale } = useI18n();
-  const { change } = useChangeLocale();
+  const { t } = useI18n();
   // The saved theme is only known in the browser.
   const mounted = useHydrated();
 
@@ -203,18 +201,6 @@ function AccountMenu({ user }: { user: HeaderUser }) {
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="label pb-1 pt-2 text-muted-foreground">{t.nav.language}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={locale} onValueChange={(next) => isLocale(next) && next !== locale && change(next)}>
-          {LOCALES.map((code) => (
-            <DropdownMenuRadioItem key={code} value={code}>
-              <span className="mr-3 flex w-6 shrink-0 justify-center font-typewriter text-[0.74rem] tracking-[0.04em] text-(--brass-ink)" aria-hidden="true">
-                {LOCALE_INFO[code].monogram}
-              </span>
-              <span lang={LOCALE_INFO[code].htmlLang}>{LOCALE_INFO[code].edition}</span>
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={signOut} className="text-destructive focus:text-destructive [--ornament-ink:currentColor]">
           <MenuMark name="key" />
           {t.nav.logOut}
@@ -241,7 +227,7 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      className="h-10 w-10 px-0 [--ornament-ink:var(--brass-ink)]"
+      className="h-10 w-9 px-0 [--ornament-ink:var(--brass-ink)] sm:w-10"
     >
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.35rem]" />
     </Button>
@@ -298,21 +284,21 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           <Masthead
             href={home}
             className={cn(
-              'whitespace-nowrap text-[1.3rem] transition-opacity duration-300 min-[400px]:text-[1.45rem] sm:text-[1.8rem]',
+              'whitespace-nowrap text-[1.2rem] transition-opacity duration-300 min-[380px]:text-[1.3rem] min-[420px]:text-[1.45rem] sm:text-[1.8rem]',
               bigMasthead && 'pointer-events-none opacity-0 max-sm:hidden',
             )}
           />
         </div>
         <NavTabs user={user} pathname={pathname} />
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+          {/* The language of the paper: always here, on every page, for everyone. */}
+          <EditionSelector />
           {user ? (
             <AccountMenu user={user} />
           ) : (
             <>
-              {/* The language of the paper as its stamp; while the front page's masthead is in view, its own selector is there. */}
-              <EditionSelector variant="seal" align="end" className={cn('hidden', !bigMasthead && 'lg:inline-flex')} />
               <EditionToggle />
-              <Button asChild variant="ghost" size="sm" className="h-10 px-3 text-[0.95rem] sm:px-4">
+              <Button asChild variant="ghost" size="sm" className="h-10 px-2 text-[0.95rem] sm:px-4">
                 <Link href="/login">{t.nav.logIn}</Link>
               </Button>
               {/* Tablets also show the tabs in the middle, so the button takes its short name there. */}

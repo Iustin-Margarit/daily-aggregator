@@ -56,7 +56,6 @@ const fr: Dictionary = {
     settings: 'Réglages',
     settingsNote: 'le registre du lecteur',
     theEdition: 'L’édition',
-    language: 'Langue',
     logOut: 'Se déconnecter',
     toMorning: 'Passer à l’édition du matin',
     toNight: 'Passer à l’édition du soir',

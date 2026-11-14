@@ -16,19 +16,11 @@ import { cn } from '@/lib/utils';
  * pointed at by a printer's fist. Changing it reprints the page at once and is
  * remembered on this device (lib/i18n/client.tsx).
  *
- * - `line`: "English Edition ▾" in small capitals beside the engraved globe,
- *   for the masthead's edition line and the sign-in pages;
- * - `seal`: the edition's stamp alone, for the header bar.
+ * It is one button, the edition's stamp, always in the same place: the header
+ * bar (and the top corner of the sign-in pages). Everywhere else the paper
+ * only prints the edition's name (EditionName).
  */
-export function EditionSelector({
-  variant = 'line',
-  align = 'start',
-  className,
-}: {
-  variant?: 'line' | 'seal';
-  align?: 'start' | 'center' | 'end';
-  className?: string;
-}) {
+export function EditionSelector({ align = 'end', className }: { align?: 'start' | 'center' | 'end'; className?: string }) {
   const { locale, t, fmt } = useI18n();
   const { change, pending } = useChangeLocale();
   const info = LOCALE_INFO[locale];
@@ -46,20 +38,11 @@ export function EditionSelector({
         title={label}
         onPointerDown={() => (byPointer.current = true)}
         onKeyDown={() => (byPointer.current = false)}
-        className={cn('inline-flex', variant === 'line' ? 'edition-line' : 'edition-seal-button', className)}
+        className={cn('edition-seal-button inline-flex', className)}
       >
-        {variant === 'line' ? (
-          <>
-            <Ornament name="globe" className="h-[1.05rem] [--ornament-ink:currentColor]" />
-            <span className="edition-line-name" lang={info.htmlLang}>
-              {info.edition}
-            </span>
-          </>
-        ) : (
-          <span className="edition-stamp" aria-hidden="true">
-            {info.monogram}
-          </span>
-        )}
+        <span className="edition-stamp" aria-hidden="true">
+          {info.monogram}
+        </span>
         {pending ? <Spinner className="h-3 w-3" /> : <span className="edition-caret" aria-hidden="true">▾</span>}
       </Menu.Trigger>
       <Menu.Portal>
@@ -110,5 +93,19 @@ export function EditionSelector({
         </Menu.Content>
       </Menu.Portal>
     </Menu.Root>
+  );
+}
+
+/** "English Edition" beside the engraved globe: printed, not a button (EditionSelector changes it). */
+export function EditionName({ className }: { className?: string }) {
+  const { locale } = useI18n();
+  const info = LOCALE_INFO[locale];
+  return (
+    <span className={cn('edition-name', className)}>
+      <Ornament name="globe" className="h-[1.05rem] [--ornament-ink:currentColor]" />
+      <span className="edition-name-text" lang={info.htmlLang}>
+        {info.edition}
+      </span>
+    </span>
   );
 }

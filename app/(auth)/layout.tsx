@@ -1,4 +1,4 @@
-import { EditionSelector } from '@/components/site/edition-selector';
+import { EditionName, EditionSelector } from '@/components/site/edition-selector';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Masthead, MottoRibbon } from '@/components/site/logo';
 import { getI18n } from '@/lib/i18n/server';
@@ -10,11 +10,15 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const { t } = await getI18n();
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="container flex flex-col items-center pt-8 text-center">
+      <header className="container flex flex-col items-center pt-2 text-center sm:pt-3">
+        {/* The same stamp as in the header bar of every other page, in the same corner. */}
+        <div className="flex w-full justify-end">
+          <EditionSelector />
+        </div>
         <Masthead className="text-[2.2rem] sm:text-[3.4rem]" />
         <MottoRibbon />
         <div className="mt-2 font-label text-[0.82rem] text-muted-foreground">
-          <EditionSelector align="center" />
+          <EditionName />
         </div>
       </header>
 

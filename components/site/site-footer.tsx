@@ -1,4 +1,4 @@
-import { EditionSelector } from '@/components/site/edition-selector';
+import { EditionName } from '@/components/site/edition-selector';
 import { Engraving } from '@/components/site/engraving';
 import { Masthead } from '@/components/site/logo';
 import { getI18n } from '@/lib/i18n/server';
@@ -14,9 +14,8 @@ export async function SiteFooter() {
           {/* One line on the narrowest phones too (the title is about 8.9 times as wide as its font size). */}
           <Masthead className="whitespace-nowrap text-[1.75rem] min-[400px]:text-[2rem]" />
           <p className="text-balance font-display text-[1.02rem] italic text-muted-foreground">{t.footer.motto}</p>
-          {/* The language of the paper, reachable from the foot of every page (and on phones, where the header has no room for it). */}
           <div className="font-label text-[0.82rem] text-muted-foreground">
-            <EditionSelector align="center" />
+            <EditionName />
           </div>
           <div className="ornament my-2 w-56" />
           <p className="max-w-xl text-pretty text-sm text-muted-foreground">{t.footer.credits}</p>

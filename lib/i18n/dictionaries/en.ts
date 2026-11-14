@@ -61,7 +61,6 @@ const en = {
     settings: 'Settings',
     settingsNote: 'the reader’s ledger',
     theEdition: 'The edition',
-    language: 'Language',
     logOut: 'Log out',
     toMorning: 'Switch to the Morning edition',
     toNight: 'Switch to the Night edition',

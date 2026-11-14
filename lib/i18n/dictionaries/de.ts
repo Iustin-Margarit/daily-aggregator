@@ -56,7 +56,6 @@ const de: Dictionary = {
     settings: 'Einstellungen',
     settingsNote: 'das Leserbuch',
     theEdition: 'Die Ausgabe',
-    language: 'Sprache',
     logOut: 'Abmelden',
     toMorning: 'Zur Morgenausgabe wechseln',
     toNight: 'Zur Abendausgabe wechseln',

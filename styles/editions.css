@@ -6,38 +6,19 @@
  * by a printer's fist.
  */
 
-/* The trigger beside the Vol. / No. line and under the masthead: small capitals, a gilt caret.
- * (display comes from the component's classes, so Tailwind's hidden / lg:inline-flex can switch it.) */
-.edition-line {
+/* The edition in hand, printed as plain text (the masthead's edition line, the footer, the sign-in pages):
+ * small capitals beside the engraved globe. Only the stamp in the header bar changes it. */
+.edition-name {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin-inline: -0.35rem;
-  padding: 0.2rem 0.35rem;
-  border-radius: 2px;
-  color: inherit;
-  transition: color 0.15s;
-  &:hover,
-  &[data-state='open'] {
-    color: hsl(var(--foreground));
-  }
-  &:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 1px;
-  }
-  & .edition-line-name {
+  & .edition-name-text {
     font-family: var(--font-jost), ui-sans-serif, sans-serif;
     font-size: 0.76rem;
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     white-space: nowrap;
-    text-decoration: underline dotted hsl(var(--rule) / 0.55);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.3em;
-  }
-  &:hover .edition-line-name,
-  &[data-state='open'] .edition-line-name {
-    text-decoration: underline solid var(--ink-gold);
   }
 }
 .edition-caret {
@@ -97,6 +78,19 @@
   width: 2rem;
   height: 2rem;
   font-size: 0.7rem;
+}
+/* Phones: the stamp alone, a little smaller, so the bar keeps room for the title. */
+@media (width < 40rem) {
+  .edition-seal-button {
+    padding-inline: 0.2rem;
+  }
+  .edition-seal-button .edition-caret {
+    display: none;
+  }
+  .edition-seal-button .edition-stamp {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
 }
 
 /* The dispatch slip. */

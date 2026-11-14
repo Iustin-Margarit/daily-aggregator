@@ -1,7 +1,7 @@
 'use client';
 
 import { ClockTile, MoonTile } from '@/components/site/almanac';
-import { EditionSelector } from '@/components/site/edition-selector';
+import { EditionName } from '@/components/site/edition-selector';
 import { StreetTheatre } from '@/components/site/street-theatre';
 import { Masthead, MottoRibbon } from '@/components/site/logo';
 import { FRONT_MASTHEAD_ID } from '@/components/site/site-header';
@@ -33,8 +33,8 @@ export function FrontMasthead({ home }: { home: string }) {
           <span className="text-[0.55rem] text-(--ink-gold)" aria-hidden="true">
             ◆
           </span>
-          {/* The language of the paper (components/site/edition-selector.tsx). */}
-          <EditionSelector />
+          {/* The language of the paper, printed; the stamp in the header bar changes it. */}
+          <EditionName />
         </span>
         <EditionDate />
       </div>
@@ -51,9 +51,9 @@ export function FrontMasthead({ home }: { home: string }) {
           <div className="relative">
             <MottoRibbon className="w-[14.5rem] min-[400px]:w-[16rem]" />
           </div>
-          {/* Phones have no edition line, so the Editions selector sits under the ribbon, near the thumb's first look. */}
+          {/* Phones have no edition line, so the edition is printed under the ribbon. */}
           <div className="relative mt-1.5 flex justify-center font-label text-[0.82rem] text-muted-foreground sm:hidden">
-            <EditionSelector align="center" />
+            <EditionName />
           </div>
         </div>
         <MoonTile layout="ear" className="hidden border-l border-rule/40 lg:flex" />

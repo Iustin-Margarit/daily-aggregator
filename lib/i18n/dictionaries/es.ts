@@ -55,7 +55,6 @@ const es: Dictionary = {
     settings: 'Ajustes',
     settingsNote: 'el libro del lector',
     theEdition: 'La edición',
-    language: 'Idioma',
     logOut: 'Cerrar sesión',
     toMorning: 'Pasar a la edición de la mañana',
     toNight: 'Pasar a la edición de la noche',
