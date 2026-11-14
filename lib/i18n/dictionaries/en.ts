@@ -190,8 +190,13 @@ const en = {
 
   landing: {
     deleted: 'Your account has been deleted, along with everything you saved.',
-    pictureAlt: 'A man in a skullcap reading the newspaper in a flowered armchair',
-    pictureCaption: 'Paul Cézanne, The Artist’s Father, 1866',
+    pictures: {
+      breakfast: { alt: 'A woman in a flowered dress reading the morning paper at the breakfast table', caption: 'L. A. Ring, At Breakfast, 1898' },
+      armchair: { alt: 'A man in a skullcap reading the newspaper in a flowered armchair', caption: 'Paul Cézanne, The Artist’s Father, 1866' },
+      figaro: { alt: 'A woman in spectacles reading the newspaper in an armchair', caption: 'Mary Cassatt, Reading Le Figaro, 1878' },
+      farmers: { alt: 'Farmers gathered by the stove while one of them reads the newspaper', caption: 'Albert Anker, The Farmers and the Newspaper, 1867' },
+      grandfather: { alt: 'An old man in a cap reading the newspaper at a table, beside a pipe and a carafe', caption: 'Albert Anker, Grandfather with the Newspaper, 1906' },
+    },
     kicker: 'Free, and no account needed',
     title: 'Your own morning paper',
     intro: '{count}+ newspapers, printed as one. Pick the sections you care about and read them like a real paper, with none of the noise.',

@@ -190,8 +190,13 @@ const fr: Dictionary = {
 
   landing: {
     deleted: 'Votre compte a été supprimé, ainsi que tout ce que vous aviez enregistré.',
-    pictureAlt: 'Un homme coiffé d’un calot lit le journal dans un fauteuil fleuri',
-    pictureCaption: 'Paul Cézanne, Le Père de l’artiste, 1866',
+    pictures: {
+      breakfast: { alt: 'Une femme en robe fleurie lit le journal du matin à la table du petit-déjeuner', caption: 'L. A. Ring, Au petit-déjeuner, 1898' },
+      armchair: { alt: 'Un homme coiffé d’un calot lit le journal dans un fauteuil fleuri', caption: 'Paul Cézanne, Le Père de l’artiste, 1866' },
+      figaro: { alt: 'Une femme à lunettes lit le journal dans un fauteuil', caption: 'Mary Cassatt, Lisant « Le Figaro », 1878' },
+      farmers: { alt: 'Des paysans réunis près du poêle pendant que l’un d’eux lit le journal', caption: 'Albert Anker, Les Paysans et le journal, 1867' },
+      grandfather: { alt: 'Un vieil homme coiffé d’un bonnet lit le journal à table, près d’une pipe et d’une carafe', caption: 'Albert Anker, Grand-père lisant le journal, 1906' },
+    },
     kicker: 'Gratuit, sans compte',
     title: 'Votre journal du matin',
     intro: 'Plus de {count} journaux, imprimés en un seul. Choisissez les rubriques qui vous intéressent et lisez-les comme un vrai journal, sans le bruit.',

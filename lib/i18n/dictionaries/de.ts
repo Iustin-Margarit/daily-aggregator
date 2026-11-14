@@ -181,8 +181,13 @@ const de: Dictionary = {
 
   landing: {
     deleted: 'Ihr Konto wurde gelöscht, zusammen mit allem, was Sie sich gemerkt hatten.',
-    pictureAlt: 'Ein Mann mit Käppchen liest in einem geblümten Sessel die Zeitung',
-    pictureCaption: 'Paul Cézanne, Der Vater des Künstlers, 1866',
+    pictures: {
+      breakfast: { alt: 'Eine Frau im geblümten Kleid liest am Frühstückstisch die Morgenzeitung', caption: 'L. A. Ring, Beim Frühstück, 1898' },
+      armchair: { alt: 'Ein Mann mit Käppchen liest in einem geblümten Sessel die Zeitung', caption: 'Paul Cézanne, Der Vater des Künstlers, 1866' },
+      figaro: { alt: 'Eine Frau mit Brille liest im Sessel die Zeitung', caption: 'Mary Cassatt, Beim Lesen des „Figaro“, 1878' },
+      farmers: { alt: 'Bauern sitzen am Ofen, während einer von ihnen die Zeitung liest', caption: 'Albert Anker, Die Bauern und die Zeitung, 1867' },
+      grandfather: { alt: 'Ein alter Mann mit Mütze liest am Tisch die Zeitung, daneben Pfeife und Karaffe', caption: 'Albert Anker, Großvater mit Zeitung, 1906' },
+    },
     kicker: 'Kostenlos, ganz ohne Konto',
     title: 'Ihre eigene Morgenzeitung',
     intro: 'Über {count} Zeitungen, gedruckt als eine. Wählen Sie die Rubriken, die Sie interessieren, und lesen Sie sie wie eine echte Zeitung, ohne den Lärm.',

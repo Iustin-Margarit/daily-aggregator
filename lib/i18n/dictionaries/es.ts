@@ -180,8 +180,13 @@ const es: Dictionary = {
 
   landing: {
     deleted: 'Tu cuenta se ha eliminado, junto con todo lo que tenías guardado.',
-    pictureAlt: 'Un hombre con gorro lee el periódico en un sillón de flores',
-    pictureCaption: 'Paul Cézanne, El padre del artista, 1866',
+    pictures: {
+      breakfast: { alt: 'Una mujer con un vestido de flores lee el periódico de la mañana mientras desayuna', caption: 'L. A. Ring, En el desayuno, 1898' },
+      armchair: { alt: 'Un hombre con gorro lee el periódico en un sillón de flores', caption: 'Paul Cézanne, El padre del artista, 1866' },
+      figaro: { alt: 'Una mujer con gafas lee el periódico en un sillón', caption: 'Mary Cassatt, Leyendo «Le Figaro», 1878' },
+      farmers: { alt: 'Unos campesinos reunidos junto a la estufa mientras uno de ellos lee el periódico', caption: 'Albert Anker, Los campesinos y el periódico, 1867' },
+      grandfather: { alt: 'Un anciano con gorro lee el periódico en la mesa, junto a una pipa y una jarra', caption: 'Albert Anker, Abuelo con el periódico, 1906' },
+    },
     kicker: 'Gratis y sin necesidad de cuenta',
     title: 'Tu propio periódico de la mañana',
     intro: 'Más de {count} periódicos, impresos en uno solo. Elige las secciones que te interesan y léelas como un periódico de verdad, sin ruido.',

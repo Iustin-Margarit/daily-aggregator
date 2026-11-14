@@ -13,6 +13,7 @@ import { getI18n } from '@/lib/i18n/server';
 import { siteConfig } from '@/lib/site';
 import { createClient } from '@/lib/supabase/server';
 import type { FeedArticle } from '@/lib/types';
+import { pickWelcomePlate } from '@/lib/welcome-plates';
 
 // Logged-in visitors are redirected to /feed by the proxy (proxy.ts), so this page is for guests.
 export default async function LandingPage({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
@@ -25,6 +26,8 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
   ]);
   const articles = (latest ?? []) as FeedArticle[];
   const [lead, ...others] = articles;
+  const plate = pickWelcomePlate();
+  const picture = t.landing.pictures[plate.key];
 
   return (
     <div className="container pt-5 sm:pt-6">
@@ -59,20 +62,21 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
         </>
       )}
 
-      {/* Welcome, under the top story so visitors see some news first: what this paper is, with Paul Cézanne's
-          father reading his paper (1866). Kept short: a wide strip of the picture on phones, the list from sm up. */}
+      {/* Welcome, under the top story so visitors see some news first: what this paper is, with one of
+          five paintings of people reading the paper, chosen at random (lib/welcome-plates.ts). Kept short: a wide strip of the picture on phones, the list from sm up. */}
       <section className="card-paper mt-10 grid items-center gap-5 overflow-hidden p-4 sm:mt-12 sm:p-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-8 lg:gap-10 lg:p-8">
         <figure className="w-full">
           {/* eslint-disable-next-line @next/next/no-img-element -- a small local picture */}
           <img
-            src="/plates/armchair.webp"
-            alt={t.landing.pictureAlt}
+            src={`/plates/${plate.key}.webp`}
+            alt={picture.alt}
             width={1000}
             height={800}
             loading="lazy"
-            className="aspect-[16/9] w-full rounded-2xl object-cover object-[50%_30%] shadow-lift md:aspect-[5/4]"
+            className="aspect-[16/9] w-full rounded-2xl object-cover shadow-lift md:aspect-[5/4]"
+            style={{ objectPosition: plate.focus }}
           />
-          <figcaption className="mt-1.5 text-center font-label text-[0.78rem] text-muted-foreground">{t.landing.pictureCaption}</figcaption>
+          <figcaption className="mt-1.5 text-center font-label text-[0.78rem] text-muted-foreground">{picture.caption}</figcaption>
         </figure>
         <div>
           <p className="kicker">{t.landing.kicker}</p>
