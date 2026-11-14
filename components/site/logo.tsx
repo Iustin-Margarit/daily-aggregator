@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
  */
 export function Masthead({ href = '/', className }: { href?: string; className?: string }) {
   return (
-    <Link href={href} lang="en" className={cn('masthead-glow inline-block font-masthead font-normal leading-[1.05] tracking-normal', className)}>
+    // data-text feeds the gilded sheen laid over the letters on the front page (styles: .masthead-sky).
+    <Link href={href} lang="en" data-text={siteConfig.masthead} className={cn('masthead-glow inline-block font-masthead font-normal leading-[1.05] tracking-normal', className)}>
       {siteConfig.masthead}
     </Link>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { ClockTile, MoonTile } from '@/components/site/almanac';
 import { EditionName } from '@/components/site/edition-selector';
 import { StreetTheatre } from '@/components/site/street-theatre';
@@ -17,6 +18,49 @@ function EditionDate() {
 }
 
 /**
+ * The lantern over the title: while a mouse or pen moves over the nameplate, its
+ * position (relative to the panel, and to the title for the gilded sheen) goes
+ * into CSS variables; styles/globals.css (.masthead-sky) lets the light glide
+ * after it. One update per frame at most; touch is ignored (no hover), and with
+ * reduced motion the light stays still in the middle.
+ */
+function useLantern() {
+  const sky = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const panel = sky.current;
+    if (!panel) return;
+    const title = panel.querySelector<HTMLElement>('.masthead-glow');
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    const paint = () => {
+      frame = 0;
+      const box = panel.getBoundingClientRect();
+      panel.style.setProperty('--lx', `${x - box.left}px`);
+      panel.style.setProperty('--ly', `${y - box.top}px`);
+      if (title) {
+        const letters = title.getBoundingClientRect();
+        title.style.setProperty('--tx', `${x - letters.left}px`);
+        title.style.setProperty('--ty', `${y - letters.top}px`);
+      }
+    };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || still.matches) return;
+      x = event.clientX;
+      y = event.clientY;
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
+    panel.addEventListener('pointermove', move);
+    return () => {
+      panel.removeEventListener('pointermove', move);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+  return sky;
+}
+
+/**
  * The front page's nameplate, in the grand frame: the edition line between
  * double rules, the blackletter title on its ribbon under a faint etched star
  * chart, the clock and tonight's moon as the nameplate's two "ears" (ruled
@@ -24,6 +68,7 @@ function EditionDate() {
  */
 export function FrontMasthead({ home }: { home: string }) {
   const { t } = useI18n();
+  const sky = useLantern();
   return (
     <section id={FRONT_MASTHEAD_ID} aria-label={t.masthead.label} className="card-ornate overflow-hidden">
       {/* Phones show this line in the header bar instead (site-header.tsx: HeaderEdition), so the title comes first. */}
@@ -41,8 +86,11 @@ export function FrontMasthead({ home }: { home: string }) {
 
       <div className="grid lg:grid-cols-[14rem_minmax(0,1fr)_14rem]">
         <ClockTile layout="ear" className="hidden border-r border-rule/40 lg:flex" />
-        <div className="relative min-w-0 px-4 pb-3 pt-4 text-center sm:px-6 sm:pb-6 sm:pt-7">
+        <div ref={sky} className="masthead-sky relative min-w-0 px-4 pb-3 pt-4 text-center sm:px-6 sm:pb-6 sm:pt-7">
           <span className="star-chart pointer-events-none absolute inset-0" aria-hidden="true" />
+          {/* Pointed at: a lantern follows the cursor and lights up the chart around it in gilt. */}
+          <span className="star-chart-lit" aria-hidden="true" />
+          <span className="masthead-lantern" aria-hidden="true" />
           {/* Sized so the title stays on one line (it is about 8.9 times as wide as its font size). */}
           <Masthead
             href={home}

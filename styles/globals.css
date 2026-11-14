@@ -1119,6 +1119,184 @@ article:focus-within .photo-plate::after,
   opacity: 0.09;
 }
 
+/*
+ * The lantern over the front-page nameplate (components/site/front-masthead.tsx: useLantern).
+ * Pointed at with a mouse or pen, a warm lantern glow drifts after the cursor and breathes slowly
+ * when it rests; around it the star chart shows in gilt, and a gold-leaf sheen passes over the
+ * blackletter. --lx/--ly (panel) and --tx/--ty (title) are registered so the light glides behind
+ * the cursor instead of jumping. Morning: honey sunlight on parchment, the letters' ink turning
+ * brass where the light falls (dark enough to stay crisp). Night: amber gaslight on navy, the
+ * cream letters warming to pale gold. Keyboard focus on the title lights it in the middle; reduced
+ * motion keeps a still, centred glow.
+ */
+@property --lx {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+@property --ly {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 42%;
+}
+@property --tx {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+@property --ty {
+  syntax: '<length-percentage>';
+  inherits: true;
+  initial-value: 55%;
+}
+.masthead-sky {
+  --lantern-core: hsl(43 96% 60% / 0.36);
+  --lantern-mid: hsl(38 92% 58% / 0.14);
+  --lantern-blend: multiply;
+  --chart-lit: #8a6420;
+  --chart-lit-opacity: 0.55;
+  --sheen-hi: hsl(40 78% 44%);
+  --sheen-mid: hsl(32 62% 30%);
+  --halo:
+    0 0 0.06em hsl(44 95% 62% / 0.4),
+    0 0 0.3em hsl(40 92% 56% / 0.24),
+    0 0 0.85em hsl(34 88% 52% / 0.14);
+  transition:
+    --lx 1.1s cubic-bezier(0.22, 0.61, 0.36, 1),
+    --ly 1.1s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.dark .masthead-sky {
+  --lantern-core: hsl(38 96% 60% / 0.2);
+  --lantern-mid: hsl(30 90% 46% / 0.08);
+  --lantern-blend: screen;
+  --chart-lit: #e6c47e;
+  --chart-lit-opacity: 0.58;
+  --sheen-hi: hsl(46 100% 88%);
+  --sheen-mid: hsl(40 88% 66%);
+  --halo:
+    0 0 0.06em hsl(42 100% 72% / 0.5),
+    0 0 0.32em hsl(38 95% 58% / 0.36),
+    0 0 0.95em hsl(30 90% 46% / 0.26);
+}
+.masthead-lantern,
+.star-chart-lit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.masthead-lantern {
+  mix-blend-mode: var(--lantern-blend);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle 16rem at var(--lx) var(--ly), var(--lantern-core), var(--lantern-mid) 42%, transparent 72%);
+    transform-origin: var(--lx) var(--ly);
+    animation: lantern-breathe 7s ease-in-out infinite paused;
+  }
+}
+/* The same chart as .star-chart, in gilt, seen only within the lantern's circle. */
+.star-chart-lit {
+  background-color: var(--chart-lit);
+  mask:
+    url(/ornaments/star-chart.webp) center / cover no-repeat,
+    radial-gradient(circle 12rem at var(--lx) var(--ly), #000, rgb(0 0 0 / 0.45) 45%, transparent 100%);
+  mask-composite: intersect;
+}
+.masthead-sky .masthead-glow {
+  transition:
+    text-shadow 1s ease,
+    --tx 0.9s cubic-bezier(0.22, 0.61, 0.36, 1),
+    --ty 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* The gilded sheen: the title again, in gold leaf lit only where the lantern is. */
+  &::after {
+    content: attr(data-text);
+    content: attr(data-text) / '';
+    position: absolute;
+    inset: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    color: transparent;
+    text-shadow: none;
+    background: radial-gradient(ellipse 2.4em 1.4em at var(--tx) var(--ty), var(--sheen-hi), var(--sheen-mid) 45%, transparent 82%);
+    background-clip: text;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+    animation: sheen-breathe 7s ease-in-out infinite paused;
+  }
+}
+@media (hover: hover) {
+  .masthead-sky:hover {
+    & .masthead-lantern {
+      opacity: 1;
+    }
+    & .masthead-lantern::before,
+    & .masthead-glow::after {
+      animation-play-state: running;
+    }
+    & .star-chart-lit {
+      opacity: var(--chart-lit-opacity);
+    }
+    & .masthead-glow {
+      text-shadow: var(--halo);
+    }
+    & .masthead-glow::after {
+      opacity: 1;
+    }
+  }
+}
+.masthead-sky:has(.masthead-glow:focus-visible) {
+  & .masthead-lantern {
+    opacity: 1;
+  }
+  & .star-chart-lit {
+    opacity: var(--chart-lit-opacity);
+  }
+  & .masthead-glow {
+    text-shadow: var(--halo);
+  }
+  & .masthead-glow::after {
+    opacity: 1;
+  }
+}
+/* Resting under the light: it swells and settles, about once every seven seconds. */
+@keyframes lantern-breathe {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+@keyframes sheen-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .masthead-sky,
+  .masthead-sky .masthead-glow {
+    transition: opacity 0.6s ease;
+  }
+  .masthead-lantern::before,
+  .masthead-sky .masthead-glow::after {
+    animation: none;
+  }
+  /* No moving sheen: the title keeps only its still warm halo. */
+  .masthead-sky .masthead-glow::after {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .photo-plate img,
   .photo-plate::after {
