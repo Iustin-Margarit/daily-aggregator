@@ -180,8 +180,8 @@ const es: Dictionary = {
 
   landing: {
     deleted: 'Tu cuenta se ha eliminado, junto con todo lo que tenías guardado.',
-    pictureAlt: 'Una mujer con sombrero de paja leyendo el periódico en una mecedora verde',
-    pictureCaption: 'Según Edward Penfield, 1897',
+    pictureAlt: 'Un hombre con gorro lee el periódico en un sillón de flores',
+    pictureCaption: 'Paul Cézanne, El padre del artista, 1866',
     kicker: 'Gratis y sin necesidad de cuenta',
     title: 'Tu propio periódico de la mañana',
     intro: 'Más de {count} periódicos, impresos en uno solo. Elige las secciones que te interesan y léelas como un periódico de verdad, sin ruido.',

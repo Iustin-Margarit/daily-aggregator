@@ -190,8 +190,8 @@ const fr: Dictionary = {
 
   landing: {
     deleted: 'Votre compte a été supprimé, ainsi que tout ce que vous aviez enregistré.',
-    pictureAlt: 'Une femme au chapeau de paille lisant le journal dans un rocking-chair vert',
-    pictureCaption: 'D’après Edward Penfield, 1897',
+    pictureAlt: 'Un homme coiffé d’un calot lit le journal dans un fauteuil fleuri',
+    pictureCaption: 'Paul Cézanne, Le Père de l’artiste, 1866',
     kicker: 'Gratuit, sans compte',
     title: 'Votre journal du matin',
     intro: 'Plus de {count} journaux, imprimés en un seul. Choisissez les rubriques qui vous intéressent et lisez-les comme un vrai journal, sans le bruit.',

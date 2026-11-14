@@ -36,61 +36,8 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
       <FrontMasthead home="/" />
       <ScrollDivider className="mt-4 sm:mt-6" />
 
-      {/* Welcome: what this paper is, with Edward Penfield's reader of 1897 (on phones small enough to show whole on screen). */}
-      <section className="card-paper mt-4 grid items-center gap-6 overflow-hidden p-5 sm:mt-6 sm:gap-8 sm:p-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-12 lg:p-10">
-        <figure className="mx-auto w-full max-w-[13rem] sm:max-w-xs md:max-w-none">
-          {/* eslint-disable-next-line @next/next/no-img-element -- a small local picture */}
-          <img
-            src="/plates/reader.webp"
-            alt={t.landing.pictureAlt}
-            width={717}
-            height={1000}
-            className="w-full rounded-2xl shadow-lift"
-          />
-          <figcaption className="mt-2 text-center font-label text-[0.78rem] text-muted-foreground">{t.landing.pictureCaption}</figcaption>
-        </figure>
-        <div>
-          <p className="kicker">{t.landing.kicker}</p>
-          <h2 className="headline mt-2 text-balance text-[2.1rem] sm:text-5xl">{t.landing.title}</h2>
-          <p className="mt-4 max-w-xl text-pretty text-[1.08rem] leading-relaxed text-foreground/85">
-            {fmt(t.landing.intro, { count: sourceCount ?? 30 })}
-          </p>
-          <ul className="mt-5 space-y-2.5">
-            {t.landing.offer.map((item) => (
-              <li key={item} className="flex items-start gap-3 text-[1.02rem]">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[0.95rem] text-(--ink-gold)" aria-hidden="true">
-                  ✦
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="group/read">
-              <Link href="/feed">
-                {t.landing.read}
-                <Ornament name="fist" className="fist-poke w-[1.45rem] [--ornament-ink:currentColor]" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/onboarding">{t.landing.choose}</Link>
-            </Button>
-          </div>
-          <p className="mt-4 text-pretty text-[0.95rem] italic text-muted-foreground">
-            {rich(t.landing.guestNote, {
-              account: (
-                <Link href="/signup" className="font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2">
-                  {t.landing.account}
-                </Link>
-              ),
-            })}
-          </p>
-        </div>
-      </section>
-
       {lead && (
         <>
-          <ScrollDivider className="mt-12" />
           <SectionHead className="mb-6 mt-6 text-[1.35rem]">{t.landing.topStory}</SectionHead>
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
             <div className="flex lg:pr-9">
@@ -111,6 +58,60 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
           </div>
         </>
       )}
+
+      {/* Welcome, under the top story so visitors see some news first: what this paper is, with Paul Cézanne's
+          father reading his paper (1866). Kept short: a wide strip of the picture on phones, the list from sm up. */}
+      <section className="card-paper mt-10 grid items-center gap-5 overflow-hidden p-4 sm:mt-12 sm:p-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-8 lg:gap-10 lg:p-8">
+        <figure className="w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a small local picture */}
+          <img
+            src="/plates/armchair.webp"
+            alt={t.landing.pictureAlt}
+            width={1000}
+            height={800}
+            loading="lazy"
+            className="aspect-[16/9] w-full rounded-2xl object-cover object-[50%_30%] shadow-lift md:aspect-[5/4]"
+          />
+          <figcaption className="mt-1.5 text-center font-label text-[0.78rem] text-muted-foreground">{t.landing.pictureCaption}</figcaption>
+        </figure>
+        <div>
+          <p className="kicker">{t.landing.kicker}</p>
+          <h2 className="headline mt-1.5 text-balance text-[1.75rem] sm:text-4xl">{t.landing.title}</h2>
+          <p className="mt-3 max-w-xl text-pretty text-[1.02rem] leading-relaxed text-foreground/85">
+            {fmt(t.landing.intro, { count: sourceCount ?? 30 })}
+          </p>
+          <ul className="mt-4 hidden space-y-1.5 sm:block">
+            {t.landing.offer.map((item) => (
+              <li key={item} className="flex items-start gap-3 text-[0.98rem]">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center text-[0.95rem] text-(--ink-gold)" aria-hidden="true">
+                  ✦
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button asChild size="lg" className="group/read">
+              <Link href="/feed">
+                {t.landing.read}
+                <Ornament name="fist" className="fist-poke w-[1.45rem] [--ornament-ink:currentColor]" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/onboarding">{t.landing.choose}</Link>
+            </Button>
+          </div>
+          <p className="mt-3 text-pretty text-[0.92rem] italic text-muted-foreground">
+            {rich(t.landing.guestNote, {
+              account: (
+                <Link href="/signup" className="font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2">
+                  {t.landing.account}
+                </Link>
+              ),
+            })}
+          </p>
+        </div>
+      </section>
 
       {others.length > 4 && (
         <>

@@ -281,5 +281,3 @@ tests/                   unit tests (node:test)
 
 - **Iustin Margarit** - *Lead Developer* - [GitHub](https://github.com/Iustin-Margarit)
 - **Vlad Marius-Valentin** - *Co-Developer*
-
-See [CHANGELOG.md](CHANGELOG.md) for what changed in version 2.0.

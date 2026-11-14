@@ -181,8 +181,8 @@ const de: Dictionary = {
 
   landing: {
     deleted: 'Ihr Konto wurde gelöscht, zusammen mit allem, was Sie sich gemerkt hatten.',
-    pictureAlt: 'Eine Frau mit Strohhut liest die Zeitung in einem grünen Schaukelstuhl',
-    pictureCaption: 'Nach Edward Penfield, 1897',
+    pictureAlt: 'Ein Mann mit Käppchen liest in einem geblümten Sessel die Zeitung',
+    pictureCaption: 'Paul Cézanne, Der Vater des Künstlers, 1866',
     kicker: 'Kostenlos, ganz ohne Konto',
     title: 'Ihre eigene Morgenzeitung',
     intro: 'Über {count} Zeitungen, gedruckt als eine. Wählen Sie die Rubriken, die Sie interessieren, und lesen Sie sie wie eine echte Zeitung, ohne den Lärm.',

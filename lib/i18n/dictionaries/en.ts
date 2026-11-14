@@ -190,8 +190,8 @@ const en = {
 
   landing: {
     deleted: 'Your account has been deleted, along with everything you saved.',
-    pictureAlt: 'A woman in a straw hat reading the paper in a green rocking chair',
-    pictureCaption: 'After Edward Penfield, 1897',
+    pictureAlt: 'A man in a skullcap reading the newspaper in a flowered armchair',
+    pictureCaption: 'Paul Cézanne, The Artist’s Father, 1866',
     kicker: 'Free, and no account needed',
     title: 'Your own morning paper',
     intro: '{count}+ newspapers, printed as one. Pick the sections you care about and read them like a real paper, with none of the noise.',

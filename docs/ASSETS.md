@@ -53,7 +53,8 @@ from Steinlen's picture story, scan on Wikimedia Commons:
 
 | File | Work | Source |
 |---|---|---|
-| `reader.webp` | Edward Penfield, poster for *Harper's* June issue (1897), Public Domain. The magazine's name was painted out so the picture stands alone. | [Library of Congress scan on Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Harper%27s_(for)_June_-_Edward_Penfield_LCCN2002721210.jpg) |
+| `reader.webp` | Edward Penfield, poster for *Harper's* June issue (1897), Public Domain. The magazine's name was painted out so the picture stands alone. Used beside the sign-in and sign-up forms. | [Library of Congress scan on Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Harper%27s_(for)_June_-_Edward_Penfield_LCCN2002721210.jpg) |
+| `armchair.webp` | Paul Cézanne, *The Artist's Father, Reading "L'Événement"* (1866), CC0 (National Gallery of Art, Washington, Open Access). Cropped to 5:4 around the reader; used in the front page's welcome. | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Paul_C%C3%A9zanne,_The_Artist%27s_Father,_Reading_%22L%27%C3%89v%C3%A9nement%22,_1866,_NGA_52085.jpg) |
 | `cat.webp` | Théophile Steinlen, *Winter: Cat on a Cushion* (1909), CC0 (The Metropolitan Museum of Art, Open Access) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Winter-_Cat_on_a_Cushion_MET_DP242969.jpg) |
 
 ## The street banner (`public/street`, ink masks)
