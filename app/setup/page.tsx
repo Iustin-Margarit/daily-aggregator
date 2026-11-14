@@ -15,10 +15,8 @@ const STEPS = [
     title: 'Start a database',
     body: (
       <>
-        <p>Either run Supabase locally (Docker required):</p>
-        <Code>npm run db:start</Code>
-        <p className="mt-2">or create a free project at supabase.com and push the schema:</p>
-        <Code>{'supabase link --project-ref <your-project-ref>\nsupabase db push'}</Code>
+        <p>Create a free project at supabase.com and push the schema to it:</p>
+        <Code>{'supabase login\nsupabase db push --remote=<your-project-ref>'}</Code>
       </>
     ),
   },
@@ -27,7 +25,7 @@ const STEPS = [
     title: 'Create .env.local',
     body: (
       <>
-        <p>Copy the example file and paste the URL and keys printed by the previous step:</p>
+        <p>Copy the example file and paste the project’s URL and keys (Project Settings → API Keys):</p>
         <Code>cp .env.example .env.local</Code>
       </>
     ),

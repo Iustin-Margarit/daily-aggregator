@@ -419,8 +419,7 @@ New migration `20261113095910_security_round_two.sql`.
   baseline files are frozen: every schema change goes into a new migration file.
 - Removed the 2025 AI-assistant rule books and helpers (`.clinerules`, `.cursor`, `.roo`,
   `.windsurf`, `.kilocode`, `project_rules`, `memory`, `.github/copilot-instructions.md`, `tools/`,
-  `requirements.txt`), the outdated `Architecture/` specs and old debug scripts. Added `CLAUDE.md`
-  and [`docs/REVIVAL.md`](docs/REVIVAL.md).
+  `requirements.txt`), the outdated `Architecture/` specs and old debug scripts.
 
 ## 2.1.0 - 2026-11-12: the broadsheet edition
 

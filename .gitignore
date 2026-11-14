@@ -17,10 +17,18 @@ build/
 .vercel
 .turbo
 
-# Editors and personal AI-assistant settings
+# Editors, and personal AI-assistant notes and settings (kept on this computer only)
 .vscode/
 .idea/
-.claude/settings.local.json
+.claude/
+CLAUDE.md
+AGENTS.md
+docs/REVIVAL.md
+.cursor/
+.windsurf/
+.clinerules
+.roo/
+.kilocode/
 
 # Local Supabase state
 supabase/.branches/
@@ -32,8 +40,7 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Local test output and assistant files written by `next dev`
+# Local test output
 coverage/
 playwright-report/
 test-results/
-AGENTS.md

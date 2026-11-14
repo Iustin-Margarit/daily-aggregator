@@ -4,10 +4,12 @@
 old-school broadsheet: the latest headlines from 30+ publishers, filtered by the sections you
 care about.
 
-![Feed](docs/screenshots/feed.jpg)
+**Read it live: [daily-aggregator.vercel.app](https://daily-aggregator.vercel.app)**, no account needed.
 
-More screenshots: [article](docs/screenshots/article.jpg) · [saved stories](docs/screenshots/saved.jpg) ·
-[night edition](docs/screenshots/feed-dark.jpg) · [mobile](docs/screenshots/mobile.jpg) ·
+![The front page in the morning edition: the blackletter masthead with a clock and tonight's moon, the moving street banner, the lead story, "In other news" and the On this day almanac](docs/screenshots/feed.jpg)
+
+More screenshots: [night edition](docs/screenshots/feed-dark.jpg) · [story page](docs/screenshots/article.jpg) ·
+[saved stories](docs/screenshots/saved.jpg) · [phone](docs/screenshots/mobile.jpg) ·
 [newsroom dashboard](docs/screenshots/admin.jpg)
 
 Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and **Supabase**
@@ -69,30 +71,33 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
   utility classes (`.headline`, `.kicker`, `.paper-box`, `.news-grid`, ...) in
   [`styles/globals.css`](styles/globals.css).
 
-## Quick start (local, about 5 minutes)
+## Quick start (about 10 minutes, no Docker)
 
-**You need:** Node.js 22.12+ (any current LTS: 22, 24 or 26), Docker Desktop (running), and the
-[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) v3.
+**You need:** Node.js 22.12+ (any current LTS: 22, 24 or 26), the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) v3 and a free
+[Supabase](https://supabase.com) account. Development runs against a small free cloud project, so
+nothing heavy runs on your computer.
 
-```bash
-npm install
-npm run db:start          # starts Postgres, Auth & co. in Docker and applies the migrations
-```
+1. Create a Supabase project for development (any region). In *Authentication > URL Configuration*
+   set the Site URL to `http://localhost:3000` and add `http://localhost:3000/**`; in
+   *Authentication > Sign In / Providers* switch **Confirm email** off (no mail server needed).
+2. Load the schema into it:
+   ```bash
+   npm install
+   supabase login
+   supabase db push --remote=<your-dev-project-ref>
+   ```
+3. Put its URL, publishable (anon) key and secret (service_role) key in `.env.local`:
+   ```bash
+   cp .env.example .env.local   # then fill in the values
+   npm run ingest               # fetch today's news (about a minute)
+   npm run dev                  # http://localhost:3000
+   ```
+4. Sign up, pick your sections, and make yourself an admin with
+   `npm run make-admin -- you@example.com`; reload and open `/admin`.
 
-`db:start` prints an **API URL**, an **anon key** and a **service_role key**. Put them in `.env.local`:
-
-```bash
-cp .env.example .env.local   # then fill in the three values (and a CRON_SECRET)
-npm run dev                  # http://localhost:3000
-```
-
-1. Open http://localhost:3000 and **sign up**. Locally, no confirmation email is needed.
-2. Pick your topics. The first visit to the feed fetches the news automatically (about 20 seconds).
-   You can also run `npm run ingest` at any time.
-3. Make yourself an admin: `npm run make-admin -- you@example.com`, then reload and open `/admin`.
-
-Local extras: Supabase Studio (database UI) at http://127.0.0.1:58323, and every email the app
-sends (confirmations, password resets) at http://127.0.0.1:58324.
+The `db:push:dev`, `db:push:prod` and `db:types` scripts in `package.json` name this project's own
+dev project; change the ref in them to yours.
 
 ## Deploying (Supabase cloud + Vercel)
 
@@ -252,9 +257,9 @@ tests/                   unit tests (node:test)
 | `npm run check` | Type check + lint + unit tests |
 | `npm run ingest` | Fetch all enabled sources once |
 | `npm run make-admin -- <email>` | Give an account the admin role |
-| `npm run db:start` / `db:stop` | Start / stop the local Supabase stack |
-| `npm run db:reset` | Recreate the local database from the migrations (deletes local data) |
-| `npm run db:types` | Regenerate `lib/database.types.ts` after schema changes |
+| `npm run db:push:dev` | Apply new migrations to the development project |
+| `npm run db:push:prod` | Apply new migrations to production (the project the CLI is linked to) |
+| `npm run db:types` | Regenerate `lib/database.types.ts` from the development project |
 
 ## Troubleshooting
 
@@ -264,11 +269,9 @@ tests/                   unit tests (node:test)
   not run them at the same time).
 - **The app shows "connect a database"**: `.env.local` is missing or incomplete. Restart
   `npm run dev` after editing it.
-- **Supabase CLI v3** commands work on the **local** database unless you add `--remote` (for
-  example `supabase db push --remote`). The project needs CLI v3; v2 rejects `[local_smtp]` in
+- **Supabase CLI v3** targets a local database unless you add `--remote` (the linked project) or
+  `--remote=<ref>` (any other project). The project needs CLI v3; v2 rejects `[local_smtp]` in
   `supabase/config.toml`.
-- **`supabase start` cannot pull `storage-api:custom-metadata`**: `supabase link` copied a hosted-only
-  version number into `supabase/.temp/storage-version`. Delete that file and run it again.
 - **Node.js 20 is not supported** any more (the Supabase packages need Node 22+). Run `node -v`;
   if it is older than 22.12, install a current LTS from nodejs.org.
 - **A source keeps failing**: the admin *Sources* page shows the last error. Many publishers change
