@@ -102,7 +102,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           />
         </div>
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <Label htmlFor="password">{t.auth.password}</Label>
             <Link href="/forgot-password" className="text-xs italic text-muted-foreground underline-offset-4 hover:underline">
               {w.forgot}
@@ -117,7 +117,7 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading || !email || !password}>
+        <Button type="submit" className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance" disabled={loading || !email || !password}>
           {loading && <Spinner />}
           {loading ? w.submitting : t.auth.logIn}
         </Button>

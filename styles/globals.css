@@ -16,11 +16,21 @@
   margin-inline: auto;
   padding-inline: 1rem;
   @media (width >= 40rem) {
-    padding-inline: 1.5rem;
+    padding-inline: calc(1.5rem * var(--chrome-unzoom, 1));
+    max-width: calc(40rem * max(1, var(--chrome-unzoom, 1)));
+  }
+  /* Tailwind's own steps, restated so the zoomed header (.chrome-scale) keeps the page's width with Large type.
+     With Small type the page is narrower than the header needs here, so the header keeps the Medium width. */
+  @media (width >= 48rem) {
+    max-width: calc(48rem * max(1, var(--chrome-unzoom, 1)));
+  }
+  @media (width >= 64rem) {
+    max-width: calc(64rem * max(1, var(--chrome-unzoom, 1)));
   }
   @media (width >= 1280px) {
-    padding-inline: 2.5rem;
-    max-width: calc(var(--page-max) + 5rem);
+    padding-inline: calc(2.5rem * var(--chrome-unzoom, 1));
+    /* --chrome-unzoom undoes .chrome-scale's zoom, so the header stays exactly as wide as the page under it. */
+    max-width: calc((var(--page-max) + 5rem) * var(--chrome-unzoom, 1));
   }
 }
 
@@ -252,13 +262,6 @@
   flex-shrink: 0;
   background-color: var(--engraving-ink);
   mask: var(--engraving) center / contain no-repeat;
-}
-
-@utility engraving-photo {
-  /* A photograph (components/site/engraving.tsx, PHOTOGRAPHS): its night plate on dark paper. */
-  .dark & {
-    mask-image: var(--engraving-night);
-  }
 }
 
 @utility engraving-soft {
@@ -646,9 +649,11 @@
      outgrow it (zoom undoes the root's scale). The bottom tab bar is sized in px instead (site-header.tsx). */
   html[data-font-size='large'] .chrome-scale {
     zoom: calc(1 / 1.125);
+    --chrome-unzoom: 1.125;
   }
   html[data-font-size='small'] .chrome-scale {
     zoom: calc(1 / 0.9375);
+    --chrome-unzoom: 0.9375;
   }
 
   * {
@@ -660,6 +665,12 @@
     /* The page never scrolls sideways: on a phone, anything a little too wide made the browser zoom the
        whole page out, clipping its left edge and leaving the bottom bar above the screen's edge. Clip (not
        hidden) keeps the sticky header working; elements are still checked not to overflow at 320 px. */
+    overflow-x: clip;
+  }
+  /* The rule on html is handed to the viewport, and a phone browser still widens the page for anything
+     sticking out (the postmark's 1.4x strike on a right-hand stamp did, for a moment). Clipping the body
+     as well stops it. */
+  body {
     overflow-x: clip;
   }
 
@@ -913,74 +924,92 @@
 /*
  * The section stamps (Sections, components/onboarding/topics-form.tsx): printed
  * in rich, bright inks like real coloured stamps (--stamp-ink: the section's ink
- * with more colour), with a printed frame line inside the perforations. Pointing
- * at one lifts it off the page with a deeper shadow, darkens its frame and
- * brings the "Choose" ring up in the stamp's ink. A chosen stamp is tinted,
- * tilted and franked with the postmark.
+ * with more colour), with a printed frame line inside the perforations. Three
+ * states that must never be confused: an unchosen stamp rests close to the paper
+ * with a faint dashed "Choose" ring; pointing at one only lifts it and adds a light
+ * tint; a chosen stamp is richly tinted, double-framed in its ink, raised, tilted
+ * and franked with a dark postmark and an inked tick.
  */
 .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l + 0.03) calc(c * 1.55) h);
-  filter: drop-shadow(0 2px 3px rgb(60 38 16 / 0.16));
+  filter: drop-shadow(0 1px 2px rgb(60 38 16 / 0.12));
   transition:
     transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1),
     filter 0.2s;
+  /* Not chosen: close to the resting paper, a thin frame line; the engraving and name keep their colour. */
   & > .stamp {
     --engraving-ink: var(--stamp-ink);
-    background-color: color-mix(in oklab, var(--stamp-ink) 11%, hsl(var(--card)));
-    outline: 1px solid color-mix(in oklab, var(--stamp-ink) 45%, transparent);
+    background-color: color-mix(in oklab, var(--stamp-ink) 5%, hsl(var(--card)));
+    outline: 1px solid color-mix(in oklab, var(--stamp-ink) 40%, transparent);
     outline-offset: -9px;
+    box-shadow: none;
     transition:
       outline-color 0.2s,
-      background-color 0.2s;
+      background-color 0.2s,
+      box-shadow 0.2s;
   }
+  /* A pencilled, dashed "Choose" ring: present, but never competing with a real postmark. */
   & .choose-ring {
     color: hsl(var(--muted-foreground));
-    opacity: 0.5;
+    opacity: 0.45;
     transform: rotate(-6deg);
     transition:
       opacity 0.2s,
       color 0.2s,
       transform 0.2s;
   }
+  /* Pointing: a gentle lift and a light preview tint, well short of a chosen stamp. */
   &:hover {
-    transform: translateY(-5px) rotate(-0.6deg);
-    filter: drop-shadow(0 14px 14px rgb(60 38 16 / 0.3));
+    transform: translateY(-4px) rotate(-0.5deg);
+    filter: drop-shadow(0 10px 10px rgb(60 38 16 / 0.2));
   }
   &:hover > .stamp {
-    outline: 2px solid var(--stamp-ink);
-    background-color: color-mix(in oklab, var(--stamp-ink) 17%, hsl(var(--card)));
+    background-color: color-mix(in oklab, var(--stamp-ink) 9%, hsl(var(--card)));
+    outline-color: color-mix(in oklab, var(--stamp-ink) 70%, transparent);
   }
   &:hover .choose-ring {
     color: var(--stamp-ink);
-    opacity: 1;
-    transform: rotate(-12deg) scale(1.08);
+    opacity: 0.75;
+    transform: rotate(-10deg) scale(1.05);
   }
+  /* Chosen: a rich tint, a crisp double frame line in the stamp's ink, raised off the page, postmarked. */
   &[data-chosen] {
-    transform: rotate(-1deg);
-    filter: drop-shadow(0 8px 12px rgb(60 38 16 / 0.24));
+    transform: translateY(-2px) rotate(-1deg);
+    filter: drop-shadow(0 9px 12px rgb(60 38 16 / 0.32));
   }
   &[data-chosen] > .stamp {
-    outline: 2px solid var(--stamp-ink);
-    background-color: color-mix(in oklab, var(--stamp-ink) 20%, hsl(var(--card)));
+    background-color: color-mix(in oklab, var(--stamp-ink) 27%, hsl(var(--card)));
+    outline: 2.5px solid var(--stamp-ink);
+    box-shadow: inset 0 0 0 12px transparent, inset 0 0 0 13px color-mix(in oklab, var(--stamp-ink) 55%, transparent);
   }
   &[data-chosen]:hover {
     transform: translateY(-5px) rotate(-1.4deg);
+    filter: drop-shadow(0 14px 14px rgb(60 38 16 / 0.34));
   }
 }
 .dark .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l + 0.05) calc(c * 1.7) h);
-  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.5));
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.4));
+  & > .stamp {
+    background-color: color-mix(in oklab, var(--stamp-ink) 6%, hsl(var(--card)));
+  }
   &:hover {
-    filter: drop-shadow(0 14px 16px rgb(0 0 0 / 0.75));
+    filter: drop-shadow(0 12px 14px rgb(0 0 0 / 0.65));
+  }
+  &:hover > .stamp {
+    background-color: color-mix(in oklab, var(--stamp-ink) 11%, hsl(var(--card)));
   }
   &[data-chosen] {
-    filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.6));
+    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.75));
+  }
+  &[data-chosen] > .stamp {
+    background-color: color-mix(in oklab, var(--stamp-ink) 30%, hsl(var(--card)));
   }
 }
-/* Morning: the unchosen "Choose" ring in a darker, steadier ink, so it reads on the pale stamps. */
+/* Morning: the unchosen "Choose" ring in a brown pencil, faint but legible on the pale stamps. */
 html:not(.dark) .section-stamp:not(:hover) .choose-ring {
-  color: hsl(28 26% 23%);
-  opacity: 0.82;
+  color: hsl(28 22% 30%);
+  opacity: 0.5;
 }
 @media (prefers-reduced-motion: reduce) {
   .section-stamp,
@@ -991,10 +1020,10 @@ html:not(.dark) .section-stamp:not(:hover) .choose-ring {
 
 /* A postmark struck on a chosen stamp (Sections), and a tick inked into a ledger box. */
 :root {
-  --postmark-ink: hsl(26 30% 14% / 0.78);
+  --postmark-ink: hsl(26 34% 12% / 0.92);
 }
 .dark {
-  --postmark-ink: hsl(40 40% 86% / 0.8);
+  --postmark-ink: hsl(40 45% 90% / 0.95);
 }
 .postmark {
   transform: rotate(-9deg);

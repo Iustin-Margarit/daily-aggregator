@@ -36,7 +36,7 @@ export function MottoRibbon({ className }: { className?: string }) {
   const pathId = `motto-arc-${useId().replace(/:/g, '')}`;
   const { motto } = useI18n().t.masthead;
   return (
-    <div className={cn('relative mx-auto mt-1 w-[18rem] sm:w-[21rem] xl:w-[23rem]', className)}>
+    <div className={cn('relative mx-auto mt-1 w-[18rem] max-w-full sm:w-[21rem] xl:w-[23rem]', className)}>
       <Engraving name="ribbon" className="w-full" />
       <svg viewBox="0 0 873 300" className="absolute inset-0 h-full w-full overflow-visible" role="img" aria-label={motto}>
         <path id={pathId} d="M 92 91 Q 420 41 748 95" fill="none" />

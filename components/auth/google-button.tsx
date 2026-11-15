@@ -51,7 +51,7 @@ export function GoogleButton({ next = '/feed', label }: { next?: string; label?:
   return (
     <div className="space-y-3">
       {error && <FormMessage type="error">{error}</FormMessage>}
-      <Button type="button" variant="outline" className="w-full gap-3 bg-card" onClick={start} disabled={loading}>
+      <Button type="button" variant="outline" className="h-auto min-h-10 w-full gap-3 whitespace-normal bg-card py-2 text-center text-balance" onClick={start} disabled={loading}>
         {loading ? <Spinner /> : <GoogleLogo />}
         {loading ? t.auth.openingGoogle : (label ?? t.auth.google)}
       </Button>

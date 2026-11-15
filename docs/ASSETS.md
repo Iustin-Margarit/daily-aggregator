@@ -21,7 +21,7 @@ Mostly traced from 19th-century book and magazine illustrations; converted to ma
 | `technology.webp` | [vintage-airship](https://freesvg.org/vintage-airship) |
 | `science.webp` | [johnny-automatic-microscope](https://freesvg.org/johnny-automatic-microscope): a brass microscope traced from an old engraving (replaced the woman with a telescope, 2026-11-15: the section stamps show objects, not people) |
 | `health.webp` | [1541895045](https://freesvg.org/1541895045) |
-| `sports.webp`, `sports-night.webp` | Not from freesvg: a press photograph, Ricardo Zamora (goalkeeper) with a laced leather ball, Agence Rol, 1931, public domain, from Gallica (btv1b53251534k) via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Ricardo_Zamora_1931.jpg). Cropped to an oval plate with a soft edge; the day plate is inked where the photo is dark, the night plate where it is light, so it reads as a positive on both papers (replaced the golf lady and a bicycle, 2026-11-15) |
+| `sports.webp` | [boxing-gloves](https://freesvg.org/boxing-gloves): a pair of laced leather gloves (replaced a 1931 press photograph, which stood out among the engravings, 2026-11-15; before that a golf lady and a bicycle) |
 | `entertainment.webp` | [theater-masks](https://freesvg.org/theater-masks) |
 | `press.webp` | [1536075490](https://freesvg.org/1536075490) |
 | `newsboy.webp` | [johnny-automatic-newsboy](https://freesvg.org/johnny-automatic-newsboy) |

@@ -287,7 +287,7 @@ function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative flex items-center gap-2 whitespace-nowrap px-3 font-label xl:px-4 text-[0.84rem] font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                'relative flex items-center gap-2 whitespace-nowrap px-2.5 font-label text-[0.84rem] font-semibold uppercase tracking-[0.1em] transition-colors xl:px-4 xl:tracking-[0.12em] focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                 active
                   ? 'text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:border-y after:border-(--ink-gold)'
                   : 'text-muted-foreground hover:text-foreground',
@@ -333,7 +333,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           />
         </div>
         <NavTabs user={user} pathname={pathname} />
-        <div className="flex items-center justify-end gap-1 min-[400px]:gap-1.5 sm:gap-2">
+        <div className="flex items-center justify-end gap-1 min-[400px]:gap-1.5 sm:gap-2 lg:gap-1.5 xl:gap-2">
           {/* The language of the paper: always here, on every page, for everyone. */}
           <EditionSelector />
           {user ? (
@@ -356,10 +356,9 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <Button asChild variant="ghost" size="sm" className="hidden h-10 shrink-0 whitespace-nowrap px-4 text-[0.95rem] sm:inline-flex">
                 <Link href="/login">{t.nav.logIn}</Link>
               </Button>
-              {/* From 1280px: below that the bar has room for the title, the tabs, the edition, Morning / Night,
-                  Settings and Log in in every edition, not a sixth button (it ran under the title at 1024px),
-                  and the Log in page offers sign-up. */}
-              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] xl:inline-flex">
+              {/* From 1440px: below that, a sixth button would push the tabs off the centre of the bar in the
+                  longer editions (French, Romanian), and the Log in page offers sign-up. */}
+              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] min-[1440px]:inline-flex">
                 <Link href="/signup">{t.nav.signUp}</Link>
               </Button>
             </>

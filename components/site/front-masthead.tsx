@@ -105,7 +105,7 @@ export function FrontMasthead({ home }: { home: string }) {
           {/* Sized so the title stays on one line (it is about 8.9 times as wide as its font size). */}
           <Masthead
             href={home}
-            className="relative text-[1.85rem] min-[400px]:text-[2.05rem] sm:text-[3.2rem] md:text-[4.1rem] lg:text-[3.3rem] xl:text-[4.6rem]"
+            className="relative text-[min(1.85rem,8vw)] min-[400px]:text-[2.05rem] sm:text-[3.2rem] md:text-[4.1rem] lg:text-[3.3rem] xl:text-[4.6rem]"
           />
           <div className="relative">
             <MottoRibbon className="w-[14.5rem] min-[400px]:w-[16rem]" />

@@ -42,7 +42,7 @@ export function ForgotPasswordForm() {
       {sent ? (
         <div className="space-y-4">
           <FormMessage type="success">{rich(w.sent, { email: <strong className="break-all">{email}</strong> })}</FormMessage>
-          <Button variant="outline" asChild className="w-full">
+          <Button variant="outline" asChild className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance">
             <Link href="/login">{t.auth.backToLogin}</Link>
           </Button>
         </div>
@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading || !email}>
+          <Button type="submit" className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance" disabled={loading || !email}>
             {loading && <Spinner />}
             {w.submit}
           </Button>
@@ -137,7 +137,7 @@ export function UpdatePasswordForm() {
           <KeyRound className="h-6 w-6 text-muted-foreground" />
         </div>
         <AuthHeading title={w.expired} description={w.expiredNote} />
-        <Button asChild className="w-full">
+        <Button asChild className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance">
           <Link href="/forgot-password">{w.newLink}</Link>
         </Button>
       </div>
@@ -170,7 +170,7 @@ export function UpdatePasswordForm() {
             onChange={(e) => setConfirm(e.target.value)}
           />
         </div>
-        <Button type="submit" className="w-full" disabled={loading || !password || !confirm}>
+        <Button type="submit" className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance" disabled={loading || !password || !confirm}>
           {loading && <Spinner />}
           {w.submit}
         </Button>

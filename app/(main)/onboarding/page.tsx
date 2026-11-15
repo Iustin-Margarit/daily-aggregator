@@ -38,13 +38,15 @@ export default async function OnboardingPage() {
     isFirstRun && (preferences ?? []).length === 0 ? guestSections : (preferences ?? []).map((p) => p.category_id);
 
   return (
-    <div className="container py-8 sm:py-10">
+    // Phones: a short header, so the first row of stamps shows without scrolling.
+    <div className="container pb-8 pt-4 sm:py-10">
       <PageHeader
         kicker={isFirstRun ? w.kickerFirst : isGuest ? w.kickerGuest : w.kicker}
         title={isFirstRun ? w.titleFirst : w.title}
         description={isFirstRun ? w.descriptionFirst : isGuest ? w.descriptionGuest : w.description}
+        compact
       />
-      <ScrollDivider className="mb-8 mt-8" />
+      <ScrollDivider className="my-2 sm:my-8 max-sm:[&_.ornament-mask]:w-[7.5rem]" />
       <TopicsForm
         categories={categories ?? []}
         selectedIds={selectedIds}

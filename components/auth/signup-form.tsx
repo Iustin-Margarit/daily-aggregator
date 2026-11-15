@@ -81,7 +81,7 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
           title={w.checkInbox}
           description={rich(w.sent, { email: <span className="break-all font-medium text-foreground">{sentTo}</span> })}
         />
-        <Button variant="outline" asChild className="w-full">
+        <Button variant="outline" asChild className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance">
           <Link href={`/login?email=${encodeURIComponent(sentTo)}`}>{t.auth.backToLogin}</Link>
         </Button>
       </div>
@@ -135,7 +135,7 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
           />
           {mismatch && <p className="text-xs text-destructive">{errors.mismatch}</p>}
         </div>
-        <Button type="submit" className="w-full" disabled={loading || !email || !password || !confirm}>
+        <Button type="submit" className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance" disabled={loading || !email || !password || !confirm}>
           {loading && <Spinner />}
           {loading ? w.submitting : w.submit}
         </Button>

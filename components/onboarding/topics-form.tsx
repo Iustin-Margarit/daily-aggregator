@@ -114,7 +114,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
   return (
     // Wide screens: a margin column (byline, how many are chosen, the buttons) beside the stamps.
     // Phones: the same, stacked, with the buttons after the stamps.
-    <form action={formAction} className="grid grid-cols-1 gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-0">
+    <form action={formAction} className="grid grid-cols-1 gap-4 lg:grid-cols-[17rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-0">
       <div className="space-y-6 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-rule/40 lg:pr-8">
         {state && !state.ok && state.message && <FormMessage type="error">{state.message}</FormMessage>}
 
@@ -126,17 +126,19 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
           </div>
         )}
 
-        <div className="flex items-end justify-between gap-4 lg:block">
-          <div className="min-w-0">
-            <p className="label text-(--brass-ink)">{w.inYourPaper}</p>
-            <p className="mt-1 font-display text-[1.45rem] font-semibold leading-tight" aria-live="polite">
+        {/* Phones: one compact row (how many, and whether it is saved) with Select all beside it; the label and
+            the "press a stamp" sentence only show in the wide margin column. */}
+        <div className="flex items-center justify-between gap-3 lg:block">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 lg:block">
+            <p className="label hidden text-(--brass-ink) lg:block">{w.inYourPaper}</p>
+            <p className="font-display text-[1.15rem] font-semibold leading-tight lg:mt-1 lg:text-[1.45rem]" aria-live="polite">
               {selected.length === 0 ? w.everySection : plural(w.countOf, selected.length, { total: categories.length })}
             </p>
-            <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">
+            <p className="mt-1 hidden text-pretty text-[0.95rem] italic text-muted-foreground lg:block">
               {selected.length === 0 ? w.noneYet : isFirstRun ? w.pressStamp : w.pressStampAuto}
             </p>
             {!isFirstRun && (
-              <p className="mt-1.5 flex h-5 items-center gap-1.5 font-label text-[0.85rem] font-medium text-(--brass-ink)" role="status">
+              <p className="flex items-center gap-1.5 font-label text-[0.8rem] font-medium text-(--brass-ink) lg:mt-1.5 lg:h-5 lg:text-[0.85rem]" role="status">
                 {status === 'saving' && (
                   <>
                     <Spinner className="size-3.5" />
@@ -186,7 +188,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                   <span className="flex w-full items-center justify-between font-label text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-(--stamp-ink)">
                     <span>{fmt(t.sections.stampNo, { n: String(index + 1).padStart(2, '0') })}</span>
                   </span>
-                  <Engraving name={style.engraving} className="mx-auto h-16 max-w-[7rem]" />
+                  <Engraving name={style.engraving} className="mx-auto h-16 max-w-[min(7rem,100%)]" />
                   <span className="w-full min-w-0 px-1">
                     {/* Sized to the stamp (11.5% of its width): "Entertainment" or "Divertissement" keep clear of the inner
                         rule on a 320px phone. If a phone's own text size makes it larger still, it breaks with a hyphen. */}
@@ -204,14 +206,18 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                     <span className="relative block w-[4.4rem]">
                       <Ornament name="postmark-ring" className="block w-full [--ornament-ink:var(--postmark-ink)]" />
                       <span className="absolute inset-0 flex flex-col items-center justify-center font-typewriter leading-none text-(--postmark-ink)">
-                        <span className="text-[0.66rem] tracking-[0.1em]">{w.chosen}</span>
-                        <span className="mt-1 text-[0.7rem]">✦</span>
+                        {/* An inked tick: chosen reads at a glance, before the word. */}
+                        <svg viewBox="0 0 24 24" className="ink-tick mb-0.5 w-[1.15rem]" aria-hidden="true">
+                          <path d="M4 12.5l5 5L20 6" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="text-[0.62rem] font-bold tracking-[0.1em]">{w.chosen}</span>
                       </span>
                     </span>
                   </span>
                 ) : (
                   <span className="choose-ring pointer-events-none absolute right-2 top-1 w-[4rem]" aria-hidden="true">
-                    <Ornament name="postmark-ring" className="block w-full [--ornament-ink:currentColor]" />
+                    {/* A faint dashed ring, pencilled in where the postmark will go; only a chosen stamp gets the real one. */}
+                    <span className="block aspect-square w-full rounded-full border-[1.5px] border-dashed border-current" />
                     <span className="absolute inset-0 flex items-center justify-center font-typewriter text-[0.62rem] tracking-[0.1em]">
                       {w.choose}
                     </span>
@@ -223,7 +229,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
         </div>
       </fieldset>
 
-      <div className="lg:col-start-1 lg:row-start-2 lg:border-r lg:border-rule/40 lg:pr-8 lg:pt-6">
+      <div className="mt-4 lg:mt-0 lg:col-start-1 lg:row-start-2 lg:border-r lg:border-rule/40 lg:pr-8 lg:pt-6">
         {isFirstRun ? (
           <SubmitButtons count={selected.length} />
         ) : (
