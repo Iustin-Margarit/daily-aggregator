@@ -540,6 +540,30 @@
 .st-stand .st-fig {
   opacity: var(--o-back);
 }
+/*
+ * The newsboy at the kerb, in front of the railings: his crate stands on the
+ * cobbles, its foot just below the banner's edge, and he is inked like the
+ * passers-by. Only the paper moves, turning slowly in his fist (the pivot is
+ * inside the fist, so no seam opens).
+ */
+.st-newsboy {
+  position: absolute;
+  bottom: calc(var(--st-h) * -0.02);
+  left: calc(var(--x) * var(--st-h));
+}
+.st-news-paper {
+  --src: url(/street/fig-newsboy-paper.webp);
+  transform-origin: 42.5% 12.8%;
+  animation: st-news-wave 3.2s ease-in-out infinite alternate;
+}
+@keyframes st-news-wave {
+  from {
+    transform: rotate(-5deg);
+  }
+  to {
+    transform: rotate(4deg);
+  }
+}
 
 /* ---------------------------------------------------------------- the cut-outs */
 

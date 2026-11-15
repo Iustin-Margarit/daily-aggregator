@@ -17,7 +17,9 @@ import { cn } from '@/lib/utils';
  *   mid:   J. W. Fiske iron railings (1875) and gas lamps whose flames gutter
  *          and whose halos breathe;
  *   road:  now and then a hansom cab trots past, its near wheel turning;
- *   front: cut-paper silhouettes by Auguste Edouart (1830s-40s), on cobbles.
+ *   front: cut-paper silhouettes by Auguste Edouart (1830s-40s), on cobbles,
+ *          and a newsboy on a crate (pieced from Edouart cut-outs) holding up
+ *          the paper.
  * The layers drift at different speeds, as if the reader strolls past; the
  * townsfolk walk with jointed paper legs, framed from the knees up. Moths
  * circle the lamps, and now and then a carrier pigeon crosses the far sky.
@@ -50,6 +52,8 @@ const ASPECT = {
   'girl-flower': 100 / 300,
   'girl-doll': 184 / 300,
   'boy-running': 185 / 300,
+  // Boy and crate; the paper in his raised hand is fig-newsboy-paper.webp on the same canvas.
+  newsboy: 131 / 300,
 } as const;
 type FigureName = keyof typeof ASPECT;
 
@@ -127,6 +131,15 @@ const STANDING: { name: FigureName; size: number; x: number; flip?: boolean; idl
 const STREET_PERIOD = 9.3;
 /** Lamps stand every 1.698 heights (four railing panels). */
 const LAMP_STEP = 1.698;
+
+/**
+ * The newsboy on his crate at the kerb, holding up the late edition. He stands
+ * on the pavement with the townsfolk (so he drifts with the street, in front of
+ * the railings), between the two ladies talking and the lady reading, where he
+ * is in view as soon as the page opens, even on a phone. Height (paper to
+ * crate) as a share of the banner, x in banner heights within one stretch.
+ */
+const NEWSBOY = { size: 0.44, x: 2.75 };
 
 /**
  * Chimney smoke over Hollar's roofs: where each plume rises in a skyline tile
@@ -357,6 +370,15 @@ export function StreetTheatre({ className }: { className?: string }) {
               </div>
             )),
           )}
+          {/* The newsboy on his crate; only the paper moves, turning in his fist. */}
+          {[0, 1, 2].map((copy) => (
+            <div key={`newsboy-${copy}`} className="st-newsboy" style={{ '--x': (NEWSBOY.x + copy * STREET_PERIOD).toFixed(3) } as React.CSSProperties}>
+              <CutOut name="newsboy" size={NEWSBOY.size}>
+                <span className="st-piece" />
+                <span className="st-piece st-news-paper" />
+              </CutOut>
+            </div>
+          ))}
         </div>
 
         {WALKERS.map((walker) => (
