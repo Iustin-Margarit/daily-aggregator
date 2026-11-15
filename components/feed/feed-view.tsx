@@ -317,8 +317,9 @@ export function FeedView({
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-          {/* Phones: Latest | For you on the left and Filters at the same height on the right. */}
-          <div className="flex items-stretch justify-between gap-2 min-[400px]:gap-3">
+          {/* Phones: Latest | For you on the left and Filters at the same height on the right; Filters drops
+              under them rather than off the screen where a long edition or large type leaves no room. */}
+          <div className="flex flex-wrap items-stretch justify-between gap-2 min-[400px]:gap-3">
             <Segmented<FeedSort>
               aria-label={t.feed.order}
               variant="ribbon"

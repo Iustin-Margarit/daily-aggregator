@@ -663,7 +663,7 @@ export function SectionsAndSourcesSection({
 
   return (
     <LedgerEntry id="sections" description={w.description}>
-      <div className="grid gap-8 md:grid-cols-2 md:gap-0">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-0">
         <div className="md:border-r md:border-rule/30 md:pr-8">
           <SubHead>{w.yours}</SubHead>
           <div className="flex flex-wrap gap-2">
@@ -673,7 +673,8 @@ export function SectionsAndSourcesSection({
               topics.map((name) => <CategoryBadge key={name} name={name} />)
             )}
           </div>
-          <Button variant="outline" asChild className="mt-5">
+          {/* May wrap with large type on a narrow phone rather than run off the page. */}
+          <Button variant="outline" asChild className="mt-5 h-auto min-h-10 max-w-full whitespace-normal text-center">
             <Link href="/onboarding">{w.edit}</Link>
           </Button>
         </div>

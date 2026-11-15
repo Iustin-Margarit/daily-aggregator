@@ -61,7 +61,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
   return (
     // Wide screens: a margin column (byline, how many are chosen, the buttons) beside the stamps.
     // Phones: the same, stacked, with the buttons after the stamps.
-    <form action={formAction} className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-0">
+    <form action={formAction} className="grid grid-cols-1 gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-0">
       <div className="space-y-6 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-rule/40 lg:pr-8">
         {state && !state.ok && state.message && <FormMessage type="error">{state.message}</FormMessage>}
 
@@ -74,7 +74,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
         )}
 
         <div className="flex items-end justify-between gap-4 lg:block">
-          <div>
+          <div className="min-w-0">
             <p className="label text-(--brass-ink)">{w.inYourPaper}</p>
             <p className="mt-1 font-display text-[1.45rem] font-semibold leading-tight" aria-live="polite">
               {selected.length === 0 ? w.everySection : plural(w.countOf, selected.length, { total: categories.length })}

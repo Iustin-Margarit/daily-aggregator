@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -10,6 +10,7 @@ import { Masthead } from '@/components/site/logo';
 import { Ornament, type OrnamentName } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
 import { ColoredAvatar } from '@/components/ui/colored-avatar';
+import { Phrases } from '@/components/ui/phrases';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,22 +103,23 @@ function useBigMastheadVisible(pathname: string) {
     const observer = new IntersectionObserver(([entry]) => setSeen({ path: pathname, visible: entry.isIntersecting }), {
       rootMargin: '-64px 0px 0px 0px',
     });
-    // The front page may still be showing its loading skeleton: wait for the masthead to arrive.
-    let waiting: MutationObserver | null = null;
+    // Follow the masthead element itself: on a front page it may arrive after the loading skeleton, or be
+    // replaced while the page streams in (the night edition did: the bar then watched a detached copy and
+    // printed the small title over the big one). Cheap: one lookup by id per change to the page's elements.
+    let observed: Element | null = null;
     const watch = () => {
       const target = document.getElementById(FRONT_MASTHEAD_ID);
-      if (!target) return false;
-      observer.observe(target);
-      waiting?.disconnect();
-      return true;
+      if (target === observed) return;
+      if (observed) observer.unobserve(observed);
+      observed = target;
+      if (target) observer.observe(target);
     };
-    if (!watch() && (pathname === '/' || pathname === '/feed')) {
-      waiting = new MutationObserver(() => void watch());
-      waiting.observe(document.body, { childList: true, subtree: true });
-    }
+    watch();
+    const following = pathname === '/' || pathname === '/feed' ? new MutationObserver(watch) : null;
+    following?.observe(document.body, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
-      waiting?.disconnect();
+      following?.disconnect();
     };
   }, [pathname]);
   // Before the first observation, assume the front pages show their big masthead.
@@ -134,8 +136,11 @@ function HeaderEdition() {
   const date = useClientValue(() => dates.short(new Date()), null);
   return (
     <p className="font-label leading-tight text-muted-foreground">
-      <span className="block text-[0.74rem] font-semibold uppercase tracking-[0.13em]">{editionLabel(new Date(), t.masthead.volNo)}</span>
-      <span className="block text-[0.82rem]">{date ?? ' '}</span>
+      {/* Breaks only between Vol. and No. (never before a lone number) when the bar is narrow. */}
+      <span className="block text-[0.72rem] font-semibold uppercase tracking-[0.08em] min-[400px]:text-[0.74rem] min-[400px]:tracking-[0.13em]">
+        <Phrases text={editionLabel(new Date(), t.masthead.volNo)} />
+      </span>
+      <span className="block text-balance text-[0.8rem] min-[400px]:text-[0.82rem]">{date ?? ' '}</span>
     </p>
   );
 }
@@ -235,9 +240,8 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      // Below 420px the bar cannot hold it beside the title, the edition and Log in in every edition;
-      // visitors find Morning / Night first thing in Settings, a tab in the bottom bar there.
-      className="h-10 w-9 px-0 [--ornament-ink:var(--brass-ink)] max-[419px]:hidden sm:w-10"
+      // On every width: on phones the bar's title shrinks to leave it room (SiteHeader).
+      className="h-10 w-8 shrink-0 px-0 [--ornament-ink:var(--brass-ink)] min-[400px]:w-9 sm:w-10"
     >
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.35rem]" />
     </Button>
@@ -280,7 +284,7 @@ function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative flex items-center gap-2 whitespace-nowrap px-4 font-label text-[0.84rem] font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                'relative flex items-center gap-2 whitespace-nowrap px-3 font-label xl:px-4 text-[0.84rem] font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                 active
                   ? 'text-foreground after:absolute after:inset-x-3 after:-bottom-px after:h-[3px] after:border-y after:border-(--ink-gold)'
                   : 'text-muted-foreground hover:text-foreground',
@@ -305,9 +309,13 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
 
   return (
     <header className="paper sticky top-0 z-40 border-b border-border/60">
-      {/* Phones: a 3.5rem bar and a one-line title small enough to sit beside the account (about 8.9 times its font size wide). */}
-      <div className="container grid h-14 grid-cols-[1fr_auto] items-center gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[1fr_auto_1fr]">
-        <div className="min-w-0">
+      {/* Phones: a 3.5rem bar; the buttons on the right keep their size and the title takes the rest. */}
+      <div className="container grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-[400px]:gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)]">
+        {/* A size container: the title is about 8.9 times as wide as its font size, so a font size of at most
+            10.8% of the cell's width (cqi) always fits on one line beside the buttons, in every edition. From
+            1024px the two sides share the room equally (the tabs centred) until the buttons need more; then the
+            title gives way, never the buttons. */}
+        <div className="@container min-w-0">
           {bigMasthead && (
             <div className="sm:hidden">
               <HeaderEdition />
@@ -316,7 +324,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           <Masthead
             href={home}
             className={cn(
-              'whitespace-nowrap text-[1.2rem] transition-opacity duration-300 min-[380px]:text-[1.3rem] min-[480px]:text-[1.45rem] sm:text-[1.8rem]',
+              'whitespace-nowrap text-[min(1.3rem,10.8cqi)] transition-opacity duration-300 min-[480px]:text-[min(1.45rem,10.8cqi)] sm:text-[min(1.8rem,10.8cqi)]',
               bigMasthead && 'pointer-events-none opacity-0 max-sm:hidden',
             )}
           />
@@ -332,12 +340,17 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <EditionToggle />
               {/* Below 1024px Settings is a tab in the bottom bar (BottomNav). */}
               <SettingsButton pathname={pathname} />
-              <Button asChild variant="ghost" size="sm" className="h-10 px-2 text-[0.95rem] sm:px-4">
-                <Link href="/login">{t.nav.logIn}</Link>
+              {/* Phones print the short name ("Entrar" for "Iniciar sesión"), so the title keeps a readable size. */}
+              <Button asChild variant="ghost" size="sm" className="h-10 shrink-0 whitespace-nowrap px-1.5 text-[0.88rem] min-[400px]:px-2 min-[400px]:text-[0.92rem] sm:px-4 sm:text-[0.95rem]">
+                <Link href="/login">
+                  <span className="sm:hidden">{t.nav.logInShort}</span>
+                  <span className="max-sm:hidden">{t.nav.logIn}</span>
+                </Link>
               </Button>
-              {/* Desktop only: below 1024px the bar has room for the title, the edition, the moon and Log in in
-                  every edition (a fourth button ran under the title), and the Log in page offers sign-up. */}
-              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] lg:inline-flex">
+              {/* From 1280px: below that the bar has room for the title, the tabs, the edition, Morning / Night,
+                  Settings and Log in in every edition, not a sixth button (it ran under the title at 1024px),
+                  and the Log in page offers sign-up. */}
+              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] xl:inline-flex">
                 <Link href="/signup">{t.nav.signUp}</Link>
               </Button>
             </>
@@ -349,56 +362,23 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
 }
 
 /**
- * Keeps a fixed bar on the bottom edge of what is actually on screen. Mobile browsers can leave the
- * layout viewport (what bottom: 0 means) taller than the visible area after a tab change, until the
- * next scroll: the bar then hangs below the screen and its labels are cut off. The visual viewport
- * says how much is hidden, and the bar is lifted by exactly that (nothing, normally).
- */
-function useStayOnScreen(ref: React.RefObject<HTMLElement | null>, pathname: string) {
-  useEffect(() => {
-    const bar = ref.current;
-    const viewport = window.visualViewport;
-    if (!bar || !viewport) return;
-    let frame = 0;
-    const place = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        // Pinch-zoomed: leave the bar where it is, as browsers do.
-        const hidden = viewport.scale > 1.01 ? 0 : Math.round(window.innerHeight - (viewport.offsetTop + viewport.height));
-        bar.style.transform = hidden > 1 ? `translateY(-${hidden}px)` : '';
-      });
-    };
-    place();
-    // The browser may settle its toolbars a moment after the new page is drawn.
-    const late = window.setTimeout(place, 400);
-    viewport.addEventListener('resize', place);
-    viewport.addEventListener('scroll', place);
-    window.addEventListener('resize', place);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(late);
-      viewport.removeEventListener('resize', place);
-      viewport.removeEventListener('scroll', place);
-      window.removeEventListener('resize', place);
-    };
-  }, [ref, pathname]);
-}
-
-/**
  * On phones and tablets the reader's places sit at the bottom of the screen, within reach of a thumb
  * (the header only has room for them, beside the title and the account, from 1024px).
+ *
+ * Pinned by CSS alone (fixed, bottom 0, safe-area padding), so the browser keeps it on the bottom edge
+ * while its address bar slides in and out. A script that lifted it by the visual viewport's height
+ * left it hanging above the page on Android whenever the page was a little wider than the screen.
+ * Its ancestors (.sheet, the paper) must stay free of transform, filter and contain, or fixed would
+ * follow them instead of the screen.
  */
 export function BottomNav({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
   const items = bottomItems(user);
   const { t } = useI18n();
-  const navRef = useRef<HTMLElement>(null);
-  useStayOnScreen(navRef, pathname);
   return (
     <>
-      <div className="h-[4.5rem] lg:hidden" aria-hidden="true" />
+      <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
       <nav
-        ref={navRef}
         aria-label={t.nav.main}
         className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >

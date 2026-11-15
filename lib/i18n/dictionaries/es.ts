@@ -50,6 +50,7 @@ const es: Dictionary = {
     newsroom: 'Redacción',
     logIn: 'Iniciar sesión',
     signUp: 'Crear cuenta gratis',
+    logInShort: 'Entrar',
     accountMenu: 'Menú de la cuenta',
     settings: 'Ajustes',
     settingsNote: 'el libro del lector',

@@ -1,6 +1,7 @@
 import { EditionName } from '@/components/site/edition-selector';
 import { Engraving } from '@/components/site/engraving';
 import { Masthead } from '@/components/site/logo';
+import { Phrases } from '@/components/ui/phrases';
 import { getI18n } from '@/lib/i18n/server';
 import { siteConfig } from '@/lib/site';
 
@@ -14,7 +15,9 @@ export async function SiteFooter() {
           <Engraving name="kitten-curious" className="h-20" label={t.footer.catLabel} />
           {/* One line on the narrowest phones too (the title is about 8.9 times as wide as its font size). */}
           <Masthead className="whitespace-nowrap text-[1.75rem] min-[400px]:text-[2rem]" />
-          <p className="text-balance font-display text-[1.02rem] italic text-muted-foreground">{t.footer.motto}</p>
+          <p className="text-balance font-display text-[1.02rem] italic text-muted-foreground">
+            <Phrases text={t.footer.motto} />
+          </p>
           <div className="font-label text-[0.82rem] text-muted-foreground">
             <EditionName />
           </div>

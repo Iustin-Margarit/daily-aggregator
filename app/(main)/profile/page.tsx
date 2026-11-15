@@ -102,7 +102,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         />
         <div className="text-center md:text-left">
           <p className="kicker">{w.kicker}</p>
-          <h1 className="headline mt-2 text-[2.6rem] sm:text-[3.4rem]">{w.title}</h1>
+          {/* Scales down on a narrow phone with large type, so "Einstellungen" stays on the page. */}
+          <h1 className="headline mt-2 text-[min(2.6rem,12vw)] sm:text-[3.4rem]">{w.title}</h1>
           <p className="mt-2 max-w-xl text-pretty text-[1.05rem] italic text-muted-foreground md:max-w-none">{guest ? w.guestIntro : w.intro}</p>
         </div>
         {profile && (

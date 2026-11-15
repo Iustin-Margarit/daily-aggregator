@@ -51,6 +51,7 @@ const fr: Dictionary = {
     newsroom: 'Rédaction',
     logIn: 'Se connecter',
     signUp: 'Inscription gratuite',
+    logInShort: 'Connexion',
     accountMenu: 'Menu du compte',
     settings: 'Réglages',
     settingsNote: 'le registre du lecteur',

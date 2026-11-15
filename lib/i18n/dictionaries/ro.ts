@@ -56,6 +56,7 @@ const ro: Dictionary = {
     newsroom: 'Redacția',
     logIn: 'Intră în cont',
     signUp: 'Înscrie-te gratuit',
+    logInShort: 'Conectare',
     accountMenu: 'Meniul contului',
     settings: 'Setări',
     settingsNote: 'registrul cititorului',

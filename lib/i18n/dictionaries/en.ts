@@ -62,7 +62,8 @@ const en = {
     newsroom: 'Newsroom',
     logIn: 'Log in',
     signUp: 'Sign up free',
-    /** The same button on tablets, where the tabs leave less room. */
+    /** Log in on phones, where the bar also holds the title, the edition stamp and Morning / Night. */
+    logInShort: 'Log in',
     accountMenu: 'Account menu',
     settings: 'Settings',
     settingsNote: 'the reader’s ledger',

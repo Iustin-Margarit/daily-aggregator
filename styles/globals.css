@@ -642,6 +642,10 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* The page never scrolls sideways: on a phone, anything a little too wide made the browser zoom the
+       whole page out, clipping its left edge and leaving the bottom bar above the screen's edge. Clip (not
+       hidden) keeps the sticky header working; elements are still checked not to overflow at 320 px. */
+    overflow-x: clip;
   }
 
   html {
