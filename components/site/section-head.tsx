@@ -21,7 +21,7 @@ export function SectionHead({
     <h2 id={id} className={cn('section-head', className)}>
       {engraving ? (
         <span className="inline-flex items-center gap-2.5">
-          <Engraving name={engraving} className="h-[1.85em] max-w-[4.2em]" />
+          <Engraving name={engraving} className="h-[1.85em] max-w-[4.2em] max-[319px]:hidden" />
           <span>{children}</span>
         </span>
       ) : (

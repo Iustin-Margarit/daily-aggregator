@@ -513,7 +513,7 @@ export function MonthAlmanac({ className, wide = false }: { className?: string; 
 export function OnThisDayCard({ data, className }: { data: OnThisDay; className?: string }) {
   const { t, fmt, rich } = useI18n();
   return (
-    <section aria-labelledby="on-this-day" className={cn('card-paper px-5 pb-4 pt-5', className)}>
+    <section aria-labelledby="on-this-day" className={cn('card-paper @container px-5 pb-4 pt-5', className)}>
       <p className="kicker text-center">{t.almanac.fromAlmanac}</p>
       <h2 id="on-this-day" className="mt-1 text-center font-display text-[1.35rem] font-semibold italic leading-tight text-balance">
         {fmt(t.almanac.onThisDay, { date: data.dateLabel })}
@@ -521,8 +521,12 @@ export function OnThisDayCard({ data, className }: { data: OnThisDay; className?
       <div className="ornament mx-auto my-3 w-2/3" />
       <ol className="divide-y divide-dashed divide-rule/40">
         {data.events.map((event) => (
-          <li key={`${event.year}-${event.text.slice(0, 20)}`} className="grid grid-cols-[3.6rem_minmax(0,1fr)] gap-3 py-2.5">
-            <span className="pt-0.5 text-right font-display text-[1.25rem] font-semibold leading-none text-(--brass-ink) tabular-nums">{event.year}</span>
+          // A narrow card (a phone, large type): the year above its paragraph, so the text keeps the full width.
+          <li
+            key={`${event.year}-${event.text.slice(0, 20)}`}
+            className="grid grid-cols-1 gap-1 py-2.5 @[20rem]:grid-cols-[3.6rem_minmax(0,1fr)] @[20rem]:gap-3"
+          >
+            <span className="pt-0.5 font-display text-[1.25rem] font-semibold leading-none text-(--brass-ink) tabular-nums @[20rem]:text-right">{event.year}</span>
             <p className="text-[0.93rem] leading-snug">
               {event.url ? (
                 <a href={event.url} target="_blank" rel="noopener noreferrer" className="decoration-1 underline-offset-2 hover:underline">

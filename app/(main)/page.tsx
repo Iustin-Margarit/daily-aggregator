@@ -47,7 +47,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
       {lead && (
         <>
           <SectionHead className="mb-5 mt-4 text-[1.35rem]">{t.landing.topStory}</SectionHead>
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
             <div className="flex lg:pr-9">
               <ArticleCard article={lead} userId={null} variant="lead" eagerImage />
             </div>
@@ -69,7 +69,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
 
       {/* Welcome, under the top story so visitors see some news first: what this paper is, with one of
           five paintings of people reading the paper, chosen at random (lib/welcome-plates.ts). Kept short: a wide strip of the picture on phones, the list from sm up. */}
-      <section className="card-paper mt-10 grid items-center gap-5 overflow-hidden p-4 sm:mt-12 sm:p-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-8 lg:gap-10 lg:p-8">
+      <section className="card-paper mt-10 grid grid-cols-1 items-center gap-5 overflow-hidden p-4 sm:mt-12 sm:p-6 md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-8 lg:gap-10 lg:p-8">
         <figure className="w-full">
           {/* eslint-disable-next-line @next/next/no-img-element -- a small local picture */}
           <img
@@ -83,8 +83,9 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
           />
           <figcaption className="mt-1.5 text-center font-label text-[0.78rem] text-muted-foreground">{picture.caption}</figcaption>
         </figure>
-        <div>
-          <p className="kicker">{t.landing.kicker}</p>
+        {/* min-w-0 and wrapping buttons: on a phone nothing in this column may set its width (it clipped at 412px). */}
+        <div className="min-w-0">
+          <p className="kicker text-balance">{t.landing.kicker}</p>
           <h2 className="headline mt-1.5 text-balance text-[1.75rem] sm:text-4xl">{t.landing.title}</h2>
           <p className="mt-3 max-w-xl text-pretty text-[1.02rem] leading-relaxed text-foreground/85">
             {fmt(t.landing.intro, { count: sourceCount ?? 30 })}
@@ -100,13 +101,13 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
             ))}
           </ul>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button asChild size="lg" className="group/read">
+            <Button asChild size="lg" className="group/read h-auto min-h-12 max-w-full whitespace-normal py-2.5 text-center">
               <Link href="/feed">
                 {t.landing.read}
                 <Ornament name="fist" className="fist-poke w-[1.45rem] [--ornament-ink:currentColor]" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            <Button asChild size="lg" variant="outline" className="h-auto min-h-12 max-w-full whitespace-normal py-2.5 text-center">
               <Link href="/onboarding">{t.landing.choose}</Link>
             </Button>
           </div>

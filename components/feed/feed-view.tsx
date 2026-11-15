@@ -444,7 +444,7 @@ export function FeedView({
 
             {/* Page one of the paper: the lead story and "In other news", divided by a column rule. */}
             {lead && (
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
                 <div className="flex lg:pr-9">{story(lead, 0, 'lead')}</div>
                 <aside className="flex flex-col border-t border-rule/40 pt-6 lg:border-l lg:border-t-0 lg:pl-9 lg:pt-0" aria-labelledby="other-news">
                   <SectionHead id="other-news" engraving="telegraph">

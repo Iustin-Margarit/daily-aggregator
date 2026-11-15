@@ -127,7 +127,7 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
               <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
             </Link>
             {/* Fills the rest of the line beside "Read dispatch", or takes a line of its own when that is too narrow. */}
-            <StoryActions article={article} userId={userId} className="min-w-[17rem] flex-1" />
+            <StoryActions article={article} userId={userId} className="min-w-[min(17rem,100%)] flex-1" />
           </div>
         </div>
       </article>

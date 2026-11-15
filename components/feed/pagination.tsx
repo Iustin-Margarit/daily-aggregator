@@ -42,20 +42,20 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
   return (
     <nav aria-label={t.pagination.label} className={cn('flex items-center justify-between gap-2 sm:gap-3', disabled && 'opacity-60')}>
       {page > 1 ? (
-        <a href={hrefFor(page - 1)} onClick={go(page - 1)} className={cn(linkClass, 'group/read gap-2 border border-rule/50 bg-card/70 px-3 shadow-[inset_0_0_0_2px_hsl(var(--card)),inset_0_0_0_3px_hsl(var(--rule)/0.22)] hover:border-(--ink-gold) hover:bg-card sm:gap-2.5 sm:px-4')} rel="prev">
+        <a href={hrefFor(page - 1)} onClick={go(page - 1)} className={cn(linkClass, 'group/read gap-2 border border-rule/50 bg-card/70 px-3 max-[319px]:gap-1.5 max-[319px]:px-2 shadow-[inset_0_0_0_2px_hsl(var(--card)),inset_0_0_0_3px_hsl(var(--rule)/0.22)] hover:border-(--ink-gold) hover:bg-card sm:gap-2.5 sm:px-4')} rel="prev">
           {/* A printer's fist pointing back (☜). */}
           <span className="-scale-x-100">
             <Ornament name="fist" className="fist-poke block w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
           </span>
           <span className="hidden lg:inline">{previous}</span>
-          <span className="lg:hidden">{prev}</span>
+          <span className="max-[319px]:sr-only lg:hidden">{prev}</span>
         </a>
       ) : (
         // Keeps the page numbers centred: as wide as the "Previous page" link would be.
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-4')} aria-hidden="true">
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
           <span className="hidden lg:inline">{previous}</span>
-          <span className="lg:hidden">{prev}</span>
+          <span className="max-[319px]:sr-only lg:hidden">{prev}</span>
         </span>
       )}
 
@@ -88,16 +88,16 @@ export function Pagination({ page, pages, onChange, hrefFor, disabled }: Paginat
       </ol>
 
       {page < pages ? (
-        <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
+        <a href={hrefFor(page + 1)} onClick={go(page + 1)} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 max-[319px]:gap-1.5 max-[319px]:px-2 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
           <span className="hidden lg:inline">{next}</span>
-          <span className="lg:hidden">{nextShort}</span>
+          <span className="max-[319px]:sr-only lg:hidden">{nextShort}</span>
           {/* A printer's fist pointing on (☞). */}
           <Ornament name="fist" className="fist-poke w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:currentColor]" />
         </a>
       ) : (
         <span className={cn(linkClass, 'invisible gap-2 px-3 sm:gap-2.5 sm:px-5')} aria-hidden="true">
           <span className="hidden lg:inline">{next}</span>
-          <span className="lg:hidden">{nextShort}</span>
+          <span className="max-[319px]:sr-only lg:hidden">{nextShort}</span>
           <span className="w-[1.1rem] sm:w-[1.35rem]" />
         </span>
       )}

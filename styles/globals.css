@@ -254,6 +254,15 @@
     --rule-side: right;
     text-align: left;
   }
+  /* The narrowest phones (or large type on a small one): tighter capitals and shorter rules, so a long word fits. */
+  @media (width < 320px) {
+    gap: 0.35rem;
+    letter-spacing: 0.08em;
+    &::before,
+    &::after {
+      min-width: 0.7rem;
+    }
+  }
 }
 
 @utility engraving {
