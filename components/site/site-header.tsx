@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/site/theme-provider';
+import type { ThemeChoice } from '@/lib/theme';
 import { EditionSelector } from '@/components/site/edition-selector';
 import { Engraving } from '@/components/site/engraving';
 import { Masthead } from '@/components/site/logo';
@@ -47,21 +48,22 @@ const READER_NAV: { href: string; icon: NavIcon }[] = [
  * Each tab's small engraving, printed in the tab's ink (currentColor, brass when
  * current): a folded broadsheet, a quill, the Penny Black and the printing press.
  */
-function TabIcon({ icon, className }: { icon: NavIcon; className?: string }) {
+function TabIcon({ icon, className, fixed = false }: { icon: NavIcon; className?: string; fixed?: boolean }) {
   // Printed in the tab's ink; the wrapper's hairline shadow thickens the fine lines a little
   // (a filter on the masked drawing itself would be masked away).
   const ink = 'block [--ornament-ink:currentColor] [--engraving-ink:currentColor]';
   return (
-    <span className={cn('inline-flex shrink-0 drop-shadow-[0_0_0.4px_currentColor]', className)} aria-hidden="true">
+    // Sized in em from a 1rem base; the bottom bar sets 16px so its icons never follow Type size.
+    <span className={cn('inline-flex shrink-0 drop-shadow-[0_0_0.4px_currentColor]', className)} style={{ fontSize: fixed ? '16px' : '1rem' }} aria-hidden="true">
       {icon === 'settings' ? (
         // An engraved cogwheel and its pinion, as for Settings in the account menu.
-        <Ornament name="gear" className={cn('h-[1.05rem]', ink)} />
+        <Ornament name="gear" className={cn('h-[1.05em]', ink)} />
       ) : icon === 'front' ? (
-        <Ornament name="broadsheet" className={cn('h-[1.15rem]', ink)} />
+        <Ornament name="broadsheet" className={cn('h-[1.15em]', ink)} />
       ) : icon === 'sections' ? (
-        <Ornament name="stamp" className={cn('h-[1.3rem]', ink)} />
+        <Ornament name="stamp" className={cn('h-[1.3em]', ink)} />
       ) : (
-        <Engraving name={icon === 'saved' ? 'quill' : 'press'} className={cn(icon === 'saved' ? 'h-[1.55rem]' : 'h-[1.35rem]', ink)} />
+        <Engraving name={icon === 'saved' ? 'quill' : 'press'} className={cn(icon === 'saved' ? 'h-[1.55em]' : 'h-[1.35em]', ink)} />
       )}
     </span>
   );
@@ -154,10 +156,10 @@ function MenuMark({ name }: { name: OrnamentName }) {
   );
 }
 
-const EDITIONS: { value: 'light' | 'dark' | 'system'; mark: OrnamentName }[] = [
+const EDITIONS: { value: ThemeChoice; mark: OrnamentName }[] = [
   { value: 'light', mark: 'sun' },
   { value: 'dark', mark: 'moon' },
-  { value: 'system', mark: 'globe' },
+  { value: 'auto', mark: 'watch-case' },
 ];
 
 /**
@@ -240,10 +242,11 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      // On every width: on phones the bar's title shrinks to leave it room (SiteHeader).
-      className="h-10 w-8 shrink-0 px-0 [--ornament-ink:var(--brass-ink)] min-[400px]:w-9 sm:w-10"
+      // On every width. Phones: a framed 44px button like the language stamp and Log in beside it; the
+      // bar's title shrinks to leave them room (SiteHeader).
+      className="h-11 w-11 shrink-0 rounded-[3px] border-[3px] border-double border-rule/45 bg-card/60 px-0 [--ornament-ink:var(--brass-ink)] hover:border-(--ink-gold) sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
     >
-      <Ornament name={night ? 'sun' : 'moon'} className="h-[1.35rem]" />
+      <Ornament name={night ? 'sun' : 'moon'} className="h-[1.45rem] sm:h-[1.35rem]" />
     </Button>
   );
 }
@@ -310,7 +313,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
   return (
     <header className="paper sticky top-0 z-40 border-b border-border/60">
       {/* Phones: a 3.5rem bar; the buttons on the right keep their size and the title takes the rest. */}
-      <div className="container grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-[400px]:gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)]">
+      <div className="chrome-scale container grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-[400px]:gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)]">
         {/* A size container: the title is about 8.9 times as wide as its font size, so a font size of at most
             10.8% of the cell's width (cqi) always fits on one line beside the buttons, in every edition. From
             1024px the two sides share the room equally (the tabs centred) until the buttons need more; then the
@@ -340,12 +343,18 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <EditionToggle />
               {/* Below 1024px Settings is a tab in the bottom bar (BottomNav). */}
               <SettingsButton pathname={pathname} />
-              {/* Phones print the short name ("Entrar" for "Iniciar sesión"), so the title keeps a readable size. */}
-              <Button asChild variant="ghost" size="sm" className="h-10 shrink-0 whitespace-nowrap px-1.5 text-[0.88rem] min-[400px]:px-2 min-[400px]:text-[0.92rem] sm:px-4 sm:text-[0.95rem]">
-                <Link href="/login">
-                  <span className="sm:hidden">{t.nav.logInShort}</span>
-                  <span className="max-sm:hidden">{t.nav.logIn}</span>
-                </Link>
+              {/* Phones: a framed button with an engraved key (the same width in every edition, so the title
+                  keeps its size); its name is read out and shown as a tooltip. From 640px: the words. */}
+              <Link
+                href="/login"
+                aria-label={t.nav.logIn}
+                title={t.nav.logIn}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] border-[3px] border-double border-rule/45 bg-card/60 text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:border-(--ink-gold) hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+              >
+                <Ornament name="key" className="h-[0.9rem] -rotate-[30deg]" />
+              </Link>
+              <Button asChild variant="ghost" size="sm" className="hidden h-10 shrink-0 whitespace-nowrap px-4 text-[0.95rem] sm:inline-flex">
+                <Link href="/login">{t.nav.logIn}</Link>
               </Button>
               {/* From 1280px: below that the bar has room for the title, the tabs, the edition, Morning / Night,
                   Settings and Log in in every edition, not a sixth button (it ran under the title at 1024px),
@@ -377,12 +386,14 @@ export function BottomNav({ user }: { user: HeaderUser | null }) {
   const { t } = useI18n();
   return (
     <>
-      <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
+      {/* Room under the footer: the bar's height plus a margin, so the last lines are never under it. */}
+      <div className="h-[calc(56px+24px+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
       <nav
         aria-label={t.nav.main}
         className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        <div className={cn('mx-auto grid h-16 max-w-md', items.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
+        {/* Sized in px, not rem: one height (56px) and one-line labels whatever the Type size or zoom. */}
+        <div className={cn('mx-auto grid h-[56px] max-w-md', items.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
           {items.map(({ href, icon }) => {
             const active = isActive(href, pathname);
             return (
@@ -391,19 +402,19 @@ export function BottomNav({ user }: { user: HeaderUser | null }) {
                 href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 font-label text-[0.8rem] font-medium transition-colors',
+                  'flex h-[56px] min-w-0 flex-col items-center justify-center gap-[3px] whitespace-nowrap px-0.5 font-label text-[11px] font-medium leading-[14px] transition-colors min-[360px]:text-[12px]',
                   active ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-7 w-12 items-center justify-center rounded-[2px] border-[3px] border-double border-transparent transition-colors',
+                    'flex h-[28px] w-[46px] shrink-0 items-center justify-center rounded-[2px] border-[3px] border-double border-transparent transition-colors',
                     active && 'border-(--ink-gold) bg-(--ink-gold)/15 text-foreground',
                   )}
                 >
-                  <TabIcon icon={icon} className={cn(active && 'text-(--brass-ink)')} />
+                  <TabIcon icon={icon} fixed className={cn(active && 'text-(--brass-ink)')} />
                 </span>
-                {t.nav[icon]}
+                <span className="block max-w-full">{t.nav[icon]}</span>
               </Link>
             );
           })}

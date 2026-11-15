@@ -38,6 +38,8 @@ const ORNAMENTS = {
   spectacles: [160, 81],
   // A cogwheel and its pinion (Pearson Scott Foresman line art, made solid): Settings.
   gear: [160, 115],
+  // The pocket-watch case of the masthead clock (1911 catalogue): the edition By the clock.
+  'watch-case': [360, 518],
 } as const;
 
 export type OrnamentName = keyof typeof ORNAMENTS;

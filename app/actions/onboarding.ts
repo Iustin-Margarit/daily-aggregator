@@ -11,13 +11,52 @@ import { profileSaveError, validateUsername } from '@/lib/validation';
 
 const fail = (message: string): ActionResult => ({ ok: false, message, at: Date.now() });
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The Sections page saves each stamp the moment it is pressed: the whole choice
+ * is sent and the account (or a visitor's cookie) is brought in line with it.
+ * Only what changed is written, so a save that overlaps another one stays safe.
+ */
+export async function saveSections(ids: string[]): Promise<ActionResult> {
+  const categoryIds = Array.isArray(ids) ? [...new Set(ids.map(String))].filter((id) => UUID.test(id)).slice(0, 50) : [];
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const jar = await cookies();
+
+  if (!user) {
+    if (categoryIds.length > 0) {
+      jar.set(GUEST_SECTIONS_COOKIE, categoryIds.join(','), { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    } else {
+      jar.delete(GUEST_SECTIONS_COOKIE);
+    }
+  } else {
+    const { t } = await getI18n();
+    let remove = supabase.from('user_preferred_categories').delete().eq('user_id', user.id);
+    if (categoryIds.length > 0) remove = remove.not('category_id', 'in', `(${categoryIds.join(',')})`);
+    const { error: deleteError } = await remove;
+    if (deleteError) return fail(t.actions.topicsUpdateFailed);
+    if (categoryIds.length > 0) {
+      const { error: insertError } = await supabase
+        .from('user_preferred_categories')
+        .upsert(categoryIds.map((category_id) => ({ user_id: user.id, category_id })), { onConflict: 'user_id,category_id', ignoreDuplicates: true });
+      if (insertError) return fail(t.actions.topicsSaveFailed);
+    }
+    jar.delete(GUEST_SECTIONS_COOKIE);
+  }
+  // The front page reads the sections: let it print the new choice.
+  revalidatePath('/feed');
+  return { ok: true, at: Date.now() };
+}
+
 export async function saveTopics(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const skip = formData.get('intent') === 'skip';
-  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const categoryIds = skip
     ? []
     : [...new Set(formData.getAll('categories').map(String))].filter((id) => UUID.test(id)).slice(0, 50);

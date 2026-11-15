@@ -62,8 +62,6 @@ const en = {
     newsroom: 'Newsroom',
     logIn: 'Log in',
     signUp: 'Sign up free',
-    /** Log in on phones, where the bar also holds the title, the edition stamp and Morning / Night. */
-    logInShort: 'Log in',
     accountMenu: 'Account menu',
     settings: 'Settings',
     settingsNote: 'the reader’s ledger',
@@ -73,7 +71,7 @@ const en = {
     logOut: 'Log out',
     toMorning: 'Switch to the Morning edition',
     toNight: 'Switch to the Night edition',
-    themes: { light: 'Morning edition', dark: 'Night edition', system: 'Like my device' },
+    themes: { light: 'Morning edition', dark: 'Night edition', auto: 'By the clock' },
   },
 
   /** The "Editions" selector: the language of the paper. */
@@ -478,7 +476,10 @@ const en = {
     skip: 'Skip for now',
     continueWith: plural('Continue with {n} section', 'Continue with {n} sections'),
     continueAll: 'Continue with every section',
-    save: 'Save sections',
+    pressStampAuto: 'Press a stamp to add or remove it. Each change is saved at once.',
+    saving: 'Saving…',
+    saved: 'Saved',
+    toFrontPage: 'Go to my front page',
     byline: 'Your byline (username)',
     bylineHint: 'Shown at the top of your paper. You can change it later.',
     inYourPaper: 'In your paper',
@@ -530,7 +531,7 @@ const en = {
       themes: {
         light: { label: 'Morning', note: 'Cream paper, sepia ink' },
         dark: { label: 'Night', note: 'Slate paper, brass ink' },
-        system: { label: 'Like my device', note: 'Follows its light or dark' },
+        auto: { label: 'By the clock', note: 'Night edition from 7 pm to 7 am' },
       },
       language: 'Language of the paper',
       languageNote: 'News stories keep the language they were written in.',

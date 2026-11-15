@@ -55,7 +55,13 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
   );
 
   return (
-    <div role="radiogroup" aria-label={label ?? inks.color} className="flex flex-wrap items-center gap-2.5">
+    // Phones: the twelve inks in two even rows of six, and mixing your own on a line of its own, named.
+    // From 640px: one wrapping row of seals.
+    <div
+      role="radiogroup"
+      aria-label={label ?? inks.color}
+      className="grid grid-cols-6 justify-items-center gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5"
+    >
       {COLOR_PRESETS.map((preset, index) => {
         const name = inks.names[index] ?? preset.name;
         const selected = preset.value.toLowerCase() === value.toLowerCase();
@@ -75,22 +81,28 @@ export function ColorSwatches({ value, onChange, allowCustom = true, size = 'md'
         );
       })}
       {allowCustom && (
-        <label title={inks.mix} className={cn(seal, 'cursor-pointer', !isPreset && '-translate-y-0.5 scale-110')}>
-          {!isPreset && HEX_COLOR.test(value) ? (
-            <Wax color={value} pressed />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 flex items-center justify-center font-display font-semibold text-muted-foreground"
-              style={{
-                backgroundColor: 'hsl(var(--muted))',
-                backgroundImage: 'radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.3), transparent 50%)',
-                mask: 'url(/ornaments/seal.webp) center / contain no-repeat',
-              }}
-            >
-              +
-            </span>
-          )}
+        <label
+          title={inks.mix}
+          className="relative col-span-6 inline-flex cursor-pointer items-center gap-3 justify-self-start rounded-[2px] pr-2 has-focus-visible:outline-solid has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring sm:col-span-1 sm:pr-0"
+        >
+          <span className={cn(seal, !isPreset && '-translate-y-0.5 scale-110')}>
+            {!isPreset && HEX_COLOR.test(value) ? (
+              <Wax color={value} pressed />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center font-display font-semibold text-muted-foreground"
+                style={{
+                  backgroundColor: 'hsl(var(--muted))',
+                  backgroundImage: 'radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.3), transparent 50%)',
+                  mask: 'url(/ornaments/seal.webp) center / contain no-repeat',
+                }}
+              >
+                +
+              </span>
+            )}
+          </span>
+          <span className="text-[0.92rem] italic text-muted-foreground sm:hidden">{inks.mix}</span>
           <input
             type="color"
             value={HEX_COLOR.test(value) ? value : '#1E3A5F'}

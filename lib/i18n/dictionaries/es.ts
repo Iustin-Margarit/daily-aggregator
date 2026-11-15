@@ -50,7 +50,6 @@ const es: Dictionary = {
     newsroom: 'Redacción',
     logIn: 'Iniciar sesión',
     signUp: 'Crear cuenta gratis',
-    logInShort: 'Entrar',
     accountMenu: 'Menú de la cuenta',
     settings: 'Ajustes',
     settingsNote: 'el libro del lector',
@@ -59,7 +58,7 @@ const es: Dictionary = {
     logOut: 'Cerrar sesión',
     toMorning: 'Pasar a la edición de la mañana',
     toNight: 'Pasar a la edición de la noche',
-    themes: { light: 'Edición de la mañana', dark: 'Edición de la noche', system: 'Como mi dispositivo' },
+    themes: { light: 'Edición de la mañana', dark: 'Edición de la noche', auto: 'Según la hora' },
   },
 
   editions: {
@@ -457,7 +456,10 @@ const es: Dictionary = {
     skip: 'Saltar por ahora',
     continueWith: { one: 'Continuar con {n} sección', other: 'Continuar con {n} secciones' },
     continueAll: 'Continuar con todas las secciones',
-    save: 'Guardar secciones',
+    pressStampAuto: 'Pulsa un sello para añadirlo o quitarlo. Cada cambio se guarda al momento.',
+    saving: 'Guardando…',
+    saved: 'Guardado',
+    toFrontPage: 'Ir a mi portada',
     byline: 'Tu firma (nombre de usuario)',
     bylineHint: 'Aparece en la parte superior de tu periódico. Puedes cambiarla más tarde.',
     inYourPaper: 'En tu periódico',
@@ -508,7 +510,7 @@ const es: Dictionary = {
       themes: {
         light: { label: 'Mañana', note: 'Papel crema, tinta sepia' },
         dark: { label: 'Noche', note: 'Papel pizarra, tinta de latón' },
-        system: { label: 'Como mi dispositivo', note: 'Sigue su modo claro u oscuro' },
+        auto: { label: 'Según la hora', note: 'Edición de la noche de 19:00 a 7:00' },
       },
       language: 'Idioma del periódico',
       languageNote: 'Las noticias se mantienen en el idioma en que se escribieron.',

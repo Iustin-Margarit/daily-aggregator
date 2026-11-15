@@ -10,6 +10,7 @@ import { I18nProvider } from '@/lib/i18n/client';
 import { getI18n } from '@/lib/i18n/server';
 import { prefAttributes } from '@/lib/reader-prefs';
 import { siteConfig } from '@/lib/site';
+import { THEME_COLORS, THEME_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
 
 // Fraunces with its 'soft' axis: rounded old-style headlines.
@@ -74,10 +75,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#efe6d6' },
-    { media: '(prefers-color-scheme: dark)', color: '#141a26' },
-  ],
+  // The Morning edition's paper; the theme provider repaints it for the Night edition.
+  themeColor: THEME_COLORS.light,
 };
 
 const FONT_SIZES = new Set(['small', 'medium', 'large']);
@@ -99,8 +98,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       {...prefAttributes((name) => cookieStore.get(name)?.value, locale)}
       className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable} ${typewriterRo.variable}`}
     >
+      <head>
+        {/* The Morning or Night edition before the first paint (lib/theme.ts). */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen">
-        <ThemeProvider nonce={nonce}>
+        <ThemeProvider>
           <I18nProvider locale={locale}>
             <ToastProvider>
               {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}

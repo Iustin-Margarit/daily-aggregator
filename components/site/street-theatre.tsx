@@ -25,8 +25,9 @@ import { cn } from '@/lib/utils';
  * circle the lamps, and now and then a carrier pigeon crosses the far sky.
  * Every size is a share of the banner height (--st-h), so speeds and strides
  * stay in step at any size. GPU transforms and opacity only; it pauses off
- * screen, stops for readers who ask for less motion, and has a Pause button
- * (the "banner" reading preference) that also stills the masthead's sky.
+ * screen, and has a Pause button (the "banner" reading preference) that also
+ * stills the masthead's sky. It moves by default, even where the device asks for
+ * less motion (styles/street-theatre.css); the sound only ever starts from a press.
  */
 
 // ---------------------------------------------------------------- pause state

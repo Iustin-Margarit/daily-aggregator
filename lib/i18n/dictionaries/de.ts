@@ -51,7 +51,6 @@ const de: Dictionary = {
     newsroom: 'Redaktion',
     logIn: 'Anmelden',
     signUp: 'Kostenlos registrieren',
-    logInShort: 'Anmelden',
     accountMenu: 'Kontomenü',
     settings: 'Einstellungen',
     settingsNote: 'das Leserbuch',
@@ -60,7 +59,7 @@ const de: Dictionary = {
     logOut: 'Abmelden',
     toMorning: 'Zur Morgenausgabe wechseln',
     toNight: 'Zur Abendausgabe wechseln',
-    themes: { light: 'Morgenausgabe', dark: 'Abendausgabe', system: 'Wie mein Gerät' },
+    themes: { light: 'Morgenausgabe', dark: 'Abendausgabe', auto: 'Nach der Uhrzeit' },
   },
 
   editions: {
@@ -458,7 +457,10 @@ const de: Dictionary = {
     skip: 'Vorerst überspringen',
     continueWith: { one: 'Weiter mit {n} Rubrik', other: 'Weiter mit {n} Rubriken' },
     continueAll: 'Weiter mit allen Rubriken',
-    save: 'Rubriken speichern',
+    pressStampAuto: 'Drücken Sie eine Marke, um sie hinzuzufügen oder zu entfernen. Jede Änderung wird sofort gespeichert.',
+    saving: 'Wird gespeichert …',
+    saved: 'Gespeichert',
+    toFrontPage: 'Zu meiner Titelseite',
     byline: 'Ihr Kürzel (Benutzername)',
     bylineHint: 'Steht oben in Ihrer Zeitung. Sie können es später ändern.',
     inYourPaper: 'In Ihrer Zeitung',
@@ -509,7 +511,7 @@ const de: Dictionary = {
       themes: {
         light: { label: 'Morgen', note: 'Cremepapier, Sepiatinte' },
         dark: { label: 'Abend', note: 'Schieferpapier, Messingtinte' },
-        system: { label: 'Wie mein Gerät', note: 'Folgt seinem hellen oder dunklen Modus' },
+        auto: { label: 'Nach der Uhrzeit', note: 'Abendausgabe von 19 bis 7 Uhr' },
       },
       language: 'Sprache der Zeitung',
       languageNote: 'Die Nachrichten bleiben in der Sprache, in der sie geschrieben wurden.',

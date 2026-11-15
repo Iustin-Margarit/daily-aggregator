@@ -11,9 +11,10 @@ const ENGRAVINGS = {
   politics: [420, 297],
   business: [400, 393],
   technology: [440, 163],
-  science: [232, 400],
+  science: [187, 400],
   health: [301, 372],
-  sports: [194, 400],
+  // A press photograph (Ricardo Zamora, Agence Rol, 1931) printed as an oval plate; see PHOTOGRAPHS.
+  sports: [361, 400],
   entertainment: [380, 278],
   press: [362, 440],
   newsboy: [258, 420],
@@ -46,6 +47,13 @@ const ENGRAVINGS = {
 
 export type EngravingName = keyof typeof ENGRAVINGS;
 
+/**
+ * Photographs rather than line art. A photo printed as a mask keeps its tones only in dark ink on light
+ * paper; on the Night edition's dark paper that would show a negative, so these have a second plate,
+ * public/engravings/<name>-night.webp, inked where the photograph is light.
+ */
+const PHOTOGRAPHS = new Set<EngravingName>(['sports']);
+
 type EngravingProps = {
   name: EngravingName;
   className?: string;
@@ -64,8 +72,14 @@ export function Engraving({ name, className, label, flip = false, soft = false }
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-      className={cn('engraving', soft && 'engraving-soft', flip && '-scale-x-100', className)}
-      style={{ '--engraving': `url(/engravings/${name}.webp)`, aspectRatio: `${width} / ${height}` } as React.CSSProperties}
+      className={cn('engraving', soft && 'engraving-soft', PHOTOGRAPHS.has(name) && 'engraving-photo', flip && '-scale-x-100', className)}
+      style={
+        {
+          '--engraving': `url(/engravings/${name}.webp)`,
+          ...(PHOTOGRAPHS.has(name) && { '--engraving-night': `url(/engravings/${name}-night.webp)` }),
+          aspectRatio: `${width} / ${height}`,
+        } as React.CSSProperties
+      }
     />
   );
 }

@@ -56,7 +56,6 @@ const ro: Dictionary = {
     newsroom: 'Redacția',
     logIn: 'Intră în cont',
     signUp: 'Înscrie-te gratuit',
-    logInShort: 'Conectare',
     accountMenu: 'Meniul contului',
     settings: 'Setări',
     settingsNote: 'registrul cititorului',
@@ -65,7 +64,7 @@ const ro: Dictionary = {
     logOut: 'Ieși din cont',
     toMorning: 'Treci la ediția de dimineață',
     toNight: 'Treci la ediția de seară',
-    themes: { light: 'Ediția de dimineață', dark: 'Ediția de seară', system: 'Ca dispozitivul meu' },
+    themes: { light: 'Ediția de dimineață', dark: 'Ediția de seară', auto: 'După oră' },
   },
 
   editions: {
@@ -474,7 +473,10 @@ const ro: Dictionary = {
     skip: 'Mai târziu',
     continueWith: { one: 'Continuă cu {n} rubrică', other: 'Continuă cu {n} rubrici' },
     continueAll: 'Continuă cu toate rubricile',
-    save: 'Salvează rubricile',
+    pressStampAuto: 'Apasă pe un timbru pentru a-l adăuga sau a-l scoate. Fiecare schimbare se salvează imediat.',
+    saving: 'Se salvează…',
+    saved: 'Salvat',
+    toFrontPage: 'Mergi la prima pagină',
     byline: 'Semnătura ta (nume de utilizator)',
     bylineHint: 'Apare în partea de sus a ziarului tău. O poți schimba mai târziu.',
     inYourPaper: 'În ziarul tău',
@@ -525,7 +527,7 @@ const ro: Dictionary = {
       themes: {
         light: { label: 'Dimineață', note: 'Hârtie crem, cerneală sepia' },
         dark: { label: 'Seară', note: 'Hârtie de ardezie, cerneală aurie' },
-        system: { label: 'Ca dispozitivul meu', note: 'Urmează modul luminos sau întunecat' },
+        auto: { label: 'După oră', note: 'Ediția de seară între 19:00 și 7:00' },
       },
       language: 'Limba ziarului',
       languageNote: 'Articolele își păstrează limba în care au fost scrise.',

@@ -3,7 +3,8 @@
 import { createContext, useActionState, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/components/site/theme-provider';
+import type { ThemeChoice } from '@/lib/theme';
 import { X } from 'lucide-react';
 import { deleteAccount, saveAccentInk, saveFontSize, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
 import { muteSource, unmuteSource } from '@/components/articles/moderation';
@@ -186,16 +187,16 @@ export function ProfileSection({ username, avatarColor, email }: { username: str
 
 // ---------------------------------------------------------------- II. printing
 
-const EDITIONS: { value: 'light' | 'dark' | 'system'; ornament: OrnamentName }[] = [
+const EDITIONS: { value: ThemeChoice; ornament: OrnamentName }[] = [
   { value: 'light', ornament: 'sun' },
   { value: 'dark', ornament: 'moon' },
-  { value: 'system', ornament: 'globe' },
+  { value: 'auto', ornament: 'watch-case' },
 ];
 
 /** A choice printed as a card in a double rule (the edition, its language): brass-washed when chosen. */
 const choiceCard = (active: boolean) =>
   cn(
-    // min-w-0 and hyphenation: three cards share a phone's width even with "Como mi dispositivo".
+    // min-w-0 and hyphenation: three cards share a tablet's width even with "Nach der Uhrzeit".
     'flex min-w-0 flex-col items-center gap-1.5 rounded-[2px] border-[3px] border-double px-2 py-3.5 text-center hyphens-auto break-words transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     active ? 'border-(--ink-gold) bg-(--ink-gold)/14' : 'border-rule/35 bg-card/50 hover:border-rule/60',
   );
@@ -305,14 +306,27 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
           <div className="space-y-7 xl:border-r xl:border-rule/30 xl:pr-8">
             <div>
               <SubHead>{w.edition}</SubHead>
-              <div className="grid grid-cols-3 gap-2.5" role="radiogroup" aria-label={w.edition}>
+              {/* Phones: one full-width card a line, the engraving on the left and the name and note beside it.
+                  From 640px: three cards side by side. */}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5" role="radiogroup" aria-label={w.edition}>
                 {EDITIONS.map(({ value, ornament }) => {
                   const active = mounted && theme === value;
                   return (
-                    <button key={value} type="button" role="radio" aria-checked={active} onClick={() => setTheme(value)} className={choiceCard(active)}>
-                      <Ornament name={ornament} className="h-9" />
-                      <span className="font-display text-[1.02rem] font-semibold leading-tight text-balance">{w.themes[value].label}</span>
-                      <span className="hidden text-[0.78rem] italic leading-snug text-muted-foreground sm:block">{w.themes[value].note}</span>
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setTheme(value)}
+                      className={cn(choiceCard(active), 'max-sm:flex-row max-sm:gap-3.5 max-sm:px-3.5 max-sm:py-2.5 max-sm:text-left')}
+                    >
+                      <span className="flex w-10 shrink-0 justify-center sm:w-auto">
+                        <Ornament name={ornament} className="h-8 max-w-10 sm:h-9 sm:max-w-none" />
+                      </span>
+                      <span className="flex min-w-0 flex-col gap-0.5 sm:items-center sm:gap-1.5">
+                        <span className="font-display text-[1.02rem] font-semibold leading-tight text-balance">{w.themes[value].label}</span>
+                        <span className="text-[0.8rem] italic leading-snug text-muted-foreground sm:text-[0.78rem]">{w.themes[value].note}</span>
+                      </span>
                     </button>
                   );
                 })}
@@ -323,6 +337,7 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
               <SubHead>{w.typeSize}</SubHead>
               <Hint>{w.typeSizeNote}</Hint>
               <Segmented<FontSize>
+                fill
                 aria-label={w.typeSize}
                 value={size}
                 onChange={(next) => void chooseSize(next)}
@@ -378,6 +393,7 @@ function PrefSlipRow<K extends ReaderPref>({ name, values }: { name: K; values: 
         <p className="mt-0.5 text-pretty text-[0.9rem] italic leading-snug text-muted-foreground">{slip.note}</p>
       </div>
       <Segmented<ReaderPrefValue<K>>
+        fill
         aria-label={slip.title}
         className="max-w-full self-start"
         value={value}

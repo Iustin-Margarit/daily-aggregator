@@ -147,17 +147,24 @@
   text-shadow: none;
 }
 
-/* Phones: the stamp alone, a little smaller, so the bar keeps room for the title. */
+/* Phones: the stamp alone in a framed 44px button, like Morning / Night and Log in beside it, so all
+   three are easy to press. The title shrinks to leave them room (SiteHeader). */
 @media (width < 40rem) {
   .edition-seal-button {
-    padding-inline: 0.2rem;
+    height: 2.75rem;
+    min-width: 2.75rem;
+    justify-content: center;
+    padding-inline: 0.15rem;
+    border: 3px double hsl(var(--rule) / 0.45);
+    background: hsl(var(--card) / 0.6);
   }
   .edition-seal-button .edition-caret {
     display: none;
   }
   .edition-seal-button .edition-stamp {
-    width: 1.85rem;
-    height: 1.85rem;
+    width: 2.05rem;
+    height: 2.05rem;
+    font-size: 0.72rem;
   }
 }
 

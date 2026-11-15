@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { saveTopics } from '@/app/actions/onboarding';
+import { saveSections, saveTopics } from '@/app/actions/onboarding';
+import { useToast } from '@/components/ui/toast';
 import { FormMessage } from '@/components/auth/form-message';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,29 +25,76 @@ type TopicsFormProps = {
   sourceCounts: Record<string, number>;
 };
 
-function SubmitButtons({ isFirstRun, count }: { isFirstRun: boolean; count: number }) {
+/** A new account's first visit: the byline and the sections go in together, with Continue. */
+function SubmitButtons({ count }: { count: number }) {
   const { pending, data } = useFormStatus();
   const intent = data?.get('intent');
   const { t, plural } = useI18n();
   const w = t.onboarding;
   return (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end lg:flex-col-reverse lg:justify-start">
-      {isFirstRun ? (
-        <Button type="submit" name="intent" value="skip" variant="ghost" disabled={pending}>
-          {pending && intent === 'skip' && <Spinner />}
-          {w.skip}
-        </Button>
-      ) : (
-        <Button variant="outline" asChild>
-          <Link href="/feed">{t.common.cancel}</Link>
-        </Button>
-      )}
+      <Button type="submit" name="intent" value="skip" variant="ghost" disabled={pending}>
+        {pending && intent === 'skip' && <Spinner />}
+        {w.skip}
+      </Button>
       <Button type="submit" name="intent" value="save" disabled={pending} className="sm:min-w-44">
         {pending && intent !== 'skip' && <Spinner />}
-        {isFirstRun ? (count > 0 ? plural(w.continueWith, count) : w.continueAll) : w.save}
+        {count > 0 ? plural(w.continueWith, count) : w.continueAll}
       </Button>
     </div>
   );
+}
+
+type SaveStatus = 'idle' | 'saving' | 'saved';
+
+/**
+ * Every other visit saves each press at once (no Save button). Quick presses are
+ * gathered for a moment and sent as one choice, one save at a time; a change still
+ * waiting when the reader leaves the page is sent on the way out.
+ */
+function useSaveAsYouGo(enabled: boolean) {
+  const [status, setStatus] = useState<SaveStatus>('idle');
+  const { showToast } = useToast();
+  const { t } = useI18n();
+  const waiting = useRef<string[] | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const busy = useRef(false);
+
+  const flush = async () => {
+    if (busy.current) return;
+    busy.current = true;
+    while (waiting.current) {
+      const ids = waiting.current;
+      waiting.current = null;
+      setStatus('saving');
+      const result = await saveSections(ids).catch(() => ({ ok: false, message: undefined }));
+      if (!result.ok) {
+        showToast({ type: 'error', title: result.message || t.common.somethingWrong });
+        setStatus('idle');
+        busy.current = false;
+        return;
+      }
+    }
+    busy.current = false;
+    setStatus('saved');
+  };
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(timer.current);
+      if (waiting.current && !busy.current) void saveSections(waiting.current);
+    },
+    [],
+  );
+
+  const save = (ids: string[]) => {
+    if (!enabled) return;
+    waiting.current = ids;
+    setStatus('saving');
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => void flush(), 300);
+  };
+  return { status, save };
 }
 
 export function TopicsForm({ categories, selectedIds, isFirstRun, username, sourceCounts }: TopicsFormProps) {
@@ -54,8 +102,13 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
   const [state, formAction] = useActionState(saveTopics, null);
   const { t, fmt, plural } = useI18n();
   const w = t.onboarding;
+  const { status, save } = useSaveAsYouGo(!isFirstRun);
 
-  const toggle = (id: string) => setSelected((current) => (current.includes(id) ? current.filter((x) => x !== id) : [...current, id]));
+  const choose = (next: string[]) => {
+    setSelected(next);
+    save(next);
+  };
+  const toggle = (id: string) => choose(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
   const allSelected = selected.length === categories.length;
 
   return (
@@ -79,14 +132,27 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
             <p className="mt-1 font-display text-[1.45rem] font-semibold leading-tight" aria-live="polite">
               {selected.length === 0 ? w.everySection : plural(w.countOf, selected.length, { total: categories.length })}
             </p>
-            <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">{selected.length === 0 ? w.noneYet : w.pressStamp}</p>
+            <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">
+              {selected.length === 0 ? w.noneYet : isFirstRun ? w.pressStamp : w.pressStampAuto}
+            </p>
+            {!isFirstRun && (
+              <p className="mt-1.5 flex h-5 items-center gap-1.5 font-label text-[0.85rem] font-medium text-(--brass-ink)" role="status">
+                {status === 'saving' && (
+                  <>
+                    <Spinner className="size-3.5" />
+                    {w.saving}
+                  </>
+                )}
+                {status === 'saved' && <>✓ {w.saved}</>}
+              </p>
+            )}
           </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="shrink-0 lg:mt-4"
-            onClick={() => setSelected(allSelected ? [] : categories.map((c) => c.id))}
+            onClick={() => choose(allSelected ? [] : categories.map((c) => c.id))}
           >
             {allSelected ? w.clearAll : w.selectAll}
           </Button>
@@ -115,14 +181,17 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                   onChange={() => toggle(category.id)}
                   className="sr-only"
                 />
-                <span className="stamp flex h-full flex-col items-center gap-2.5 text-center">
+                {/* A container: the section's name shrinks to the stamp's width ("Entertainment" on a phone). */}
+                <span className="stamp @container flex h-full flex-col items-center gap-2.5 text-center">
                   <span className="flex w-full items-center justify-between font-label text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-(--stamp-ink)">
                     <span>{fmt(t.sections.stampNo, { n: String(index + 1).padStart(2, '0') })}</span>
                   </span>
                   <Engraving name={style.engraving} className="mx-auto h-16 max-w-[7rem]" />
-                  <span>
-                    <span className="headline block text-xl text-(--stamp-ink)">{section.name}</span>
-                    <span className="mt-1 block text-[0.9rem] leading-snug text-muted-foreground">{section.description}</span>
+                  <span className="w-full min-w-0 px-1">
+                    {/* Sized to the stamp (11.5% of its width): "Entertainment" or "Divertissement" keep clear of the inner
+                        rule on a 320px phone. If a phone's own text size makes it larger still, it breaks with a hyphen. */}
+                    <span className="headline block text-[min(1.2rem,11.5cqi)] text-(--stamp-ink) [overflow-wrap:anywhere] hyphens-auto">{section.name}</span>
+                    <span className="mt-1 block break-words text-[0.9rem] leading-snug text-muted-foreground">{section.description}</span>
                   </span>
                   {sourceCounts[category.id] ? (
                     <span className="byline">{plural(w.newspapers, sourceCounts[category.id])}</span>
@@ -155,7 +224,13 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
       </fieldset>
 
       <div className="lg:col-start-1 lg:row-start-2 lg:border-r lg:border-rule/40 lg:pr-8 lg:pt-6">
-        <SubmitButtons isFirstRun={isFirstRun} count={selected.length} />
+        {isFirstRun ? (
+          <SubmitButtons count={selected.length} />
+        ) : (
+          <Button variant="outline" asChild className="w-full sm:w-auto lg:w-full">
+            <Link href="/feed">{w.toFrontPage}</Link>
+          </Button>
+        )}
       </div>
     </form>
   );

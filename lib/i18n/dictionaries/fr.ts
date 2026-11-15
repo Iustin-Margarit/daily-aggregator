@@ -51,7 +51,6 @@ const fr: Dictionary = {
     newsroom: 'Rédaction',
     logIn: 'Se connecter',
     signUp: 'Inscription gratuite',
-    logInShort: 'Connexion',
     accountMenu: 'Menu du compte',
     settings: 'Réglages',
     settingsNote: 'le registre du lecteur',
@@ -60,7 +59,7 @@ const fr: Dictionary = {
     logOut: 'Se déconnecter',
     toMorning: 'Passer à l’édition du matin',
     toNight: 'Passer à l’édition du soir',
-    themes: { light: 'Édition du matin', dark: 'Édition du soir', system: 'Comme mon appareil' },
+    themes: { light: 'Édition du matin', dark: 'Édition du soir', auto: 'Selon l’heure' },
   },
 
   editions: {
@@ -467,7 +466,10 @@ const fr: Dictionary = {
     skip: 'Passer pour l’instant',
     continueWith: { one: 'Continuer avec {n} rubrique', other: 'Continuer avec {n} rubriques' },
     continueAll: 'Continuer avec toutes les rubriques',
-    save: 'Enregistrer les rubriques',
+    pressStampAuto: 'Appuyez sur un timbre pour l’ajouter ou le retirer. Chaque changement est enregistré aussitôt.',
+    saving: 'Enregistrement…',
+    saved: 'Enregistré',
+    toFrontPage: 'Voir ma une',
     byline: 'Votre signature (nom d’utilisateur)',
     bylineHint: 'Affichée en haut de votre journal. Vous pourrez la changer plus tard.',
     inYourPaper: 'Dans votre journal',
@@ -518,7 +520,7 @@ const fr: Dictionary = {
       themes: {
         light: { label: 'Matin', note: 'Papier crème, encre sépia' },
         dark: { label: 'Soir', note: 'Papier ardoise, encre laiton' },
-        system: { label: 'Comme mon appareil', note: 'Suit son mode clair ou sombre' },
+        auto: { label: 'Selon l’heure', note: 'Édition du soir de 19 h à 7 h' },
       },
       language: 'Langue du journal',
       languageNote: 'Les articles gardent la langue dans laquelle ils ont été écrits.',

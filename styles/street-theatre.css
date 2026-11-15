@@ -818,15 +818,13 @@
   animation-play-state: paused !important;
 }
 
-/* Readers who ask for less motion get a still picture: everyone stops mid-stride. */
+/*
+ * The street walks for everyone by default (the owner's choice, 2026-11-15), also on
+ * devices that ask for less motion: many phones ask for it with battery saving on, and
+ * the banner then looked broken. Its Pause button is always there and is remembered
+ * (the "banner" preference, also Still or Hidden in Settings). Only the small wobbles stop.
+ */
 @media (prefers-reduced-motion: reduce) {
-  .st * {
-    animation-play-state: paused !important;
-  }
-  /* Sound stays: it does not move anything. */
-  .st-motion {
-    display: none;
-  }
   .st-sound[aria-pressed='true'] .ornament-mask,
   .st-float .ornament-mask {
     animation: none;
