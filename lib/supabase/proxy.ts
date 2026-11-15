@@ -9,11 +9,12 @@ const GUEST_ONLY = new Set(['/login', '/signup', '/forgot-password']);
 
 /**
  * Sections that need a session. Everything else is public: visitors can read
- * the paper, choose sections and clip stories in their browser (/feed,
- * /onboarding, /saved) without an account. Each of these pages also checks
- * the session itself; this redirect only adds the `?next=` return path.
+ * the paper, choose sections, clip stories and set their preferences in their
+ * browser (/feed, /onboarding, /saved, /profile: Settings without the account
+ * entries) without an account. Each of these pages also checks the session
+ * itself; this redirect only adds the `?next=` return path.
  */
-const PRIVATE_SECTIONS = ['/profile', '/admin'];
+const PRIVATE_SECTIONS = ['/admin'];
 
 function isPrivatePath(pathname: string) {
   return PRIVATE_SECTIONS.some((section) => pathname === section || pathname.startsWith(`${section}/`));

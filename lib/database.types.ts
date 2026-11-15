@@ -466,6 +466,8 @@ export type Database = {
           p_as_of?: string
           p_category_ids?: string[]
           p_limit?: number
+          p_muted_source_ids?: string[]
+          p_muted_words?: string[]
           p_offset?: number
           p_search?: string
           p_since?: string

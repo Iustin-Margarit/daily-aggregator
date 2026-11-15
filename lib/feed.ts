@@ -1,3 +1,4 @@
+import type { GuestMutes } from '@/lib/guest';
 import type { Category, DateRange, FeedFilters, FeedSort } from '@/lib/types';
 
 /**
@@ -34,8 +35,11 @@ export function sinceFor(range: DateRange, asOf: string): string | undefined {
   return undefined;
 }
 
-/** Arguments for the get_feed RPC for one page (1-based). Empty filters are omitted (= no filter). */
-export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string) {
+/**
+ * Arguments for the get_feed RPC for one page (1-based). Empty filters are omitted (= no filter).
+ * `mutes`: a visitor's muted newspapers and words (signed-in readers' lists are in the database).
+ */
+export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string, mutes?: GuestMutes) {
   return {
     p_category_ids: filters.categoryIds.length ? filters.categoryIds : undefined,
     p_source_ids: filters.sourceIds.length ? filters.sourceIds : undefined,
@@ -45,6 +49,15 @@ export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string) {
     p_limit: pageWindow(page, hasFrontPage(filters)).limit,
     p_offset: pageWindow(page, hasFrontPage(filters)).offset,
     p_as_of: asOf,
+    ...mutedArgs(mutes),
+  };
+}
+
+/** get_feed's arguments for a visitor's muted newspapers and words (omitted when there are none). */
+export function mutedArgs(mutes?: GuestMutes) {
+  return {
+    p_muted_source_ids: mutes?.sourceIds.length ? mutes.sourceIds : undefined,
+    p_muted_words: mutes?.words.length ? mutes.words : undefined,
   };
 }
 

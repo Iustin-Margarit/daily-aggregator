@@ -1,14 +1,14 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { createContext, useActionState, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { X } from 'lucide-react';
-import { deleteAccount, updateAppearance, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
-import { unmuteSource } from '@/components/articles/moderation';
+import { deleteAccount, saveAccentInk, saveFontSize, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
+import { muteSource, unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
-import { LEDGER_INDEX, type LedgerEntryId } from '@/components/profile/ledger-index';
+import { ledgerIndex, type LedgerEntryId, type LedgerIndex } from '@/components/profile/ledger-index';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { EditionMark } from '@/components/site/edition-stamp';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
@@ -19,17 +19,22 @@ import { ColoredAvatar } from '@/components/ui/colored-avatar';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { PasswordInput } from '@/components/ui/password-input';
 import { PasswordStrength } from '@/components/ui/password-strength';
 import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { accentVariables } from '@/lib/colors';
+import { GUEST_MAX_MUTED_WORDS, guestMutedWordsFit } from '@/lib/guest';
+import { applyAccent, applyFontSize, readGuestMutes, saveGuestAccent, saveGuestFontSize, saveGuestMutes } from '@/lib/guest-prefs';
+import { sectionText } from '@/lib/i18n';
 import { LOCALE_INFO, LOCALES, type Locale } from '@/lib/i18n/config';
 import { useChangeLocale, useI18n } from '@/lib/i18n/client';
+import { getCategoryStyle } from '@/lib/category-styles';
 import { type ReaderPref, type ReaderPrefValue } from '@/lib/reader-prefs';
 import { createClient } from '@/lib/supabase/client';
-import type { ActionResult, FontSize } from '@/lib/types';
+import type { ActionResult, Category, FontSize, SourceOption } from '@/lib/types';
 import { MAX_MUTED_KEYWORDS, normalizeMutedKeyword } from '@/lib/validation';
 import { useHydrated } from '@/lib/use-client-value';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
@@ -38,9 +43,17 @@ import { cn } from '@/lib/utils';
 /*
  * The Settings page as the Reader's Ledger: each part is an entry on a sheet
  * of ledger paper (styles: .ledger-sheet), with a red margin rule and a folio
- * numeral, laid out in columns on wide screens.
+ * numeral, laid out in columns on wide screens. Visitors without an account
+ * get the entries kept in their browser only (components/profile/ledger-index.ts).
  */
 
+const LedgerContext = createContext<LedgerIndex>(ledgerIndex(false));
+
+/** The entries on the page and their numerals: all six for an account, three for a visitor. */
+export function Ledger({ guest, children }: { guest: boolean; children: React.ReactNode }) {
+  const index = useMemo(() => ledgerIndex(guest), [guest]);
+  return <LedgerContext.Provider value={index}>{children}</LedgerContext.Provider>;
+}
 
 function LedgerEntry({
   id,
@@ -55,7 +68,7 @@ function LedgerEntry({
   danger?: boolean;
   children: React.ReactNode;
 }) {
-  const { numeral } = LEDGER_INDEX.find((entry) => entry.id === id)!;
+  const numeral = useContext(LedgerContext).find((entry) => entry.id === id)?.numeral ?? '';
   const { t, fmt } = useI18n();
   const title = t.settings.entries[id];
   return (
@@ -92,6 +105,15 @@ function SubHead({ children, htmlFor }: { children: React.ReactNode; htmlFor?: s
     </Label>
   ) : (
     <p className={className}>{children}</p>
+  );
+}
+
+/** One line under a SubHead saying what the choice does. */
+function Hint({ children, id }: { children: React.ReactNode; id?: string }) {
+  return (
+    <p id={id} className="-mt-1 mb-3 text-pretty text-[0.9rem] italic leading-snug text-muted-foreground">
+      {children}
+    </p>
   );
 }
 
@@ -198,10 +220,11 @@ function LanguageChoice() {
               role="radio"
               aria-checked={active}
               onClick={() => !active && change(code)}
-              className={cn(choiceCard(active), 'edition-card last:odd:col-span-2 sm:last:odd:col-span-1')}
+              className={cn(choiceCard(active), 'edition-card break-normal hyphens-none last:odd:col-span-2 sm:last:odd:col-span-1')}
             >
               <EditionMark code={code} active={active} className="edition-mark-card mb-0.5" />
-              <span lang={info.htmlLang} className="font-display text-[1rem] font-semibold leading-tight text-balance">
+              {/* Whole words only: "Édition française" may wrap between its words, never inside one. */}
+              <span lang={info.htmlLang} className="font-display text-[1rem] font-semibold leading-tight text-balance hyphens-none">
                 {info.edition}
               </span>
             </button>
@@ -213,34 +236,71 @@ function LanguageChoice() {
   );
 }
 
-export function AppearanceSection({ bannerColor, fontSize }: { bannerColor: string; fontSize: FontSize }) {
+/**
+ * The edition, type size, ink and language. Every choice applies the moment
+ * it is made: for an account the type size and ink are saved to it straight
+ * away; a visitor's are kept in this browser (lib/guest-prefs.ts).
+ */
+export function AppearanceSection({ bannerColor, fontSize, guest = false }: { bannerColor: string; fontSize: FontSize; guest?: boolean }) {
   const { theme, setTheme } = useTheme();
   // The saved edition is only known in the browser.
   const mounted = useHydrated();
   const [banner, setBanner] = useState(bannerColor);
   const [size, setSize] = useState<FontSize>(fontSize);
-  const [state, action] = useActionState(updateAppearance, null);
-  useActionFeedback(state);
-  const w = useI18n().t.settings.printing;
+  const { showToast } = useToast();
+  const { t } = useI18n();
+  const w = t.settings.printing;
+  const failed = (result: ActionResult) => showToast({ type: 'error', title: result.message || t.common.somethingWrong });
 
-  // Live preview of the font size; revert to the saved value when leaving the page.
-  const savedSize = useRef(fontSize);
-  useEffect(() => {
-    savedSize.current = fontSize;
-  }, [fontSize]);
-  useEffect(() => {
-    document.documentElement.dataset.fontSize = size;
-  }, [size]);
+  const chooseSize = async (next: FontSize) => {
+    const previous = size;
+    setSize(next);
+    if (guest) {
+      saveGuestFontSize(next);
+      return;
+    }
+    applyFontSize(next);
+    const result = await saveFontSize(next);
+    if (!result.ok) {
+      setSize(previous);
+      applyFontSize(previous);
+      failed(result);
+    }
+  };
+
+  // The colour picker sends a new ink at every move of the pointer: the page follows at once,
+  // and the account is written once the ink has settled (or when the reader leaves the page).
+  const inkTimer = useRef<number | undefined>(undefined);
+  const unsavedInk = useRef<string | null>(null);
+  const saveInk = async () => {
+    const ink = unsavedInk.current;
+    unsavedInk.current = null;
+    if (!ink) return;
+    const result = await saveAccentInk(ink);
+    if (!result.ok) failed(result);
+  };
+  const chooseInk = (next: string) => {
+    setBanner(next);
+    if (guest) {
+      saveGuestAccent(next);
+      return;
+    }
+    applyAccent(next);
+    unsavedInk.current = next;
+    window.clearTimeout(inkTimer.current);
+    inkTimer.current = window.setTimeout(() => void saveInk(), 600);
+  };
   useEffect(
     () => () => {
-      document.documentElement.dataset.fontSize = savedSize.current;
+      window.clearTimeout(inkTimer.current);
+      if (unsavedInk.current) void saveAccentInk(unsavedInk.current);
     },
     [],
   );
 
   return (
     <LedgerEntry id="printing" description={w.description}>
-      <form action={action}>
+      <div>
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-0">
           <div className="space-y-7 xl:border-r xl:border-rule/30 xl:pr-8">
             <div>
@@ -259,39 +319,40 @@ export function AppearanceSection({ bannerColor, fontSize }: { bannerColor: stri
               </div>
             </div>
 
-            <LanguageChoice />
-
             <div>
               <SubHead>{w.typeSize}</SubHead>
+              <Hint>{w.typeSizeNote}</Hint>
               <Segmented<FontSize>
                 aria-label={w.typeSize}
                 value={size}
-                onChange={setSize}
+                onChange={(next) => void chooseSize(next)}
                 options={[
                   { value: 'small', label: <span className="text-xs">{w.sizes.small}</span> },
                   { value: 'medium', label: <span className="text-sm">{w.sizes.medium}</span> },
                   { value: 'large', label: <span className="text-base">{w.sizes.large}</span> },
                 ]}
               />
-              <input type="hidden" name="font_size" value={size} />
             </div>
           </div>
 
-          <div className="space-y-4 xl:pl-8">
+          <div className="xl:pl-8">
             <SubHead>{w.accent}</SubHead>
-            {/* A proof of the ink on a slip of the paper. */}
-            <div className="card-paper px-4 py-3" style={accentVariables(banner)} data-accent="" aria-hidden="true">
-              <p className="kicker">{w.proofKicker}</p>
-              <p className="headline mt-1 text-lg">{w.proofHeadline}</p>
+            <Hint>{w.accentNote}</Hint>
+            <div className="space-y-4">
+              {/* A proof of the ink on a slip of the paper. */}
+              <div className="card-paper px-4 py-3" style={accentVariables(banner)} data-accent="" aria-hidden="true">
+                <p className="kicker">{w.proofKicker}</p>
+                <p className="headline mt-1 text-lg">{w.proofHeadline}</p>
+              </div>
+              <ColorSwatches value={banner} onChange={chooseInk} label={w.accent} />
             </div>
-            <ColorSwatches value={banner} onChange={setBanner} label={w.accent} />
-            <input type="hidden" name="banner_color" value={banner} />
           </div>
         </div>
-        <LedgerFoot>
-          <SubmitButton disabled={banner === bannerColor && size === fontSize}>{w.save}</SubmitButton>
-        </LedgerFoot>
-      </form>
+        {/* The five editions get the whole width, so their names never break inside a word. */}
+        <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
+          <LanguageChoice />
+        </div>
+      </div>
     </LedgerEntry>
   );
 }
@@ -342,11 +403,17 @@ export function ReadingRoomSection() {
 
 // ---------------------------------------------------------------- IV. sections and papers
 
+/*
+ * Muted newspapers and words are saved the moment they change: in the account
+ * (RLS: a reader writes only their own rows), or for a visitor in this
+ * browser's cookies (lib/guest-prefs.ts), which the feed sends to get_feed.
+ */
+
 /**
  * Muted words: stories whose headline or summary contains one of them (as a
  * whole word) never appear on the front page. Saved straight away, one by one.
  */
-function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywords: string[] }) {
+function MutedWords({ userId, initialKeywords }: { userId: string | null; initialKeywords: string[] }) {
   const [keywords, setKeywords] = useState(initialKeywords);
   const [draft, setDraft] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
@@ -354,6 +421,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
   const { showToast } = useToast();
   const { t, fmt } = useI18n();
   const w = t.settings.sections;
+  const max = userId ? MAX_MUTED_KEYWORDS : GUEST_MAX_MUTED_WORDS;
 
   const add = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -366,18 +434,23 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
       setProblem(fmt(w.alreadyMuted, { word: result.keyword }));
       return;
     }
-    if (keywords.length >= MAX_MUTED_KEYWORDS) {
-      setProblem(fmt(w.tooManyWords, { max: MAX_MUTED_KEYWORDS }));
+    const next = [...keywords, result.keyword].sort();
+    if (keywords.length >= max || (!userId && !guestMutedWordsFit(next))) {
+      setProblem(fmt(w.tooManyWords, { max: userId ? max : keywords.length }));
       return;
     }
-    setBusy(true);
-    const { error } = await createClient().from('muted_keywords').insert({ user_id: userId, keyword: result.keyword });
-    setBusy(false);
-    if (error) {
-      showToast({ type: 'error', title: w.muteWordFailed, message: error.message });
-      return;
+    if (userId) {
+      setBusy(true);
+      const { error } = await createClient().from('muted_keywords').insert({ user_id: userId, keyword: result.keyword });
+      setBusy(false);
+      if (error) {
+        showToast({ type: 'error', title: w.muteWordFailed, message: error.message });
+        return;
+      }
+    } else {
+      saveGuestMutes({ ...readGuestMutes(), words: next });
     }
-    setKeywords((list) => [...list, result.keyword].sort());
+    setKeywords(next);
     setDraft('');
     setProblem(null);
     showToast({ type: 'success', title: fmt(w.wordMuted, { word: result.keyword }), message: w.wordMutedNote });
@@ -385,6 +458,11 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
 
   const remove = async (keyword: string) => {
     setKeywords((list) => list.filter((k) => k !== keyword));
+    if (!userId) {
+      const mutes = readGuestMutes();
+      saveGuestMutes({ ...mutes, words: mutes.words.filter((k) => k !== keyword) });
+      return;
+    }
     const { error } = await createClient().from('muted_keywords').delete().eq('user_id', userId).eq('keyword', keyword);
     if (error) {
       setKeywords((list) => [...list, keyword].sort());
@@ -395,7 +473,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
   return (
     <div>
       <SubHead htmlFor="muted-word">{w.mutedWords}</SubHead>
-      <p className="mb-3 text-pretty text-[0.95rem] italic text-muted-foreground">{w.mutedWordsNote}</p>
+      <Hint id="muted-word-hint">{w.mutedWordsNote}</Hint>
       <form onSubmit={add} className="flex flex-wrap items-start gap-2.5">
         <div className="min-w-0 flex-1 basis-56">
           <Input
@@ -409,7 +487,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
             placeholder={w.wordPlaceholder}
             autoComplete="off"
             aria-invalid={problem ? true : undefined}
-            aria-describedby={problem ? 'muted-word-problem' : undefined}
+            aria-describedby={problem ? 'muted-word-hint muted-word-problem' : 'muted-word-hint'}
           />
           {problem && (
             <p id="muted-word-problem" role="alert" className="mt-1.5 text-[0.88rem] text-destructive">
@@ -446,32 +524,142 @@ function MutedWords({ userId, initialKeywords }: { userId: string; initialKeywor
   );
 }
 
-export function SectionsAndSourcesSection({
-  topics,
+type MutedPaper = { id: string; name: string };
+
+/**
+ * Muted newspapers: a list with Unmute on each, and a menu of every other
+ * newspaper (grouped by section) with Mute beside it.
+ */
+function MutedPapers({
   userId,
+  initial,
   sources,
-  keywords,
+  categories,
 }: {
-  topics: string[];
-  userId: string;
-  sources: { id: string; name: string }[];
-  keywords: string[];
+  userId: string | null;
+  initial: MutedPaper[];
+  sources: SourceOption[];
+  categories: Category[];
 }) {
-  const [list, setList] = useState(sources);
+  const [list, setList] = useState(initial);
+  const [choice, setChoice] = useState('');
+  const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const { t, fmt } = useI18n();
   const w = t.settings.sections;
 
-  const unmute = async (source: { id: string; name: string }) => {
-    setList((current) => current.filter((s) => s.id !== source.id));
-    const { error } = await unmuteSource(userId, source.id);
+  // The newspapers that can still be muted, under their sections.
+  const groups = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          category,
+          papers: sources.filter((s) => s.category_id === category.id && !list.some((m) => m.id === s.id)),
+        }))
+        .filter((group) => group.papers.length > 0),
+    [categories, sources, list],
+  );
+
+  const saveGuest = (next: MutedPaper[]) => saveGuestMutes({ ...readGuestMutes(), sourceIds: next.map((paper) => paper.id) });
+
+  const mute = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const paper = sources.find((s) => s.id === choice);
+    if (!paper) return;
+    const next = [...list, { id: paper.id, name: paper.name }].sort((a, b) => a.name.localeCompare(b.name));
+    if (userId) {
+      setBusy(true);
+      const { error } = await muteSource(userId, paper.id);
+      setBusy(false);
+      if (error) {
+        showToast({ type: 'error', title: w.mutePaperFailed, message: error.message });
+        return;
+      }
+    } else {
+      saveGuest(next);
+    }
+    setList(next);
+    setChoice('');
+    showToast({ type: 'success', title: fmt(w.mutedPaper, { name: paper.name }), message: w.mutedPaperNote });
+  };
+
+  const unmute = async (paper: MutedPaper) => {
+    const next = list.filter((s) => s.id !== paper.id);
+    setList(next);
+    if (!userId) {
+      saveGuest(next);
+      showToast({ type: 'success', title: fmt(w.unmuted, { name: paper.name }) });
+      return;
+    }
+    const { error } = await unmuteSource(userId, paper.id);
     if (error) {
-      setList((current) => [...current, source]);
+      setList((current) => [...current, paper].sort((a, b) => a.name.localeCompare(b.name)));
       showToast({ type: 'error', title: w.unmuteFailed, message: error.message });
     } else {
-      showToast({ type: 'success', title: fmt(w.unmuted, { name: source.name }) });
+      showToast({ type: 'success', title: fmt(w.unmuted, { name: paper.name }) });
     }
   };
+
+  return (
+    <div>
+      <SubHead htmlFor="mute-paper">{w.mutedPapers}</SubHead>
+      <Hint id="mute-paper-hint">{w.mutedPapersNote}</Hint>
+      <form onSubmit={mute} className="flex flex-wrap items-start gap-2.5">
+        <div className="min-w-0 flex-1 basis-52">
+          <NativeSelect id="mute-paper" value={choice} onChange={(event) => setChoice(event.target.value)} aria-describedby="mute-paper-hint">
+            <option value="">{w.pickPaper}</option>
+            {groups.map(({ category, papers }) => (
+              <optgroup key={category.id} label={sectionText(t, getCategoryStyle(category.name).key, category.name).name}>
+                {papers.map((paper) => (
+                  <option key={paper.id} value={paper.id}>
+                    {paper.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </NativeSelect>
+        </div>
+        <Button type="submit" variant="outline" disabled={busy || !choice}>
+          {busy && <Spinner />}
+          {w.mutePaper}
+        </Button>
+      </form>
+      {list.length === 0 ? (
+        <p className="mt-4 text-[0.95rem] italic text-muted-foreground">{w.noMutedPapers}</p>
+      ) : (
+        <ul className="mt-4 divide-y divide-dashed divide-rule/40 border-y border-rule/40" aria-label={w.yourPapers}>
+          {list.map((paper) => (
+            <li key={paper.id} className="flex items-center justify-between gap-3 py-2">
+              <span className="min-w-0 font-display text-[1rem] font-semibold">{paper.name}</span>
+              <Button variant="stamp" size="sm" onClick={() => unmute(paper)} aria-label={fmt(w.unmutePaper, { name: paper.name })}>
+                {w.unmute}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export function SectionsAndSourcesSection({
+  topics,
+  userId,
+  muted,
+  sources,
+  categories,
+  keywords,
+}: {
+  topics: string[];
+  /** null for a visitor: everything is kept in this browser. */
+  userId: string | null;
+  muted: MutedPaper[];
+  /** Every newspaper in the paper, for the Mute menu. */
+  sources: SourceOption[];
+  categories: Category[];
+  keywords: string[];
+}) {
+  const w = useI18n().t.settings.sections;
 
   return (
     <LedgerEntry id="sections" description={w.description}>
@@ -490,21 +678,7 @@ export function SectionsAndSourcesSection({
           </Button>
         </div>
         <div className="md:pl-8">
-          <SubHead>{w.mutedPapers}</SubHead>
-          {list.length === 0 ? (
-            <p className="text-pretty text-[0.95rem] italic text-muted-foreground">{w.noMutedPapers}</p>
-          ) : (
-            <ul className="divide-y divide-dashed divide-rule/40 border-y border-rule/40">
-              {list.map((source) => (
-                <li key={source.id} className="flex items-center justify-between gap-3 py-2">
-                  <span className="font-display text-[1rem] font-semibold">{source.name}</span>
-                  <Button variant="stamp" size="sm" onClick={() => unmute(source)}>
-                    {w.unmute}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <MutedPapers userId={userId} initial={muted} sources={sources} categories={categories} />
         </div>
       </div>
       <div className="mt-8 border-t border-dashed border-rule/45 pt-6">

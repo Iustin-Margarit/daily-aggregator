@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { after } from 'next/server';
 import { FeedView } from '@/components/feed/feed-view';
 import { feedRpcArgs, filtersFromSearchParams, pageFromSearchParams } from '@/lib/feed';
-import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
+import { GUEST_SECTIONS_COOKIE, guestMutesFrom, parseGuestSections } from '@/lib/guest';
 import { canIngest, refreshNewsIfStale } from '@/lib/ingestion/auto-refresh';
 import { getI18n, getLocale } from '@/lib/i18n/server';
 import { getOnThisDay } from '@/lib/on-this-day';
@@ -41,6 +41,8 @@ export default async function FeedPage({
   const preferences = signedIn
     ? accountPreferences
     : parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value).map((category_id) => ({ category_id }));
+  // A visitor's muted newspapers and words (Settings); an account keeps its own in the database.
+  const guestMutes = signedIn ? undefined : guestMutesFrom((name) => jar.get(name)?.value);
 
   const categoryList: Category[] = categories ?? [];
   // Only sections that still exist (a guest's cookie may be old).
@@ -49,7 +51,7 @@ export default async function FeedPage({
   const page = pageFromSearchParams(params);
   const asOf = new Date().toISOString();
 
-  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf)), onThisDayPromise]);
+  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf, guestMutes)), onThisDayPromise]);
   const initialArticles = (articles ?? []) as FeedArticle[];
 
   // Brand-new install: the database has no articles yet, so fetch them now.
@@ -69,6 +71,7 @@ export default async function FeedPage({
       categories={categoryList}
       sources={(sources ?? []) as SourceOption[]}
       preferredCategoryIds={preferredCategoryIds}
+      guestMutes={guestMutes}
       initialFilters={filters}
       initialPage={page}
       initialArticles={initialArticles}

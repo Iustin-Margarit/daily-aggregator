@@ -34,7 +34,7 @@ export type HeaderUser = {
 };
 
 /** The reader's three places, in the same spot on every page. */
-type NavIcon = 'front' | 'saved' | 'sections' | 'newsroom';
+type NavIcon = 'front' | 'saved' | 'sections' | 'newsroom' | 'settings';
 
 const READER_NAV: { href: string; icon: NavIcon }[] = [
   { href: '/feed', icon: 'front' },
@@ -52,7 +52,10 @@ function TabIcon({ icon, className }: { icon: NavIcon; className?: string }) {
   const ink = 'block [--ornament-ink:currentColor] [--engraving-ink:currentColor]';
   return (
     <span className={cn('inline-flex shrink-0 drop-shadow-[0_0_0.4px_currentColor]', className)} aria-hidden="true">
-      {icon === 'front' ? (
+      {icon === 'settings' ? (
+        // The printer's section mark, as for Settings in the account menu.
+        <span className="font-display text-[1.3rem] leading-none">§</span>
+      ) : icon === 'front' ? (
         <Ornament name="broadsheet" className={cn('h-[1.15rem]', ink)} />
       ) : icon === 'sections' ? (
         <Ornament name="stamp" className={cn('h-[1.3rem]', ink)} />
@@ -82,6 +85,11 @@ function isActive(href: string, pathname: string) {
 
 function navItems(user: HeaderUser | null) {
   return user?.isAdmin ? [...READER_NAV, { href: '/admin/dashboard', icon: 'newsroom' as const }] : READER_NAV;
+}
+
+/** The bottom bar: the same places, plus Settings for visitors (signed-in readers have it in the account menu). */
+function bottomItems(user: HeaderUser | null): { href: string; icon: NavIcon }[] {
+  return user ? navItems(user) : [...READER_NAV, { href: '/profile', icon: 'settings' }];
 }
 
 /**
@@ -227,9 +235,35 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      className="h-10 w-9 px-0 [--ornament-ink:var(--brass-ink)] sm:w-10"
+      // Below 420px the bar cannot hold it beside the title, the edition and Log in in every edition;
+      // visitors find Morning / Night first thing in Settings, a tab in the bottom bar there.
+      className="h-10 w-9 px-0 [--ornament-ink:var(--brass-ink)] max-[419px]:hidden sm:w-10"
     >
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.35rem]" />
+    </Button>
+  );
+}
+
+/**
+ * Settings for visitors (signed-in readers find it in the account menu): the §,
+ * the printer's mark for a section, as in that menu. Visitors' settings are
+ * kept in their browser (lib/guest-prefs.ts).
+ */
+function SettingsButton({ pathname }: { pathname: string }) {
+  const { t } = useI18n();
+  const active = isActive('/profile', pathname);
+  return (
+    <Button
+      asChild
+      variant="ghost"
+      size="sm"
+      className={cn('hidden h-10 w-10 px-0 lg:inline-flex', active && 'bg-(--ink-gold)/15')}
+    >
+      <Link href="/profile" aria-label={t.nav.settings} title={t.nav.settings} aria-current={active ? 'page' : undefined}>
+        <span className="font-display text-[1.5rem] leading-none text-(--brass-ink)" aria-hidden="true">
+          §
+        </span>
+      </Link>
     </Button>
   );
 }
@@ -284,13 +318,13 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           <Masthead
             href={home}
             className={cn(
-              'whitespace-nowrap text-[1.2rem] transition-opacity duration-300 min-[380px]:text-[1.3rem] min-[420px]:text-[1.45rem] sm:text-[1.8rem]',
+              'whitespace-nowrap text-[1.2rem] transition-opacity duration-300 min-[380px]:text-[1.3rem] min-[480px]:text-[1.45rem] sm:text-[1.8rem]',
               bigMasthead && 'pointer-events-none opacity-0 max-sm:hidden',
             )}
           />
         </div>
         <NavTabs user={user} pathname={pathname} />
-        <div className="flex items-center justify-end gap-1.5 sm:gap-2">
+        <div className="flex items-center justify-end gap-1 min-[400px]:gap-1.5 sm:gap-2">
           {/* The language of the paper: always here, on every page, for everyone. */}
           <EditionSelector />
           {user ? (
@@ -298,15 +332,15 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
           ) : (
             <>
               <EditionToggle />
+              {/* Below 1024px Settings is a tab in the bottom bar (BottomNav). */}
+              <SettingsButton pathname={pathname} />
               <Button asChild variant="ghost" size="sm" className="h-10 px-2 text-[0.95rem] sm:px-4">
                 <Link href="/login">{t.nav.logIn}</Link>
               </Button>
-              {/* Below desktop width the button takes its short name, leaving room for the title. */}
-              <Button asChild size="sm" className="hidden h-10 px-4 text-[0.95rem] sm:inline-flex lg:px-5">
-                <Link href="/signup">
-                  <span className="max-lg:hidden">{t.nav.signUp}</span>
-                  <span className="lg:hidden">{t.nav.signUpShort}</span>
-                </Link>
+              {/* Desktop only: below 1024px the bar has room for the title, the edition, the moon and Log in in
+                  every edition (a fourth button ran under the title), and the Log in page offers sign-up. */}
+              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] lg:inline-flex">
+                <Link href="/signup">{t.nav.signUp}</Link>
               </Button>
             </>
           )}
@@ -358,7 +392,7 @@ function useStayOnScreen(ref: React.RefObject<HTMLElement | null>, pathname: str
  */
 export function BottomNav({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
-  const items = navItems(user);
+  const items = bottomItems(user);
   const { t } = useI18n();
   const navRef = useRef<HTMLElement>(null);
   useStayOnScreen(navRef, pathname);

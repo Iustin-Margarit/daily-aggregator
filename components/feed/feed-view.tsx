@@ -21,6 +21,7 @@ import { feedRpcArgs, filtersToQueryString, hasFrontPage, pageCount } from '@/li
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
 import { getCategoryStyle } from '@/lib/category-styles';
+import type { GuestMutes } from '@/lib/guest';
 import type { OnThisDay } from '@/lib/on-this-day';
 import { createClient } from '@/lib/supabase/client';
 import type { Category, FeedArticle, FeedFilters, FeedSort, SourceOption } from '@/lib/types';
@@ -34,6 +35,8 @@ type FeedViewProps = {
   categories: Category[];
   sources: SourceOption[];
   preferredCategoryIds: string[];
+  /** A visitor's muted newspapers and words (Settings, kept in this browser). */
+  guestMutes?: GuestMutes;
   initialFilters: FeedFilters;
   initialPage: number;
   initialArticles: FeedArticle[];
@@ -142,6 +145,7 @@ export function FeedView({
   categories,
   sources,
   preferredCategoryIds,
+  guestMutes,
   initialFilters,
   initialPage,
   initialArticles,
@@ -182,7 +186,7 @@ export function FeedView({
       if (fresh) asOfRef.current = new Date().toISOString();
       setStatus('loading');
 
-      const { data, error } = await createClient().rpc('get_feed', feedRpcArgs(nextFilters, nextPage, asOfRef.current));
+      const { data, error } = await createClient().rpc('get_feed', feedRpcArgs(nextFilters, nextPage, asOfRef.current, guestMutes));
       if (id !== requestId.current) return; // a newer request superseded this one
 
       if (error) {
@@ -201,7 +205,7 @@ export function FeedView({
       setStatus('idle');
       if (rows.length > 0) setWaiting(false);
     },
-    [showToast, t],
+    [showToast, t, guestMutes],
   );
 
   /** New filters always start again at page 1. */

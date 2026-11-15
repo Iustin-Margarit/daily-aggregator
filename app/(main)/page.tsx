@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { ArticleCard } from '@/components/articles/article-card';
 import { MonthAlmanac } from '@/components/site/almanac';
@@ -8,6 +9,8 @@ import { ScrollDivider } from '@/components/site/scroll-divider';
 import { SectionHead } from '@/components/site/section-head';
 import { Button } from '@/components/ui/button';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { mutedArgs } from '@/lib/feed';
+import { guestMutesFrom } from '@/lib/guest';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { siteConfig } from '@/lib/site';
@@ -17,10 +20,12 @@ import { pickWelcomePlate } from '@/lib/welcome-plates';
 
 // Logged-in visitors are redirected to /feed by the proxy (proxy.ts), so this page is for guests.
 export default async function LandingPage({ searchParams }: { searchParams: Promise<{ account?: string }> }) {
-  const [{ account }, { t, fmt, rich }] = await Promise.all([searchParams, getI18n()]);
+  const [{ account }, { t, fmt, rich }, jar] = await Promise.all([searchParams, getI18n(), cookies()]);
   const supabase = await createClient();
+  // The newspapers and words the visitor muted in Settings stay off this page too.
+  const muted = mutedArgs(guestMutesFrom((name) => jar.get(name)?.value));
   const [{ data: latest }, { data: categories }, { count: sourceCount }] = await Promise.all([
-    supabase.rpc('get_feed', { p_limit: 11 }),
+    supabase.rpc('get_feed', { p_limit: 11, ...muted }),
     supabase.from('categories').select('name').order('sort_order'),
     supabase.from('sources').select('id', { count: 'exact', head: true }).eq('is_enabled', true),
   ]);
