@@ -37,7 +37,21 @@ export function MottoRibbon({ className }: { className?: string }) {
   const { motto } = useI18n().t.masthead;
   return (
     <div className={cn('relative mx-auto mt-1 w-[18rem] max-w-full sm:w-[21rem] xl:w-[23rem]', className)}>
-      <Engraving name="ribbon" className="w-full" />
+      {/* Under the front page's lantern the band turns to solid paper, as a real ribbon is, so the gilt star chart
+          never shows through the motto (styles: .ribbon-paper). The stroke follows the middle of the band, inside its
+          engraved edges, and fades out at both ends. */}
+      <svg viewBox="0 0 873 300" className="ribbon-paper absolute inset-0 h-full w-full" aria-hidden="true">
+        <defs>
+          <linearGradient id={`${pathId}-paper`} x1="100" x2="750" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="hsl(var(--background))" stopOpacity="0" />
+            <stop offset="0.1" stopColor="hsl(var(--background))" stopOpacity="0.94" />
+            <stop offset="0.9" stopColor="hsl(var(--background))" stopOpacity="0.94" />
+            <stop offset="1" stopColor="hsl(var(--background))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d="M 100 76 Q 420 32 750 82" fill="none" stroke={`url(#${pathId}-paper)`} strokeWidth="66" />
+      </svg>
+      <Engraving name="ribbon" className="relative w-full" />
       <svg viewBox="0 0 873 300" className="absolute inset-0 h-full w-full overflow-visible" role="img" aria-label={motto}>
         <path id={pathId} d="M 92 91 Q 420 41 748 95" fill="none" />
         <text className="fill-current font-serif italic" fontSize="37" aria-hidden="true">

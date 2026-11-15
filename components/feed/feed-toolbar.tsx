@@ -43,8 +43,8 @@ export function FeedToolbar({ filters, onChange, categories, sources, preferredC
 
   return (
     <div className="flex items-stretch gap-3 sm:gap-5">
-      {/* Phones and tablets scroll the ribbon sideways; from 1280px every department shows (styles: .dept-bar). */}
-      <nav aria-label={t.toolbar.sections} className="dept-bar min-w-0 flex-1">
+      {/* The ribbon scrolls sideways whenever the departments do not all fit (styles: .dept-bar). */}
+      <DeptBar label={t.toolbar.sections}>
         {preferredCategoryIds.length > 0 && (
           <button type="button" className="dept-tab" aria-pressed={showingMine} onClick={() => showSections(preferredCategoryIds)}>
             {t.toolbar.mine}
@@ -69,11 +69,67 @@ export function FeedToolbar({ filters, onChange, categories, sources, preferredC
             </button>
           );
         })}
-      </nav>
+      </DeptBar>
       {/* Phones show Filters beside Latest | For you instead (components/feed/feed-view.tsx), so the ribbon gets the full width. */}
       <div className="hidden items-stretch sm:flex">
         <FilterButton filters={filters} onChange={onChange} categories={categories} sources={sources} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The department ribbon. When some departments are out of sight it fades on that side and a printer's fist
+ * (☞) points the way, nudging twice when the page opens; pressing it turns the ribbon. The chosen department
+ * is scrolled into view. Pointer and touch readers can still swipe; keyboard readers tab along the buttons.
+ */
+function DeptBar({ label, children }: { label: string; children: React.ReactNode }) {
+  const bar = useRef<HTMLElement>(null);
+  const [more, setMore] = useState({ left: false, right: false });
+
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const measure = () =>
+      setMore((prev) => {
+        const left = el.scrollLeft > 2;
+        const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+        return prev.left === left && prev.right === right ? prev : { left, right };
+      });
+    const chosen = el.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (chosen && (chosen.offsetLeft + chosen.offsetWidth > el.clientWidth || chosen.offsetLeft < el.scrollLeft)) {
+      el.scrollLeft = chosen.offsetLeft - el.clientWidth / 2 + chosen.offsetWidth / 2;
+    }
+    measure();
+    el.addEventListener('scroll', measure, { passive: true });
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', measure);
+      observer.disconnect();
+    };
+  }, []);
+
+  const turn = (direction: 1 | -1) => bar.current?.scrollBy({ left: direction * bar.current.clientWidth * 0.7, behavior: 'smooth' });
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <nav ref={bar} aria-label={label} className="dept-bar" data-more-left={more.left || undefined} data-more-right={more.right || undefined}>
+        {children}
+      </nav>
+      {/* Pointers for the eye only: the buttons in the ribbon are reachable by Tab, and the ribbon by swiping. */}
+      {more.left && (
+        <button type="button" tabIndex={-1} aria-hidden="true" className="dept-more left-0" onClick={() => turn(-1)}>
+          <span className="-scale-x-100">
+            <Ornament name="fist" className="block w-[1.5rem] [--ornament-ink:var(--brass-ink)]" />
+          </span>
+        </button>
+      )}
+      {more.right && (
+        <button type="button" tabIndex={-1} aria-hidden="true" className="dept-more dept-more-nudge right-0" onClick={() => turn(1)}>
+          <Ornament name="fist" className="block w-[1.5rem] [--ornament-ink:var(--brass-ink)]" />
+        </button>
+      )}
     </div>
   );
 }

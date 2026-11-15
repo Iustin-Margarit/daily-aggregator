@@ -1166,17 +1166,22 @@ article:focus-within .photo-plate::after,
   }
 }
 
-/* The masthead's sky: Flamsteed's chart of Orion (1729), etched very faintly behind the title. */
+/*
+ * The masthead's sky: a band across Doppelmayr's northern hemisphere (1730), the Great Bear, Draco and the
+ * pole, Cepheus, Cassiopeia and Andromeda, etched faintly behind the title: quiet enough that the title reads
+ * at once, clear enough to be seen as an old star chart. The band is cut to the panel's shape, so cover
+ * shows nearly all of it; the vignette only softens the far edges.
+ */
 .star-chart {
   background-color: hsl(var(--foreground));
-  opacity: 0.075;
+  opacity: 0.13;
   mask:
     url(/ornaments/star-chart.webp) center / cover no-repeat,
-    radial-gradient(ellipse 60% 70% at 50% 45%, #000 40%, transparent 100%);
+    radial-gradient(ellipse 85% 95% at 50% 50%, #000 55%, transparent 100%);
   mask-composite: intersect;
 }
 .dark .star-chart {
-  opacity: 0.09;
+  opacity: 0.12;
 }
 
 /*
@@ -1213,8 +1218,8 @@ article:focus-within .photo-plate::after,
   --lantern-core: hsl(43 96% 60% / 0.36);
   --lantern-mid: hsl(38 92% 58% / 0.14);
   --lantern-blend: multiply;
-  --chart-lit: #8a6420;
-  --chart-lit-opacity: 0.55;
+  --chart-lit: #6f4b14;
+  --chart-lit-opacity: 0.85;
   --sheen-hi: hsl(40 78% 44%);
   --sheen-mid: hsl(32 62% 30%);
   --halo:
@@ -1229,8 +1234,8 @@ article:focus-within .photo-plate::after,
   --lantern-core: hsl(38 96% 60% / 0.2);
   --lantern-mid: hsl(30 90% 46% / 0.08);
   --lantern-blend: screen;
-  --chart-lit: #e6c47e;
-  --chart-lit-opacity: 0.58;
+  --chart-lit: #f3d58f;
+  --chart-lit-opacity: 0.85;
   --sheen-hi: hsl(46 100% 88%);
   --sheen-mid: hsl(40 88% 66%);
   --halo:
@@ -1257,12 +1262,17 @@ article:focus-within .photo-plate::after,
     animation: lantern-breathe 7s ease-in-out infinite paused;
   }
 }
+/* The motto ribbon's paper band (components/site/logo.tsx): shown only while the lantern lights the chart. */
+.ribbon-paper {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
 /* The same chart as .star-chart, in gilt, seen only within the lantern's circle. */
 .star-chart-lit {
   background-color: var(--chart-lit);
   mask:
     url(/ornaments/star-chart.webp) center / cover no-repeat,
-    radial-gradient(circle 12rem at var(--lx) var(--ly), #000, rgb(0 0 0 / 0.45) 45%, transparent 100%);
+    radial-gradient(circle 15rem at var(--lx) var(--ly), #000, #000 30%, rgb(0 0 0 / 0.5) 60%, transparent 100%);
   mask-composite: intersect;
 }
 .masthead-sky .masthead-glow {
@@ -1299,6 +1309,9 @@ article:focus-within .photo-plate::after,
     & .star-chart-lit {
       opacity: var(--chart-lit-opacity);
     }
+    & .ribbon-paper {
+      opacity: 1;
+    }
     & .masthead-glow {
       text-shadow: var(--halo);
     }
@@ -1313,6 +1326,9 @@ article:focus-within .photo-plate::after,
   }
   & .star-chart-lit {
     opacity: var(--chart-lit-opacity);
+  }
+  & .ribbon-paper {
+    opacity: 1;
   }
   & .masthead-glow {
     text-shadow: var(--halo);
@@ -1433,8 +1449,11 @@ article:focus-within .photo-plate::after,
   /*
    * The front page's department ribbon (components/feed/feed-toolbar.tsx):
    * one full-width band between double rules, the departments set in small
-   * capitals and divided by hairlines. Phones and tablets scroll it sideways;
-   * from 1280px it spans the page and every department shows.
+   * capitals and divided by hairlines. It scrolls sideways whenever the
+   * departments do not all fit (on a phone, or a laptop with a large type size),
+   * and fades only on a side where more are waiting (data-more-left/right, set by
+   * feed-toolbar.tsx), where a printer's fist (.dept-more) points the way. When
+   * everything fits, the departments share the whole width.
    */
   .dept-bar {
     display: flex;
@@ -1442,14 +1461,53 @@ article:focus-within .photo-plate::after,
     overflow-x: auto;
     scrollbar-width: none;
     border-block: 3px double hsl(var(--rule) / 0.6);
-    /* Both ends fade softly, so it reads as a strip that scrolls. */
-    mask-image: linear-gradient(90deg, transparent, #000 0.85rem, #000 calc(100% - 2.5rem), transparent);
+    --fade-left: 0rem;
+    --fade-right: 0rem;
+    mask-image: linear-gradient(90deg, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+    &[data-more-left] {
+      --fade-left: 3rem;
+    }
+    &[data-more-right] {
+      --fade-right: 3.5rem;
+    }
     &::-webkit-scrollbar {
       display: none;
     }
-    @media (width >= 1280px) {
-      overflow: visible;
-      mask-image: none;
+  }
+  /* The fist at a faded end: brass, over the fade, a touch target as tall as the ribbon. */
+  .dept-more {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    cursor: pointer;
+    /* Paper behind it, so the fist never sits on top of a half-faded word. */
+    background: linear-gradient(90deg, transparent, hsl(var(--background)) 40%);
+    &.left-0 {
+      justify-content: flex-start;
+      padding-left: 0.2rem;
+      background: linear-gradient(270deg, transparent, hsl(var(--background)) 40%);
+    }
+    &.right-0 {
+      justify-content: flex-end;
+      padding-right: 0.2rem;
+    }
+  }
+  /* Two small nudges when the page opens: something more this way. */
+  .dept-more-nudge > * {
+    animation: dept-nudge 0.9s ease-in-out 0.6s 2;
+  }
+  @keyframes dept-nudge {
+    50% {
+      transform: translateX(5px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dept-more-nudge > * {
+      animation: none;
     }
   }
   /* One department, or one tab of a small ribbon (Latest | For you): small capitals, a hairline before it. */
@@ -1508,10 +1566,9 @@ article:focus-within .photo-plate::after,
     bottom: 0.85rem;
     border-left: 1px solid hsl(var(--rule) / 0.45);
   }
-  @media (width >= 1280px) {
-    .dept-bar > .dept-tab {
-      flex: 1 1 auto;
-    }
+  /* When they all fit, the departments share the width; when they do not, the ribbon scrolls. */
+  .dept-bar > .dept-tab {
+    flex: 1 0 auto;
   }
   /*
    * The Filters button, set apart at the ribbon's right end so it never reads
