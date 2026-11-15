@@ -54,6 +54,7 @@ const de: Dictionary = {
     accountMenu: 'Kontomenü',
     settings: 'Einstellungen',
     settingsNote: 'das Leserbuch',
+    settingsHint: 'Einstellungen für Lesen und Druck',
     theEdition: 'Die Ausgabe',
     logOut: 'Abmelden',
     toMorning: 'Zur Morgenausgabe wechseln',
@@ -748,8 +749,10 @@ const de: Dictionary = {
     catLabel: 'Ein kleines schwarzes Kätzchen, das nach oben schaut',
     motto: 'Die Welt lesen · Bewahren, was zählt · Lesen, wie Sie es mögen',
     credits:
-      'Schlagzeilen und Fotos gehören ihren Verlagen; jeder Artikel verweist auf die ursprüngliche Berichterstattung. Bilder von Edward Penfield, Théophile Steinlen, Auguste Edouart und Wenzel Hollar, gemeinfrei.',
+      'Schlagzeilen und Fotos gehören ihren Verlagen; jeder Artikel verweist auf die ursprüngliche Berichterstattung. Bilder von Edward Penfield, Théophile Steinlen, Auguste Edouart und Wenzel Hollar, gemeinfrei; Straßengeräusche von Freesound-Mitwirkenden aufgenommen (CC0).',
     printed: 'Täglich im Internet gedruckt',
+    builtBy: 'Entwickelt von {name} · Next.js, TypeScript, Supabase',
+    github: '{name} auf GitHub',
   },
 
   errors: {

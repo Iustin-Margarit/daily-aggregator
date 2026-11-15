@@ -54,6 +54,7 @@ const fr: Dictionary = {
     accountMenu: 'Menu du compte',
     settings: 'Réglages',
     settingsNote: 'le registre du lecteur',
+    settingsHint: 'Réglages de lecture et d’impression',
     theEdition: 'L’édition',
     logOut: 'Se déconnecter',
     toMorning: 'Passer à l’édition du matin',
@@ -757,8 +758,10 @@ const fr: Dictionary = {
     catLabel: 'Un petit chat noir qui lève les yeux',
     motto: 'Lire le monde · Garder l’essentiel · Lire à sa façon',
     credits:
-      'Les titres et les photos appartiennent à leurs éditeurs ; chaque article renvoie au reportage d’origine. Illustrations d’Edward Penfield, Théophile Steinlen, Auguste Edouart et Wenceslaus Hollar, du domaine public.',
+      'Les titres et les photos appartiennent à leurs éditeurs ; chaque article renvoie au reportage d’origine. Illustrations d’Edward Penfield, Théophile Steinlen, Auguste Edouart et Wenceslaus Hollar, du domaine public ; bruits de rue enregistrés par des contributeurs de Freesound (CC0).',
     printed: 'Imprimé sur Internet, chaque jour',
+    builtBy: 'Conçu par {name} · Next.js, TypeScript, Supabase',
+    github: '{name} sur GitHub',
   },
 
   errors: {

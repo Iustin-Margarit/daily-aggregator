@@ -103,14 +103,20 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
           </Link>
           <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />
         </figure>
-        <div className="pt-5 sm:pt-6">
-          <CategoryBadge name={article.category_name} />
-          <h2 className="headline mt-3 text-[1.85rem] sm:text-[2.5rem] lg:text-[2.85rem]">
-            <Link href={href} className="decoration-2 underline-offset-4 hover:underline">
-              {title}
-            </Link>
-          </h2>
-          <Byline article={article} withAuthor className="mt-3" />
+        {/*
+         * On desktops the headline is printed above the photograph, as broadsheets do, so it shows
+         * on a laptop screen without scrolling; on smaller screens the photo leads.
+         */}
+        <div className="pt-5 sm:pt-6 lg:contents">
+          <div className="lg:order-first lg:pb-5">
+            <CategoryBadge name={article.category_name} />
+            <h2 className="headline mt-3 text-[1.85rem] sm:text-[2.5rem] lg:text-[2.85rem]">
+              <Link href={href} className="decoration-2 underline-offset-4 hover:underline">
+                {title}
+              </Link>
+            </h2>
+            <Byline article={article} withAuthor className="mt-3" />
+          </div>
           {summary && <DropCap text={summary} className="news-text mt-5 text-[1.08rem] leading-relaxed text-foreground/90" />}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3">
             <Link

@@ -958,6 +958,11 @@
     filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.6));
   }
 }
+/* Morning: the unchosen "Choose" ring in a darker, steadier ink, so it reads on the pale stamps. */
+html:not(.dark) .section-stamp:not(:hover) .choose-ring {
+  color: hsl(28 26% 23%);
+  opacity: 0.82;
+}
 @media (prefers-reduced-motion: reduce) {
   .section-stamp,
   .section-stamp .choose-ring {
@@ -1684,7 +1689,8 @@ article:focus-within .photo-plate::after,
     place-items: center;
     width: 4.7em;
     height: 4.7em;
-    margin: 0.32em 0.8em 0.15em 0;
+    /* A narrow gap on the right, so the rest of the first word stays close to its letter. */
+    margin: 0.32em 0.45em 0.15em 0;
     isolation: isolate;
     &::before {
       content: '';

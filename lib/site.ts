@@ -1,7 +1,9 @@
 /** Branding in one place. Change these to rename the app. */
 export const siteConfig = {
   /** Full product name (metadata, footer). */
-  name: 'Personalized News Aggregator',
+  name: 'The Daily Aggregator',
+  /** The author, credited in the footer's colophon. */
+  author: { name: 'Iustin', url: 'https://github.com/Iustin-Margarit' },
   /** The newspaper title shown in the masthead and browser tabs. */
   masthead: 'The Daily Aggregator',
   /** Short name for tight spaces. */

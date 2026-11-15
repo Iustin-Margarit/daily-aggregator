@@ -13,7 +13,7 @@ const ENGRAVINGS = {
   technology: [440, 163],
   science: [232, 400],
   health: [301, 372],
-  sports: [358, 271],
+  sports: [194, 400],
   entertainment: [380, 278],
   press: [362, 440],
   newsboy: [258, 420],

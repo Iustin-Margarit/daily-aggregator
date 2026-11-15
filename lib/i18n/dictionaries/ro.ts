@@ -59,6 +59,7 @@ const ro: Dictionary = {
     accountMenu: 'Meniul contului',
     settings: 'Setări',
     settingsNote: 'registrul cititorului',
+    settingsHint: 'Setări pentru citire și tipar',
     theEdition: 'Ediția',
     logOut: 'Ieși din cont',
     toMorning: 'Treci la ediția de dimineață',
@@ -764,8 +765,10 @@ const ro: Dictionary = {
     catLabel: 'O pisicuță neagră care se uită în sus',
     motto: 'Cunoaște lumea · Păstrează ce contează · Citește în felul tău',
     credits:
-      'Titlurile și fotografiile aparțin publicațiilor; fiecare articol trimite la materialul original. Ilustrații de Edward Penfield, Théophile Steinlen, Auguste Edouart și Wenceslaus Hollar, din domeniul public.',
+      'Titlurile și fotografiile aparțin publicațiilor; fiecare articol trimite la materialul original. Ilustrații de Edward Penfield, Théophile Steinlen, Auguste Edouart și Wenceslaus Hollar, din domeniul public; sunete de stradă înregistrate de contribuitori Freesound (CC0).',
     printed: 'Tipărit pe internet, în fiecare zi',
+    builtBy: 'Realizat de {name} · Next.js, TypeScript, Supabase',
+    github: '{name} pe GitHub',
   },
 
   errors: {

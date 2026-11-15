@@ -66,6 +66,8 @@ const en = {
     accountMenu: 'Account menu',
     settings: 'Settings',
     settingsNote: 'the reader’s ledger',
+    /** The Settings button's tooltip (the cog by the edition toggle). */
+    settingsHint: 'Settings for reading and printing',
     theEdition: 'The edition',
     logOut: 'Log out',
     toMorning: 'Switch to the Morning edition',
@@ -769,8 +771,11 @@ const en = {
     catLabel: 'A small black cat, looking up',
     motto: 'Read the world · Keep what matters · Read it your way',
     credits:
-      'Headlines and photographs belong to their publishers; every story links to the original reporting. Pictures by Edward Penfield, Théophile Steinlen, Auguste Edouart and Wenceslaus Hollar, from the public domain.',
+      'Headlines and photographs belong to their publishers; every story links to the original reporting. Pictures by Edward Penfield, Théophile Steinlen, Auguste Edouart and Wenceslaus Hollar, from the public domain; street sounds recorded by Freesound contributors (CC0).',
     printed: 'Printed on the internet, daily',
+    /** The colophon under the copyright line, with a link to the author's GitHub on {name}. */
+    builtBy: 'Built by {name} · Next.js, TypeScript, Supabase',
+    github: '{name} on GitHub',
   },
 
   errors: {

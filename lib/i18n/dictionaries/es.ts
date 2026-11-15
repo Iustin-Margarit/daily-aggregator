@@ -53,6 +53,7 @@ const es: Dictionary = {
     accountMenu: 'Menú de la cuenta',
     settings: 'Ajustes',
     settingsNote: 'el libro del lector',
+    settingsHint: 'Ajustes de lectura e impresión',
     theEdition: 'La edición',
     logOut: 'Cerrar sesión',
     toMorning: 'Pasar a la edición de la mañana',
@@ -747,8 +748,10 @@ const es: Dictionary = {
     catLabel: 'Un gatito negro mirando hacia arriba',
     motto: 'Leer el mundo · Guardar lo importante · Leer a tu manera',
     credits:
-      'Los titulares y las fotografías pertenecen a sus medios; cada noticia enlaza con la información original. Ilustraciones de Edward Penfield, Théophile Steinlen, Auguste Edouart y Wenceslaus Hollar, de dominio público.',
+      'Los titulares y las fotografías pertenecen a sus medios; cada noticia enlaza con la información original. Ilustraciones de Edward Penfield, Théophile Steinlen, Auguste Edouart y Wenceslaus Hollar, de dominio público; sonidos de calle grabados por colaboradores de Freesound (CC0).',
     printed: 'Impreso en internet, cada día',
+    builtBy: 'Hecho por {name} · Next.js, TypeScript, Supabase',
+    github: '{name} en GitHub',
   },
 
   errors: {

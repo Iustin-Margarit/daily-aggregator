@@ -53,8 +53,8 @@ function TabIcon({ icon, className }: { icon: NavIcon; className?: string }) {
   return (
     <span className={cn('inline-flex shrink-0 drop-shadow-[0_0_0.4px_currentColor]', className)} aria-hidden="true">
       {icon === 'settings' ? (
-        // The printer's section mark, as for Settings in the account menu.
-        <span className="font-display text-[1.3rem] leading-none">§</span>
+        // An engraved cogwheel and its pinion, as for Settings in the account menu.
+        <Ornament name="gear" className={cn('h-[1.05rem]', ink)} />
       ) : icon === 'front' ? (
         <Ornament name="broadsheet" className={cn('h-[1.15rem]', ink)} />
       ) : icon === 'sections' ? (
@@ -157,7 +157,7 @@ const EDITIONS: { value: 'light' | 'dark' | 'system'; mark: OrnamentName }[] = [
 
 /**
  * The account menu, printed like the rest of the paper: the reader's seal and
- * byline at its head, then Settings (§, the printer's mark for a section), the
+ * byline at its head, then Settings (an engraved cogwheel), the
  * edition (the woodcut sun, the man in the moon, the globe) and Log out (a key).
  * The language is the stamp beside it in the bar (EditionSelector).
  */
@@ -191,8 +191,8 @@ function AccountMenu({ user }: { user: HeaderUser }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/profile">
-            <span className="mr-3 flex w-6 shrink-0 justify-center font-display text-[1.2rem] leading-none text-(--brass-ink)" aria-hidden="true">
-              §
+            <span className="mr-3 flex w-6 shrink-0 justify-center [--ornament-ink:var(--brass-ink)]" aria-hidden="true">
+              <Ornament name="gear" className="h-[0.95rem]" />
             </span>
             {t.nav.settings}
             <span className="ml-auto pl-3 text-[0.78rem] italic text-muted-foreground">{t.nav.settingsNote}</span>
@@ -245,8 +245,8 @@ function EditionToggle() {
 }
 
 /**
- * Settings for visitors (signed-in readers find it in the account menu): the §,
- * the printer's mark for a section, as in that menu. Visitors' settings are
+ * Settings for visitors (signed-in readers find it in the account menu): an engraved
+ * cogwheel and its pinion, as in that menu, with a tooltip saying what is inside. Visitors' settings are
  * kept in their browser (lib/guest-prefs.ts).
  */
 function SettingsButton({ pathname }: { pathname: string }) {
@@ -259,10 +259,8 @@ function SettingsButton({ pathname }: { pathname: string }) {
       size="sm"
       className={cn('hidden h-10 w-10 px-0 lg:inline-flex', active && 'bg-(--ink-gold)/15')}
     >
-      <Link href="/profile" aria-label={t.nav.settings} title={t.nav.settings} aria-current={active ? 'page' : undefined}>
-        <span className="font-display text-[1.5rem] leading-none text-(--brass-ink)" aria-hidden="true">
-          §
-        </span>
+      <Link href="/profile" aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined}>
+        <Ornament name="gear" className="h-[1.2rem] [--ornament-ink:var(--brass-ink)]" />
       </Link>
     </Button>
   );

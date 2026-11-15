@@ -139,7 +139,18 @@ export function ShareButton({
  * a long source name is cut short with an ellipsis (the words around it, which
  * differ by edition, never are), and the full name is in the tooltip.
  */
-export function ReadOnLink({ url, source, className }: { url: string; source: string; className?: string }) {
+export function ReadOnLink({
+  url,
+  source,
+  className,
+  wrap = false,
+}: {
+  url: string;
+  source: string;
+  className?: string;
+  /** In a narrow column (the story page's margin): let the words run onto a second line instead of cutting the name short. */
+  wrap?: boolean;
+}) {
   const { t, fmt } = useI18n();
   const href = safeExternalUrl(url);
   if (!href) return null;
@@ -150,14 +161,18 @@ export function ReadOnLink({ url, source, className }: { url: string; source: st
       target="_blank"
       rel="noopener noreferrer"
       title={fmt(t.story.readOnTitle, { source })}
-      className={cn('source-ticket', className)}
+      className={cn('source-ticket', wrap && 'whitespace-normal py-1.5 leading-snug', className)}
     >
       <Ornament name="spectacles" className="w-[1.6rem] shrink-0" />
-      <span className="flex min-w-0">
-        {before && <span className="shrink-0 whitespace-pre">{before}</span>}
-        <span className="truncate">{source}</span>
-        {after && <span className="shrink-0 whitespace-pre">{after}</span>}
-      </span>
+      {wrap ? (
+        <span className="min-w-0 break-words">{fmt(t.story.readOn, { source })}</span>
+      ) : (
+        <span className="flex min-w-0">
+          {before && <span className="shrink-0 whitespace-pre">{before}</span>}
+          <span className="truncate">{source}</span>
+          {after && <span className="shrink-0 whitespace-pre">{after}</span>}
+        </span>
+      )}
       {/* U+FE0E keeps phones from drawing the arrow as an emoji. */}
       <span className="source-ticket-arrow" aria-hidden="true">
         {'\u2197\uFE0E'}

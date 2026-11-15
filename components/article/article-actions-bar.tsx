@@ -2,7 +2,7 @@
 
 import { EyeOff, VolumeX } from 'lucide-react';
 import { hideArticle, muteSource } from '@/components/articles/moderation';
-import { ActionDivider, MoreButton, SaveButton, ShareButton } from '@/components/articles/story-actions';
+import { ActionDivider, MoreButton, ReadOnLink, SaveButton, ShareButton } from '@/components/articles/story-actions';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast';
@@ -75,6 +75,8 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
           </>
         )}
       </div>
+      {/* The way out to the publisher, in reach before the photograph (the same ticket as under every story). */}
+      <ReadOnLink url={article.url} source={article.source_name} wrap className="mt-3 xl:mt-4 xl:flex xl:w-full" />
     </div>
   );
 }

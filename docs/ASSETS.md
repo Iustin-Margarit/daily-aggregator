@@ -21,7 +21,7 @@ Mostly traced from 19th-century book and magazine illustrations; converted to ma
 | `technology.webp` | [vintage-airship](https://freesvg.org/vintage-airship) |
 | `science.webp` | [woman-with-telescope](https://freesvg.org/woman-with-telescope) |
 | `health.webp` | [1541895045](https://freesvg.org/1541895045) |
-| `sports.webp` | [laurel-wreath](https://freesvg.org/laurel-wreath) |
+| `sports.webp` | [golf-lady](https://freesvg.org/golf-lady): a lady golfer at the top of her swing, a fine-line period engraving (replaced the solid laurel wreath, 2026-11-15) |
 | `entertainment.webp` | [theater-masks](https://freesvg.org/theater-masks) |
 | `press.webp` | [1536075490](https://freesvg.org/1536075490) |
 | `newsboy.webp` | [johnny-automatic-newsboy](https://freesvg.org/johnny-automatic-newsboy) |
@@ -113,6 +113,7 @@ Small pieces for the interface, printed in brass or ink through CSS masks
 | `funnel.webp` | A funnel from August Pforr's US patent No. 159,445 (1875), cut from the drawing without its handles, reference letters and pencil notes: the front page's Filters button | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:August_Pforr_Funnel_-_DPLA_-_f46a3b1a4557a6ffa42b91f9f709b9b4_(page_1).jpg) | Public domain |
 | `stamp.webp` | The Penny Black (General Post Office, 1840), its scan trimmed and perforated along every edge for this site: the Sections tab | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Penny_black.jpg) | Public domain |
 | `spectacles.webp` | Spectacles, Pearson Scott Foresman line art, its lines thickened a little to read at button size: "Read on [source]" under every story | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Spectacles_(PSF).png) | Public domain |
+| `gear.webp` | A cogwheel and its pinion (Pearson Scott Foresman line art), cut from the sheet without its label and arrows and filled solid between the outlines so it reads at button size: Settings (the header, the bottom tab bar and the account menu) | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cogwheel_(PSF).jpg) | Public domain |
 
 ## Texture (`public/textures`)
 

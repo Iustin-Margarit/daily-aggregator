@@ -42,11 +42,11 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
       {account === 'deleted' && <p className="card-paper mb-5 px-5 py-3 text-center text-[0.95rem]">{t.landing.deleted}</p>}
 
       <FrontMasthead home="/" />
-      <ScrollDivider className="mt-4 sm:mt-6" />
+      <ScrollDivider className="mt-4" />
 
       {lead && (
         <>
-          <SectionHead className="mb-6 mt-6 text-[1.35rem]">{t.landing.topStory}</SectionHead>
+          <SectionHead className="mb-5 mt-4 text-[1.35rem]">{t.landing.topStory}</SectionHead>
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] lg:gap-0">
             <div className="flex lg:pr-9">
               <ArticleCard article={lead} userId={null} variant="lead" eagerImage />

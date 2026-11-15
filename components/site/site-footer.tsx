@@ -5,7 +5,8 @@ import { getI18n } from '@/lib/i18n/server';
 import { siteConfig } from '@/lib/site';
 
 export async function SiteFooter() {
-  const { t } = await getI18n();
+  const { t, fmt, rich } = await getI18n();
+  const { author } = siteConfig;
   return (
     <footer className="mt-16">
       <div className="container">
@@ -21,6 +22,22 @@ export async function SiteFooter() {
           <p className="max-w-xl text-pretty text-sm text-muted-foreground">{t.footer.credits}</p>
           <p className="font-label text-[0.82rem] text-muted-foreground">
             © {new Date().getFullYear()} <span lang="en">{siteConfig.name}</span> · {t.footer.printed}
+          </p>
+          {/* The colophon, set small in italic under the imprint, as printers signed their work. */}
+          <p className="font-display text-[0.86rem] italic text-muted-foreground/90">
+            {rich(t.footer.builtBy, {
+              name: (
+                <a
+                  href={author.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={fmt(t.footer.github, { name: author.name })}
+                  className="not-italic font-medium text-foreground/80 underline decoration-(--ink-gold)/60 underline-offset-4 transition-colors hover:text-foreground hover:decoration-(--ink-gold)"
+                >
+                  {author.name}
+                </a>
+              ),
+            })}
           </p>
         </div>
       </div>
