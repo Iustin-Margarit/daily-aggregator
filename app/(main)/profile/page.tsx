@@ -14,7 +14,7 @@ import { Engraving } from '@/components/site/engraving';
 import { ScrollDivider } from '@/components/site/scroll-divider';
 import { ColoredAvatar } from '@/components/ui/colored-avatar';
 import { hasPasswordLogin } from '@/lib/auth';
-import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getCurrentProfile, getCurrentUser, getSessionUser } from '@/lib/supabase/server';
 import type { FontSize } from '@/lib/types';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,17 +28,20 @@ export async function generateMetadata(): Promise<Metadata> {
  * ledger's index down the margin column and its entries beside it.
  */
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ delete?: string }> }) {
-  const [user, profile, query, { t }] = await Promise.all([getCurrentUser(), getCurrentProfile(), searchParams, getI18n()]);
+  const [session, query, { t }, supabase] = await Promise.all([getSessionUser(), searchParams, getI18n(), createClient()]);
   const w = t.settings;
+  if (!session) redirect('/login?next=/profile');
+
+  // The full account (its sign-in methods) comes from Supabase Auth; the ledger's lists load at the same time.
+  const [user, profile, { data: muted }, { data: preferences }, { data: mutedWords }] = await Promise.all([
+    getCurrentUser(),
+    getCurrentProfile(),
+    supabase.from('muted_sources').select('source_id, sources(name)').eq('user_id', session.id),
+    supabase.from('user_preferred_categories').select('categories(name, sort_order)').eq('user_id', session.id),
+    supabase.from('muted_keywords').select('keyword').eq('user_id', session.id).order('keyword'),
+  ]);
   if (!user || !profile) redirect('/login?next=/profile');
   const hasPassword = hasPasswordLogin(user.identities);
-
-  const supabase = await createClient();
-  const [{ data: muted }, { data: preferences }, { data: mutedWords }] = await Promise.all([
-    supabase.from('muted_sources').select('source_id, sources(name)').eq('user_id', user.id),
-    supabase.from('user_preferred_categories').select('categories(name, sort_order)').eq('user_id', user.id),
-    supabase.from('muted_keywords').select('keyword').eq('user_id', user.id).order('keyword'),
-  ]);
 
   const mutedSources = (muted ?? []).map((m) => ({ id: m.source_id, name: m.sources?.name ?? w.unknownSource }));
   const topics = (preferences ?? [])

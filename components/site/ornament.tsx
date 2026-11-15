@@ -34,6 +34,8 @@ const ORNAMENTS = {
   stamp: [132, 154],
   // A funnel from A. Pforr's US patent drawing (1875): the front page's Filters button.
   funnel: [110, 160],
+  // Spectacles (Pearson Scott Foresman line art): "Read on [source]", the story at its own paper.
+  spectacles: [160, 81],
 } as const;
 
 export type OrnamentName = keyof typeof ORNAMENTS;

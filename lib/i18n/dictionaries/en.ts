@@ -257,11 +257,8 @@ const en = {
     backToFront: 'Back to the front page',
     loadFailed: 'Could not load the stories',
     hideFailed: 'Could not hide the story',
-    hidden: 'Story hidden',
-    hiddenNote: 'It will not appear in your paper again.',
     muteFailed: 'Could not mute the source',
     muted: '{source} muted',
-    mutedNote: 'Unmute it any time in your settings.',
     running: 'The presses are running…',
     runningNote: 'Today’s stories are being fetched for the first time. This takes about 20 seconds; the page updates by itself.',
     jammed: 'The presses jammed',
@@ -317,8 +314,10 @@ const en = {
   story: {
     by: 'By {author}',
     readOn: 'Read on {source}',
+    readOnTitle: 'Read the full story on {source} (opens in a new tab)',
     share: 'Share',
-    hide: 'Hide this story',
+    /** Shown on the Share button for a moment after the link was copied. */
+    copied: 'Copied',
     mute: 'Mute {source}',
     readDispatch: 'Read dispatch',
     save: 'Save',

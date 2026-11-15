@@ -2,22 +2,14 @@
 
 import { memo } from 'react';
 import Link from 'next/link';
-import { EyeOff, Share2, SquareArrowOutUpRight, VolumeX } from 'lucide-react';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { DropCap } from '@/components/articles/drop-cap';
-import { ActionDivider, MoreButton, SaveButton } from '@/components/articles/story-actions';
+import { ActionDivider, ReadOnLink, SaveButton, ShareButton } from '@/components/articles/story-actions';
 import { TopStoryStamp } from '@/components/articles/top-story-stamp';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { formatReadingTime } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/client';
@@ -30,50 +22,30 @@ export type StoryVariant = 'lead' | 'standard' | 'compact';
 type ArticleCardProps = {
   article: FeedArticle;
   userId: string | null;
-  onHide?: (article: FeedArticle) => void;
-  onMuteSource?: (article: FeedArticle) => void;
   eagerImage?: boolean;
   variant?: StoryVariant;
 };
 
 /**
- * Save and More: two things to press, no more
- * (components/articles/story-actions.tsx). The first one starts flush with
- * the text above it.
+ * Save and Share, printed in the open like a line of type, and "Read on
+ * [source]" framed apart as the way out to the publisher's site
+ * (components/articles/story-actions.tsx), nothing behind a menu. In a story
+ * card (narrower than 34rem: every card on a phone and in the desktop grid)
+ * Save and Share share a line and the framed "Read on" spans the card under
+ * them, so every card in a row looks the same whatever its source is called.
+ * Where there is room (the lead story on a wide screen) all three sit on one
+ * line. Everything starts flush with the text above it.
  */
-function StoryActions({ article, userId, onHide, onMuteSource }: Omit<ArticleCardProps, 'eagerImage' | 'variant'>) {
+function StoryActions({ article, userId, className }: { article: FeedArticle; userId: string | null; className?: string }) {
   const { saved, busy, toggleSave, share } = useArticleActions(article, userId);
-  const { t, fmt } = useI18n();
   return (
-    <div className="flex flex-wrap items-center gap-x-1">
-      <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className="pl-0" />
-      <ActionDivider />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <MoreButton />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuItem asChild>
-            <a href={article.url} target="_blank" rel="noopener noreferrer">
-              <SquareArrowOutUpRight className="mr-2.5 h-4 w-4" /> {fmt(t.story.readOn, { source: article.source_name })}
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={share}>
-            <Share2 className="mr-2.5 h-4 w-4" /> {t.story.share}
-          </DropdownMenuItem>
-          {userId && (onHide || onMuteSource) && <DropdownMenuSeparator />}
-          {userId && onHide && (
-            <DropdownMenuItem onSelect={() => onHide(article)}>
-              <EyeOff className="mr-2.5 h-4 w-4" /> {t.story.hide}
-            </DropdownMenuItem>
-          )}
-          {userId && onMuteSource && (
-            <DropdownMenuItem onSelect={() => onMuteSource(article)}>
-              <VolumeX className="mr-2.5 h-4 w-4" /> {fmt(t.story.mute, { source: article.source_name })}
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className={cn('@container', className)}>
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5 @[34rem]:justify-end">
+        <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className="pl-0" />
+        <ActionDivider />
+        <ShareButton onShare={share} />
+        <ReadOnLink url={article.url} source={article.source_name} className="basis-full @[34rem]:ml-2 @[34rem]:basis-auto" />
+      </div>
     </div>
   );
 }
@@ -107,12 +79,11 @@ function Byline({ article, withAuthor = false, className }: { article: FeedArtic
  * One story, printed straight on the page (the grid around it draws the
  * column rules). Photographs sit in a dark photo plate (.photo-plate).
  */
-function ArticleCardImpl({ article, userId, onHide, onMuteSource, eagerImage, variant = 'standard' }: ArticleCardProps) {
+function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: ArticleCardProps) {
   const href = `/article/${article.slug}`;
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
   const section = getCategoryStyle(article.category_name).key ?? undefined;
-  const actions = <StoryActions article={article} userId={userId} onHide={onHide} onMuteSource={onMuteSource} />;
   const { t } = useI18n();
 
   if (variant === 'lead') {
@@ -149,7 +120,8 @@ function ArticleCardImpl({ article, userId, onHide, onMuteSource, eagerImage, va
               {t.story.readDispatch}
               <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
             </Link>
-            {actions}
+            {/* Fills the rest of the line beside "Read dispatch", or takes a line of its own when that is too narrow. */}
+            <StoryActions article={article} userId={userId} className="min-w-[17rem] flex-1" />
           </div>
         </div>
       </article>
@@ -198,7 +170,7 @@ function ArticleCardImpl({ article, userId, onHide, onMuteSource, eagerImage, va
         </h3>
         {summary && <p className="mt-2 line-clamp-3 text-[0.97rem] leading-relaxed text-foreground/80">{summary}</p>}
         <Byline article={article} className="mt-3" />
-        <div className="mt-auto pt-2">{actions}</div>
+        <StoryActions article={article} userId={userId} className="mt-auto pt-2" />
       </div>
     </article>
   );

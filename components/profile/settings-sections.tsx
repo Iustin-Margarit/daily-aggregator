@@ -3,7 +3,6 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { X } from 'lucide-react';
 import { deleteAccount, updateAppearance, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
@@ -106,20 +105,20 @@ function SubmitButton({ children, disabled }: { children: React.ReactNode; disab
   );
 }
 
-/** Shows a toast for each new action result and refreshes server data on success. */
+/**
+ * Shows a toast for each new action result. No router.refresh(): the actions
+ * that change what the page shows call revalidatePath, so their response
+ * already carries the fresh page (refreshing again rendered it twice).
+ */
 function useActionFeedback(state: ActionResult | null, onSuccess?: () => void) {
   const { showToast } = useToast();
-  const router = useRouter();
   const lastAt = useRef(0);
   const { t } = useI18n();
   useEffect(() => {
     if (!state || state.at === lastAt.current) return;
     lastAt.current = state.at;
     showToast({ type: state.ok ? 'success' : 'error', title: state.message ?? (state.ok ? t.common.saved : t.common.somethingWrong) });
-    if (state.ok) {
-      router.refresh();
-      onSuccess?.();
-    }
+    if (state.ok) onSuccess?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per result
   }, [state]);
 }

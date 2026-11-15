@@ -769,6 +769,16 @@
     bottom: 1.25rem;
   }
 }
+/* Phones: only the gramophone, a small square ticket (the button's aria-label names it). */
+@media (width < 40rem) {
+  .st-float {
+    left: 0.75rem;
+    padding: 0.4rem;
+  }
+  .st-float .st-float-label {
+    display: none;
+  }
+}
 .st-float .ornament-mask {
   animation: st-gramophone 2.4s ease-in-out infinite;
   transform-origin: 50% 90%;

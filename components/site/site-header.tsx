@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -317,6 +317,42 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
 }
 
 /**
+ * Keeps a fixed bar on the bottom edge of what is actually on screen. Mobile browsers can leave the
+ * layout viewport (what bottom: 0 means) taller than the visible area after a tab change, until the
+ * next scroll: the bar then hangs below the screen and its labels are cut off. The visual viewport
+ * says how much is hidden, and the bar is lifted by exactly that (nothing, normally).
+ */
+function useStayOnScreen(ref: React.RefObject<HTMLElement | null>, pathname: string) {
+  useEffect(() => {
+    const bar = ref.current;
+    const viewport = window.visualViewport;
+    if (!bar || !viewport) return;
+    let frame = 0;
+    const place = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        // Pinch-zoomed: leave the bar where it is, as browsers do.
+        const hidden = viewport.scale > 1.01 ? 0 : Math.round(window.innerHeight - (viewport.offsetTop + viewport.height));
+        bar.style.transform = hidden > 1 ? `translateY(-${hidden}px)` : '';
+      });
+    };
+    place();
+    // The browser may settle its toolbars a moment after the new page is drawn.
+    const late = window.setTimeout(place, 400);
+    viewport.addEventListener('resize', place);
+    viewport.addEventListener('scroll', place);
+    window.addEventListener('resize', place);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(late);
+      viewport.removeEventListener('resize', place);
+      viewport.removeEventListener('scroll', place);
+      window.removeEventListener('resize', place);
+    };
+  }, [ref, pathname]);
+}
+
+/**
  * On phones and tablets the reader's places sit at the bottom of the screen, within reach of a thumb
  * (the header only has room for them, beside the title and the account, from 1024px).
  */
@@ -324,10 +360,13 @@ export function BottomNav({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
   const items = navItems(user);
   const { t } = useI18n();
+  const navRef = useRef<HTMLElement>(null);
+  useStayOnScreen(navRef, pathname);
   return (
     <>
       <div className="h-[4.5rem] lg:hidden" aria-hidden="true" />
       <nav
+        ref={navRef}
         aria-label={t.nav.main}
         className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >

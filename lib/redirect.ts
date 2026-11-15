@@ -15,3 +15,17 @@ export function safeNextPath(value: string | null | undefined, fallback = '/feed
   }
   return value;
 }
+
+/**
+ * A link out to a publisher's own page: only plain http(s) web addresses, so a
+ * feed can never slip a javascript: or data: link onto a story. Null otherwise.
+ */
+export function safeExternalUrl(value: string | null | undefined): string | null {
+  if (!value || value.length > 2000) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}

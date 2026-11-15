@@ -1,7 +1,8 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/env';
 import { buildContentSecurityPolicy, createNonce } from '@/lib/security-headers';
+import { SESSION_CHECKED, SESSION_HEADERS, SESSION_USER_EMAIL, SESSION_USER_ID } from '@/lib/supabase/session-headers';
 
 /** Pages only for logged-out visitors. Logged-in users are sent to the feed. */
 const GUEST_ONLY = new Set(['/login', '/signup', '/forgot-password']);
@@ -20,6 +21,8 @@ function isPrivatePath(pathname: string) {
 
 export async function updateSession(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // Only this proxy may say who is signed in (lib/supabase/server.ts, getSessionUser): never trust a browser's copy.
+  for (const name of SESSION_HEADERS) request.headers.delete(name);
 
   // API routes authenticate themselves (cron secret, admin checks, ...) and return JSON.
   if (pathname.startsWith('/api/')) {
@@ -53,7 +56,8 @@ export async function updateSession(request: NextRequest) {
     return withPolicy(NextResponse.rewrite(url, { request }));
   }
 
-  let response = NextResponse.next({ request });
+  // A refreshed session's cookies (and cache headers), written onto the response once it exists.
+  let refreshed = null as { cookies: { name: string; value: string; options: CookieOptions }[]; headers: Record<string, string> } | null;
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     // Session cookies are only ever sent over HTTPS when the site uses it.
@@ -64,9 +68,7 @@ export async function updateSession(request: NextRequest) {
       },
       setAll(cookiesToSet, headers) {
         for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
-        response = NextResponse.next({ request });
-        for (const { name, value, options } of cookiesToSet) response.cookies.set(name, value, options);
-        for (const [key, value] of Object.entries(headers ?? {})) response.headers.set(key, value);
+        refreshed = { cookies: cookiesToSet, headers: headers ?? {} };
       },
     },
   });
@@ -74,12 +76,27 @@ export async function updateSession(request: NextRequest) {
   // Do not run code between createServerClient and getClaims(): it refreshes
   // an expired session and verifies the JWT.
   // If Supabase cannot be reached, carry on as a visitor rather than fail the request.
-  let isLoggedIn = false;
+  let userId: string | null = null;
+  let email: string | null = null;
   try {
     const { data } = await supabase.auth.getClaims();
-    isLoggedIn = Boolean(data?.claims?.sub);
+    userId = data?.claims?.sub ?? null;
+    email = typeof data?.claims?.email === 'string' ? data.claims.email : null;
   } catch (error) {
     console.error('[proxy] could not check the session:', error);
+  }
+  const isLoggedIn = Boolean(userId);
+
+  // The pages read the verified user from these headers instead of asking Supabase Auth a second time.
+  request.headers.set(SESSION_CHECKED, '1');
+  if (userId) request.headers.set(SESSION_USER_ID, userId);
+  if (email) request.headers.set(SESSION_USER_EMAIL, encodeURIComponent(email));
+
+  // Built after the headers above: NextResponse.next() copies the request headers when it is made.
+  const response = NextResponse.next({ request });
+  if (refreshed) {
+    for (const { name, value, options } of refreshed.cookies) response.cookies.set(name, value, options);
+    for (const [key, value] of Object.entries(refreshed.headers)) response.headers.set(key, value);
   }
 
   const redirect = (path: string) => {

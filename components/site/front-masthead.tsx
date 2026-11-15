@@ -21,8 +21,10 @@ function EditionDate() {
  * The lantern over the title: while a mouse or pen moves over the nameplate, its
  * position (relative to the panel, and to the title for the gilded sheen) goes
  * into CSS variables; styles/globals.css (.masthead-sky) lets the light glide
- * after it. One update per frame at most; touch is ignored (no hover), and with
- * reduced motion the light stays still in the middle.
+ * after it. One update per frame at most, and the two boxes are measured once
+ * per visit (again only after a scroll or resize), so moving the mouse never
+ * makes the browser lay the page out again; touch is ignored (no hover), and
+ * with reduced motion the light stays still in the middle.
  */
 function useLantern() {
   const sky = useRef<HTMLDivElement>(null);
@@ -34,15 +36,18 @@ function useLantern() {
     let frame = 0;
     let x = 0;
     let y = 0;
+    let boxes: { panel: DOMRect; title: DOMRect | null } | null = null;
+    const forget = () => {
+      boxes = null;
+    };
     const paint = () => {
       frame = 0;
-      const box = panel.getBoundingClientRect();
-      panel.style.setProperty('--lx', `${x - box.left}px`);
-      panel.style.setProperty('--ly', `${y - box.top}px`);
-      if (title) {
-        const letters = title.getBoundingClientRect();
-        title.style.setProperty('--tx', `${x - letters.left}px`);
-        title.style.setProperty('--ty', `${y - letters.top}px`);
+      boxes ??= { panel: panel.getBoundingClientRect(), title: title?.getBoundingClientRect() ?? null };
+      panel.style.setProperty('--lx', `${x - boxes.panel.left}px`);
+      panel.style.setProperty('--ly', `${y - boxes.panel.top}px`);
+      if (title && boxes.title) {
+        title.style.setProperty('--tx', `${x - boxes.title.left}px`);
+        title.style.setProperty('--ty', `${y - boxes.title.top}px`);
       }
     };
     const move = (event: PointerEvent) => {
@@ -52,8 +57,14 @@ function useLantern() {
       if (!frame) frame = requestAnimationFrame(paint);
     };
     panel.addEventListener('pointermove', move);
+    panel.addEventListener('pointerenter', forget);
+    window.addEventListener('scroll', forget, { passive: true });
+    window.addEventListener('resize', forget);
     return () => {
       panel.removeEventListener('pointermove', move);
+      panel.removeEventListener('pointerenter', forget);
+      window.removeEventListener('scroll', forget);
+      window.removeEventListener('resize', forget);
       cancelAnimationFrame(frame);
     };
   }, []);

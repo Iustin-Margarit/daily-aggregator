@@ -17,8 +17,9 @@
  *
  * Always off when a page loads; the reader turns it on with the banner's
  * "Sound" ticket (components/site/street-theatre.tsx). The banner's Pause
- * button pauses it too. It keeps playing while the reader moves around the
- * site; whenever the banner is out of sight, a small "Stop sound" ticket
+ * button (the "banner" reading preference) holds it on every page. It keeps
+ * playing while the reader moves around the site; whenever it is audible and
+ * the banner is out of sight, a small "Stop sound" ticket
  * (components/site/sound-ticket.tsx) stays in the corner to turn it off.
  */
 
@@ -117,6 +118,11 @@ export function subscribeAmbience(listener: () => void) {
 
 export function isAmbiencePlaying() {
   return on;
+}
+
+/** True while the banner is paused (the reader's "banner" setting is Still): the sound is on but silent. */
+export function isAmbiencePaused() {
+  return paused;
 }
 
 /** True while the banner, with its own Sound ticket, is on screen. */
@@ -509,6 +515,7 @@ export function setAmbience(next: boolean) {
 export function setAmbiencePaused(next: boolean) {
   if (next === paused) return;
   paused = next;
+  emit();
   const p = player;
   if (!p || !p.buffers) return; // still loading: start() looks at `paused`
   window.clearTimeout(p.suspendTimer);

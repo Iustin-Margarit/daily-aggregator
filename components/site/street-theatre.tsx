@@ -4,7 +4,7 @@ import '@/styles/street-theatre.css';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { Ornament } from '@/components/site/ornament';
-import { isAmbiencePlaying, setAmbience, setAmbiencePaused, setAmbienceStage, setAmbienceStageInView, subscribeAmbience } from '@/lib/ambience';
+import { isAmbiencePlaying, setAmbience, setAmbienceStage, setAmbienceStageInView, subscribeAmbience } from '@/lib/ambience';
 import { useI18n } from '@/lib/i18n/client';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cn } from '@/lib/utils';
@@ -212,15 +212,12 @@ function Lane({ walker }: { walker: Walker }) {
  * The "Sound" ticket beside Pause: a calm 1890s promenade, with footsteps,
  * passing chatter, birds by day, and the carriage heard as the cab crosses
  * (real recordings, lib/ambience.ts). Off whenever a page loads; Pause holds
- * it. It keeps playing on the other pages, where the corner ticket
- * (sound-ticket.tsx) turns it off.
+ * it on every page (sound-ticket.tsx follows the setting). It keeps playing on
+ * the other pages, where the corner ticket turns it off.
  */
-function SoundToggle({ paused }: { paused: boolean }) {
+function SoundToggle() {
   const playing = useSyncExternalStore(subscribeAmbience, isAmbiencePlaying, () => false);
   const { t } = useI18n();
-  useEffect(() => setAmbiencePaused(paused), [paused]);
-  // Leaving the front page lets the sound play on: Pause only holds it while the banner is here.
-  useEffect(() => () => setAmbiencePaused(false), []);
   return (
     <button
       type="button"
@@ -371,7 +368,7 @@ export function StreetTheatre({ className }: { className?: string }) {
         <div className="st-vignette" />
       </div>
       <div className="st-controls">
-        <SoundToggle paused={paused} />
+        <SoundToggle />
         <button
           type="button"
           className="st-toggle st-motion"

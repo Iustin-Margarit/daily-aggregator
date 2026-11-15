@@ -1,13 +1,9 @@
 import { createClient } from '@/lib/supabase/client';
 
-// Small wrappers so cards, the article page and the profile page share logic.
+// Small wrappers so the article page and the profile page share logic.
 
 export async function hideArticle(userId: string, articleId: string) {
   return createClient().from('hidden_articles').upsert({ user_id: userId, article_id: articleId });
-}
-
-export async function unhideArticle(userId: string, articleId: string) {
-  return createClient().from('hidden_articles').delete().eq('user_id', userId).eq('article_id', articleId);
 }
 
 export async function muteSource(userId: string, sourceId: string) {

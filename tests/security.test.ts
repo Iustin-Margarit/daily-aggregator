@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { checkUrlShape, isPrivateAddress, UnsafeUrlError } from '../lib/ingestion/safe-fetch';
 import { filtersFromSearchParams } from '../lib/feed';
 import { pickEvents } from '../lib/on-this-day';
-import { safeNextPath } from '../lib/redirect';
+import { safeExternalUrl, safeNextPath } from '../lib/redirect';
 import { buildContentSecurityPolicy, createNonce } from '../lib/security-headers';
 import { isReservedUsername, normalizeMutedKeyword, profileSaveError, validateUsername } from '../lib/validation';
 
@@ -92,6 +92,19 @@ describe('safe fetch: URL shape', () => {
     rejected('http://[::1]/');
     rejected('http://[::ffff:169.254.169.254]/latest/meta-data');
     rejected('http://169.254.169.254/latest/meta-data');
+  });
+});
+
+describe('safeExternalUrl', () => {
+  it('keeps http and https links to a publisher', () => {
+    assert.equal(safeExternalUrl('https://www.engadget.com/story-123.html?src=rss'), 'https://www.engadget.com/story-123.html?src=rss');
+    assert.equal(safeExternalUrl(' http://example.com/a '), 'http://example.com/a');
+  });
+
+  it('refuses other schemes, relative paths and junk', () => {
+    for (const value of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'data:text/html,hi', 'vbscript:x', 'ftp://example.com', '/article/x', '//evil.com', 'not a url', '', null, undefined]) {
+      assert.equal(safeExternalUrl(value), null, String(value));
+    }
   });
 });
 
@@ -204,5 +217,19 @@ describe('untrusted input from links and outside feeds', () => {
       events.map((event) => event.url),
       [null, 'https://en.wikipedia.org/wiki/Example'],
     );
+  });
+});
+
+describe('proxy: session headers', () => {
+  it('never passes on a signed-in user that the browser claims itself', async () => {
+    const { NextRequest } = await import('next/server');
+    const { updateSession } = await import('../lib/supabase/proxy');
+    const { SESSION_CHECKED, SESSION_USER_EMAIL, SESSION_USER_ID } = await import('../lib/supabase/session-headers');
+    const request = new NextRequest('http://localhost/feed', {
+      headers: { [SESSION_CHECKED]: '1', [SESSION_USER_ID]: 'someone-else', [SESSION_USER_EMAIL]: 'victim%40example.com' },
+    });
+    await updateSession(request);
+    assert.notEqual(request.headers.get(SESSION_USER_ID), 'someone-else');
+    assert.equal(request.headers.get(SESSION_USER_EMAIL), null);
   });
 });

@@ -19,15 +19,33 @@ import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------- time source
 
+// One timer for every clock on the page, however many are mounted.
+const tickListeners = new Set<() => void>();
+let tickTimer = 0;
 function subscribeSeconds(listener: () => void) {
-  const timer = window.setInterval(listener, 1000);
-  return () => window.clearInterval(timer);
+  tickListeners.add(listener);
+  if (!tickTimer) tickTimer = window.setInterval(() => tickListeners.forEach((tick) => tick()), 1000);
+  return () => {
+    tickListeners.delete(listener);
+    if (tickListeners.size === 0) {
+      window.clearInterval(tickTimer);
+      tickTimer = 0;
+    }
+  };
 }
-const nowInSeconds = () => Math.floor(Date.now() / 1000);
 
-/** Seconds since 1970, ticking once a second; null on the server. */
-function useNow(): number | null {
-  return useSyncExternalStore(subscribeSeconds, nowInSeconds, () => null);
+/**
+ * Seconds since 1970, rounded down to a whole `step` (1 = every second, 60 =
+ * each minute, 3600 = each hour); null on the server. React only re-renders a
+ * component when its rounded value changes, so the moon and the clock's words
+ * stay still while the second hand ticks.
+ */
+function useNow(step = 1): number | null {
+  return useSyncExternalStore(
+    subscribeSeconds,
+    () => Math.floor(Date.now() / 1000 / step) * step,
+    () => null,
+  );
 }
 
 // ---------------------------------------------------------------- tile
@@ -148,13 +166,9 @@ function BreguetHand({ ring, size, tip, width }: { ring: number; size: number; t
  * so a hand's springy tick never spins it backwards at the top of the dial.
  */
 export function Clock({ className }: { className?: string }) {
-  const now = useNow();
+  // The dial and its label change once a minute; only the hands (ClockHands) tick every second.
+  const now = useNow(60);
   const date = now === null ? null : new Date(now * 1000);
-  const seconds = date?.getSeconds() ?? 0;
-  const minutes = (date?.getMinutes() ?? 0) + seconds / 60;
-  const hours = ((date?.getHours() ?? 0) % 12) + minutes / 60;
-  // Seconds since midnight: grows all day, so each tick turns the hand forwards.
-  const daySeconds = date ? date.getHours() * 3600 + date.getMinutes() * 60 + seconds : 0;
   const clock = useReaderPref('clock');
   const { t, fmt, locale } = useI18n();
   const label = date ? fmt(t.almanac.timeIs, { time: formatClock(date, clock, locale) }) : t.almanac.clock;
@@ -221,22 +235,7 @@ export function Clock({ className }: { className?: string }) {
             <line key={i} x1="50" y1={SUB.cy - SUB.r} x2="50" y2={SUB.cy - SUB.r + (i % 3 === 0 ? 2 : 1.3)} strokeWidth={i % 3 === 0 ? 0.6 : 0.35} transform={`rotate(${i * 30} 50 ${SUB.cy})`} />
           ))}
         </g>
-        {date && (
-          <g fill="var(--dial-hand)">
-            <g className="clock-second" style={handStyle(daySeconds * 6, SUB.cy)}>
-              <path d={`M49.78 ${SUB.cy + 1.9} 49.86 ${SUB.cy - SUB.r + 0.8}h.28l.08 ${SUB.r + 1.1}Z`} />
-              <circle cx="50" cy={SUB.cy} r="0.95" />
-            </g>
-            <g className="clock-hand" style={handStyle(hours * 30)}>
-              <BreguetHand ring={20.5} size={3.1} tip={28.5} width={2.2} />
-            </g>
-            <g className="clock-hand" style={handStyle(minutes * 6)}>
-              <BreguetHand ring={33.5} size={2.45} tip={44} width={1.7} />
-            </g>
-            <circle cx="50" cy="50" r="2.5" />
-            <circle cx="50" cy="50" r="0.85" fill="var(--brass-hi)" />
-          </g>
-        )}
+        {date && <ClockHands />}
         <circle cx="50" cy="50" r="50" fill={`url(#${glass})`} />
       </svg>
       {/* The engraved case, printed in brass, with a brass hairline round it. */}
@@ -246,9 +245,36 @@ export function Clock({ className }: { className?: string }) {
   );
 }
 
+/** The watch's three hands: the only part of the watch that re-renders every second. */
+function ClockHands() {
+  const now = useNow() ?? 0;
+  const date = new Date(now * 1000);
+  const seconds = date.getSeconds();
+  const minutes = date.getMinutes() + seconds / 60;
+  const hours = (date.getHours() % 12) + minutes / 60;
+  // Seconds since midnight: grows all day, so each tick turns the hand forwards.
+  const daySeconds = date.getHours() * 3600 + date.getMinutes() * 60 + seconds;
+  return (
+    <g fill="var(--dial-hand)">
+      <g className="clock-second" style={handStyle(daySeconds * 6, SUB.cy)}>
+        <path d={`M49.78 ${SUB.cy + 1.9} 49.86 ${SUB.cy - SUB.r + 0.8}h.28l.08 ${SUB.r + 1.1}Z`} />
+        <circle cx="50" cy={SUB.cy} r="0.95" />
+      </g>
+      <g className="clock-hand" style={handStyle(hours * 30)}>
+        <BreguetHand ring={20.5} size={3.1} tip={28.5} width={2.2} />
+      </g>
+      <g className="clock-hand" style={handStyle(minutes * 6)}>
+        <BreguetHand ring={33.5} size={2.45} tip={44} width={1.7} />
+      </g>
+      <circle cx="50" cy="50" r="2.5" />
+      <circle cx="50" cy="50" r="0.85" fill="var(--brass-hi)" />
+    </g>
+  );
+}
+
 /** "3:42 p.m." or "15:42" (Settings > clock) in the reader's time, or an empty line before the page has loaded. */
 export function ClockText({ className }: { className?: string }) {
-  const now = useNow();
+  const now = useNow(60);
   const clock = useReaderPref('clock');
   const { locale } = useI18n();
   if (now === null) return <span className={className}>{' '}</span>;
@@ -308,7 +334,7 @@ const MOON_R = 25.5;
  * hatched ink from the moon's age. Now and then a shooting star streaks past.
  */
 export function Moon({ className }: { className?: string }) {
-  const now = useNow();
+  const now = useNow(3600);
   const engraving = useSvgId('moon');
   const bezel = useSvgId('bezel');
   const brass = useSvgId('brass');
@@ -317,7 +343,7 @@ export function Moon({ className }: { className?: string }) {
   const trail = useSvgId('trail');
   const { t, fmt, tag } = useI18n();
   // Whole hours are enough; the shape barely changes within a day.
-  const age = now === null ? null : moonAge(new Date(Math.floor(now / 3600) * 3_600_000));
+  const age = now === null ? null : moonAge(new Date(now * 1000));
   const r = MOON_R;
   const c = 50;
   let shade: React.ReactNode = null;
@@ -409,7 +435,7 @@ export function Moon({ className }: { className?: string }) {
 }
 
 export function MoonText({ className }: { className?: string }) {
-  const now = useNow();
+  const now = useNow(3600);
   const { t } = useI18n();
   if (now === null) return <span className={className}>{' '}</span>;
   return <span className={className}>{moonPhaseName(moonAge(new Date(now * 1000)), t.almanac.phases)}</span>;

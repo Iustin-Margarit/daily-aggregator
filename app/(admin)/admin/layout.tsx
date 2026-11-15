@@ -2,15 +2,15 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/admin-nav';
 import { Logo } from '@/components/site/logo';
-import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getSessionUser } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: { default: 'Newsroom', template: '%s · Newsroom' } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  // The proxy has verified the session; is_admin() checks auth.uid() in the database itself.
+  const [user, supabase] = await Promise.all([getSessionUser(), createClient()]);
   if (!user) redirect('/login?next=/admin/dashboard');
 
-  const supabase = await createClient();
   const { data: isAdmin } = await supabase.rpc('is_admin');
   if (!isAdmin) redirect('/feed');
 

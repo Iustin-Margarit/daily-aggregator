@@ -7,7 +7,7 @@ import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
 import { canIngest, refreshNewsIfStale } from '@/lib/ingestion/auto-refresh';
 import { getI18n, getLocale } from '@/lib/i18n/server';
 import { getOnThisDay } from '@/lib/on-this-day';
-import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getCurrentProfile, getSessionUser } from '@/lib/supabase/server';
 import type { Category, FeedArticle, SourceOption } from '@/lib/types';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,19 +22,25 @@ export default async function FeedPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [user, profile, jar, locale] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies(), getLocale()]);
-  // Visitors read the paper too, with the sections they chose in this browser (lib/guest.ts).
-  const signedIn = Boolean(user && profile);
-
-  const supabase = await createClient();
-  const [{ data: categories }, { data: sources }, { data: preferences }, params] = await Promise.all([
+  // Everything that does not depend on each other goes out at once: the session comes from the proxy
+  // (no trip to Supabase Auth), then the profile, sections, newspapers, the reader's sections and the
+  // almanac's anniversaries load side by side, and only the stories wait (they need the sections).
+  const [user, jar, locale, supabase] = await Promise.all([getSessionUser(), cookies(), getLocale(), createClient()]);
+  const onThisDayPromise = getOnThisDay(new Date(), locale);
+  const [profile, { data: categories }, { data: sources }, { data: accountPreferences }, params] = await Promise.all([
+    getCurrentProfile(),
     supabase.from('categories').select('id, name, sort_order').order('sort_order').order('name'),
     supabase.from('sources').select('id, name, category_id').eq('is_enabled', true).order('name'),
-    user && signedIn
+    user
       ? supabase.from('user_preferred_categories').select('category_id').eq('user_id', user.id)
-      : Promise.resolve({ data: parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value).map((category_id) => ({ category_id })) }),
+      : Promise.resolve({ data: [] as { category_id: string }[] }),
     searchParams,
   ]);
+  // Visitors read the paper too, with the sections they chose in this browser (lib/guest.ts).
+  const signedIn = Boolean(user && profile);
+  const preferences = signedIn
+    ? accountPreferences
+    : parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value).map((category_id) => ({ category_id }));
 
   const categoryList: Category[] = categories ?? [];
   // Only sections that still exist (a guest's cookie may be old).
@@ -43,7 +49,7 @@ export default async function FeedPage({
   const page = pageFromSearchParams(params);
   const asOf = new Date().toISOString();
 
-  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf)), getOnThisDay(new Date(), locale)]);
+  const [{ data: articles, error: feedError }, onThisDay] = await Promise.all([supabase.rpc('get_feed', feedRpcArgs(filters, page, asOf)), onThisDayPromise]);
   const initialArticles = (articles ?? []) as FeedArticle[];
 
   // Brand-new install: the database has no articles yet, so fetch them now.

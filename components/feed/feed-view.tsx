@@ -4,7 +4,6 @@ import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArticleCard, type StoryVariant } from '@/components/articles/article-card';
 import { ArticleGridSkeleton } from '@/components/articles/article-card-skeleton';
-import { hideArticle, muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
 import { FeedSearch, FeedToolbar, FilterButton } from '@/components/feed/feed-toolbar';
 import { Pagination } from '@/components/feed/pagination';
 import { MonthAlmanac, OnThisDayCard } from '@/components/site/almanac';
@@ -50,14 +49,6 @@ type FeedViewProps = {
 };
 
 type Status = 'idle' | 'loading' | 'error';
-
-function insertBack(list: FeedArticle[], removed: { article: FeedArticle; index: number }[]) {
-  const next = [...list];
-  for (const { article, index } of [...removed].sort((a, b) => a.index - b.index)) {
-    if (!next.some((a) => a.id === article.id)) next.splice(Math.min(index, next.length), 0, article);
-  }
-  return next;
-}
 
 const totalOf = (list: FeedArticle[]) => Number(list[0]?.total_count ?? 0);
 
@@ -175,10 +166,8 @@ export function FeedView({
   const requestId = useRef(0);
   const asOfRef = useRef(initialAsOf);
   const filtersRef = useRef(initialFilters);
-  const articlesRef = useRef(initialArticles);
   const topRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef(initialPage);
-  articlesRef.current = articles;
   pageRef.current = page;
 
   const urlFor = useCallback(
@@ -266,67 +255,6 @@ export function FeedView({
     return () => window.clearInterval(timer);
   }, [waiting, load]);
 
-  const handleHide = useCallback(
-    async (article: FeedArticle) => {
-      if (!userId) return;
-      const index = articlesRef.current.findIndex((a) => a.id === article.id);
-      setArticles((list) => list.filter((a) => a.id !== article.id));
-      setTotal((t) => Math.max(0, t - 1));
-      const { error } = await hideArticle(userId, article.id);
-      if (error) {
-        setArticles((list) => insertBack(list, [{ article, index }]));
-        setTotal((t) => t + 1);
-        showToast({ type: 'error', title: t.feed.hideFailed, message: error.message });
-        return;
-      }
-      showToast({
-        type: 'success',
-        title: t.feed.hidden,
-        message: t.feed.hiddenNote,
-        action: {
-          label: t.common.undo,
-          onClick: async () => {
-            await unhideArticle(userId, article.id);
-            setArticles((list) => insertBack(list, [{ article, index }]));
-            setTotal((t) => t + 1);
-          },
-        },
-      });
-    },
-    [userId, showToast, t],
-  );
-
-  const handleMute = useCallback(
-    async (article: FeedArticle) => {
-      if (!userId) return;
-      const removed = articlesRef.current
-        .map((a, index) => ({ article: a, index }))
-        .filter((entry) => entry.article.source_id === article.source_id);
-      setArticles((list) => list.filter((a) => a.source_id !== article.source_id));
-      const { error } = await muteSource(userId, article.source_id);
-      if (error) {
-        setArticles((list) => insertBack(list, removed));
-        showToast({ type: 'error', title: t.feed.muteFailed, message: error.message });
-        return;
-      }
-      showToast({
-        type: 'success',
-        title: fmt(t.feed.muted, { source: article.source_name }),
-        message: t.feed.mutedNote,
-        action: {
-          label: t.common.undo,
-          onClick: async () => {
-            await unmuteSource(userId, article.source_id);
-            void load(filtersRef.current, pageRef.current, false);
-          },
-        },
-      });
-      // The page now has gaps; reload it so it is full again.
-      void load(filtersRef.current, pageRef.current, false);
-    },
-    [userId, showToast, load, fmt, t],
-  );
-
   const selectedNames = categories
     .filter((c) => filters.categoryIds.includes(c.id))
     .map((c) => sectionText(t, getCategoryStyle(c.name).key, c.name).name);
@@ -360,8 +288,6 @@ export function FeedView({
     <ArticleCard
       article={article}
       userId={userId}
-      onHide={userId ? handleHide : undefined}
-      onMuteSource={userId ? handleMute : undefined}
       eagerImage={index < 3}
       variant={variant}
     />

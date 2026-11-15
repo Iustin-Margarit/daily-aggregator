@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { getI18n } from '@/lib/i18n/server';
 import type { SavedView } from '@/components/saved/saved-manager';
 import { AccountSaved, GuestSaved } from '@/components/saved/saved-pages';
-import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getSessionUser } from '@/lib/supabase/server';
 import type { SavedArticle } from '@/lib/types';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function SavedPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
+  const [user, params] = await Promise.all([getSessionUser(), searchParams]);
   const view: SavedView = {
     folder: params.folder ?? 'all',
     hideRead: params.hide_read === '1',

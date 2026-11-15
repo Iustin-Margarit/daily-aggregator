@@ -2,14 +2,12 @@
 
 import { EyeOff, VolumeX } from 'lucide-react';
 import { hideArticle, muteSource } from '@/components/articles/moderation';
-import { ActionDivider, actionClass, MoreButton, SaveButton } from '@/components/articles/story-actions';
+import { ActionDivider, MoreButton, SaveButton, ShareButton } from '@/components/articles/story-actions';
 import { useArticleActions } from '@/components/articles/use-article-actions';
-import { Ornament } from '@/components/site/ornament';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n/client';
 import type { ArticleDetail } from '@/lib/types';
-import { cn } from '@/lib/utils';
 
 /**
  * The story page's printed actions: Save, as under every story on the
@@ -57,11 +55,7 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
       <div className="flex flex-wrap items-center gap-x-1 border-y border-rule/30 py-1 xl:flex-col xl:items-stretch xl:border-b-0 xl:py-0">
         <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className={line} />
         {divider}
-        <button type="button" onClick={share} className={cn(actionClass, line)} title={t.article.shareTitle}>
-          {/* A carrier pigeon with its letter (Yarrell, 1843). */}
-          <Ornament name="pigeon" className="h-[1.05rem]" />
-          {t.story.share}
-        </button>
+        <ShareButton onShare={share} className={line} />
         {userId && (
           <>
             {divider}

@@ -5,7 +5,7 @@ import { TopicsForm } from '@/components/onboarding/topics-form';
 import { PageHeader } from '@/components/site/page-header';
 import { ScrollDivider } from '@/components/site/scroll-divider';
 import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
-import { createClient, getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getCurrentProfile, getSessionUser } from '@/lib/supabase/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -13,13 +13,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function OnboardingPage() {
-  const [user, profile, jar, { t }] = await Promise.all([getCurrentUser(), getCurrentProfile(), cookies(), getI18n()]);
+  const [user, jar, { t }, supabase] = await Promise.all([getSessionUser(), cookies(), getI18n(), createClient()]);
   const w = t.onboarding;
   // Sections a visitor chose before signing up (lib/guest.ts).
   const guestSections = parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value);
 
-  const supabase = await createClient();
-  const [{ data: categories }, { data: preferences }, { data: sources }] = await Promise.all([
+  // The profile and the lists load side by side.
+  const [profile, { data: categories }, { data: preferences }, { data: sources }] = await Promise.all([
+    getCurrentProfile(),
     supabase.from('categories').select('id, name, sort_order').order('sort_order').order('name'),
     user
       ? supabase.from('user_preferred_categories').select('category_id').eq('user_id', user.id)

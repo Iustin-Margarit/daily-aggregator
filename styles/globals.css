@@ -656,15 +656,22 @@
     background-image: var(--desk-texture);
     background-size: 640px 640px;
   }
-  /* Candlelight on the desk, from candles just off the page; it wavers a little (none at night). */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background: var(--desk-light);
-    animation: candle 7s ease-in-out infinite;
+  /*
+   * Candlelight on the desk, from candles just off the page; it wavers a little
+   * (none at night). Only drawn where the desk shows beside the sheet (wider
+   * than the 1440px sheet): narrower screens would animate a full-screen layer
+   * nobody can see on every frame.
+   */
+  @media (width > 1440px) {
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: var(--desk-light);
+      animation: candle 7s ease-in-out infinite;
+    }
   }
   @keyframes candle {
     0%,
@@ -1487,6 +1494,69 @@ article:focus-within .photo-plate::after,
       gap: 0.35rem;
       padding-inline: 0.55rem 0.65rem;
       letter-spacing: 0.1em;
+    }
+  }
+
+  /*
+   * "Read on [source]" under every story (components/articles/story-actions.tsx):
+   * the way out to the publisher's site, so it is boxed apart from Save and
+   * Share in the Filters ticket's double rule, with the spectacles on the left
+   * and a printed arrow on the right that steps out on hover. The focus ring is
+   * drawn inside, so a column never clips it.
+   */
+  .source-ticket {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.25rem 0.7rem 0.25rem 0.6rem;
+    border: 3px double hsl(var(--rule) / 0.6);
+    border-radius: 2px;
+    background: hsl(var(--card) / 0.55);
+    font-family: var(--font-jost), ui-sans-serif, sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--action-ink);
+    --ornament-ink: var(--action-icon);
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      box-shadow 0.2s;
+    &:hover {
+      color: var(--brass-ink);
+      border-color: var(--ink-gold);
+      box-shadow: 0 1px 0.4rem hsl(var(--foreground) / 0.12);
+    }
+    &:focus-visible {
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: -5px;
+    }
+    @media (width < 25rem) {
+      gap: 0.45rem;
+      letter-spacing: 0.1em;
+    }
+  }
+  .source-ticket-arrow {
+    flex: none;
+    margin-inline-start: auto;
+    padding-inline-start: 0.35rem;
+    font-family: ui-serif, 'Times New Roman', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: 0;
+    color: var(--ink-gold);
+    transition: transform 0.2s ease;
+    .source-ticket:hover & {
+      transform: translate(2px, -2px);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
     }
   }
 

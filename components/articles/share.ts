@@ -1,6 +1,11 @@
-/** Shares a link with the Web Share API, falling back to the clipboard. */
+/**
+ * Shares a link: the phone's own share sheet on touch screens (Web Share API),
+ * otherwise the clipboard. Desktops copy too, even where they have a share
+ * dialog: a copied link is what people expect from a mouse.
+ */
 export async function shareLink(title: string, url: string): Promise<'shared' | 'copied' | 'cancelled' | 'failed'> {
-  if (typeof navigator !== 'undefined' && navigator.share) {
+  const touch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+  if (touch && typeof navigator !== 'undefined' && navigator.share) {
     try {
       await navigator.share({ title, url });
       return 'shared';

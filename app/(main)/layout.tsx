@@ -3,10 +3,10 @@ import { FontSizeSync } from '@/components/site/font-size-sync';
 import { SiteFooter } from '@/components/site/site-footer';
 import { BottomNav, SiteHeader, type HeaderUser } from '@/components/site/site-header';
 import { accentVariables } from '@/lib/colors';
-import { getCurrentProfile, getCurrentUser } from '@/lib/supabase/server';
+import { getCurrentProfile, getSessionUser } from '@/lib/supabase/server';
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()]);
+  const [user, profile] = await Promise.all([getSessionUser(), getCurrentProfile()]);
 
   const headerUser: HeaderUser | null =
     user && profile

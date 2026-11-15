@@ -16,7 +16,7 @@ import { getCategoryStyle } from '@/lib/category-styles';
 import { formatReadingTime } from '@/lib/format';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
-import { createClient, getCurrentUser } from '@/lib/supabase/server';
+import { createClient, getSessionUser } from '@/lib/supabase/server';
 import { cleanText, truncate } from '@/lib/text';
 import type { ArticleDetail, RelatedArticle } from '@/lib/types';
 
@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  */
 export default async function ArticlePage({ params }: PageProps) {
   const { id } = await params;
-  const [article, user, { t, fmt, locale }] = await Promise.all([getArticle(id), getCurrentUser(), getI18n()]);
+  const [article, user, { t, fmt, locale }] = await Promise.all([getArticle(id), getSessionUser(), getI18n()]);
   if (!article) notFound();
 
   const supabase = await createClient();

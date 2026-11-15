@@ -110,21 +110,28 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       } else {
         showToast({ type: 'success', title: s.removed, action: { label: t.common.undo, onClick: () => void save() } });
       }
-    } else if (await save()) {
-      showToast({
-        type: 'success',
-        title: s.savedForLater,
-        action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
-      });
+    } else {
+      // Shown as saved at once (the quill's stamp plays now); put back if the database says no.
+      setSaved(true);
+      if (await save()) {
+        showToast({
+          type: 'success',
+          title: s.savedForLater,
+          action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
+        });
+      } else {
+        setSaved(false);
+      }
     }
 
     setBusy(false);
   };
 
+  /** The share sheet where the device has one, else the clipboard; the Share button shows "Copied" itself. */
   const share = async () => {
     const result = await shareLink(article.title, articleShareUrl(article.slug));
-    if (result === 'copied') showToast({ type: 'success', title: s.linkCopied });
     if (result === 'failed') showToast({ type: 'error', title: s.shareFailed });
+    return result;
   };
 
   return { saved: userId ? saved : guestSaved, busy, toggleSave, share };
