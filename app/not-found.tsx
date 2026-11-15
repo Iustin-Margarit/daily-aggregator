@@ -8,9 +8,12 @@ export default async function NotFound() {
   const { t } = await getI18n();
   return (
     <div className="paper container flex min-h-screen max-w-2xl flex-col py-8">
-      <Logo />
-      <div className="flex flex-1 items-center">
+      <header>
+        <Logo />
+      </header>
+      <main id="main" className="flex flex-1 items-center">
         <EmptyState
+          level={1}
           className="w-full"
           engraving="kitten-peer"
           title={t.errors.notFound}
@@ -21,7 +24,7 @@ export default async function NotFound() {
             </Button>
           }
         />
-      </div>
+      </main>
     </div>
   );
 }

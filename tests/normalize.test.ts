@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { improveImageUrl, normalizeItem, normalizeUrl, parseFeedDate } from '../lib/ingestion/normalize';
+import { improveImageUrl, isAdvertTitle, normalizeItem, normalizeUrl, parseFeedDate } from '../lib/ingestion/normalize';
 import { countStoryWords, readingMinutesFor } from '../lib/ingestion/enrich';
 import type { ParsedFeedItem } from '../lib/ingestion/parse-feed';
 
@@ -143,5 +143,35 @@ describe('reading time', () => {
     assert.equal(readingMinutesFor(200), 1);
     assert.equal(readingMinutesFor(920), 4);
     assert.equal(readingMinutesFor(10_000_000), 600);
+  });
+});
+
+describe('adverts and betting tips', () => {
+  it('keeps sportsbook promotions and betting tips off the paper', () => {
+    for (const title of [
+      'Use DraftKings promo code to get $200 bonus, free NBA League Pass for 49ers-Cowboys',
+      'Use BetMGM bonus code CBSSPORTS to get $1,500 bonus bets for Falcons-Chiefs',
+      'Week 10 NFL betting promos: Get over $3,000 in bonuses from betting apps, sportsbooks',
+      'Seahawks vs. Raiders odds, NFL Week 10 predictions: Use Polymarket promo code CBSSPORTS',
+      '49ers vs. Cowboys prediction, odds, time: NFL Week 10 picks from advanced model',
+      'NFL longshot parlay picks, bets, player props for Week 10',
+      'Sponsored: The best mattress of 2026',
+    ]) {
+      assert.equal(isAdvertTitle(title), true, title);
+      assert.equal(normalizeItem(item({ title }), { now: NOW }), null, title);
+    }
+  });
+
+  it('keeps the news, even when it mentions odds, codes or promotions', () => {
+    for (const title of [
+      'Chapecoense crash survivor wins promotion in final game',
+      'Pact on South China Sea code of conduct unlikely, as ASEAN leaders gather',
+      'UFC 334: Fight card, date, odds and complete guide as Ciryl Gane takes on Josh Hokit',
+      'Zuffa Boxing 13 results: Carlos Adames picks up win in promotional debut',
+      'Against all odds, the Mars rover wakes up',
+      'Here are our favorite deals from REI’s giant Holiday Sale',
+    ]) {
+      assert.equal(isAdvertTitle(title), false, title);
+    }
   });
 });

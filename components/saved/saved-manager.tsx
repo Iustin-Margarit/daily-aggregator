@@ -17,7 +17,7 @@ import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/toast';
-import { guestErrorText } from '@/lib/guest-clippings';
+import { errorText } from '@/lib/error-text';
 import { useI18n } from '@/lib/i18n/client';
 import type { SavedArticle, SavedFolder } from '@/lib/types';
 
@@ -72,7 +72,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
   }, []);
 
   const fail = useCallback(
-    (title: string, error: { message: string }) => showToast({ type: 'error', title, message: guestErrorText(error, t) }),
+    (title: string, error: { message: string }) => showToast({ type: 'error', title, message: errorText(error, t) }),
     [showToast, t],
   );
 
@@ -240,6 +240,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
       {articles.length === 0 ? (
         <div className="mt-10">
           <EmptyState
+            level={2}
             engraving="kitten-sit"
             title={w.emptyTitle}
             description={rich(w.emptyNote, { save: <strong>{t.story.save}</strong> })}

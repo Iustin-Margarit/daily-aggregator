@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { previousAppPath } from '@/components/site/navigation-tracker';
 import { Ornament } from '@/components/site/ornament';
 import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,9 @@ export function BackLink({ href = '/feed', className }: { href?: string; classNa
     <Link
       href={href}
       onClick={(event) => {
-        const from = document.referrer.startsWith(window.location.origin) ? new URL(document.referrer).pathname : null;
+        // Back to where the reader was (the page of stories they were on, say page 2) when they came from
+        // another page of the paper in this tab; otherwise to `href`.
+        const from = previousAppPath();
         if (window.history.length > 1 && from !== null && !AUTH_PAGES.test(from)) {
           event.preventDefault();
           router.back();

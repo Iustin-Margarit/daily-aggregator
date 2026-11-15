@@ -8,6 +8,7 @@ export default async function ArticleNotFound() {
   return (
     <div className="container max-w-2xl py-16">
       <EmptyState
+        level={1}
         engraving="kitten-peer"
         title={t.article.pulled}
         description={t.article.pulledNote}

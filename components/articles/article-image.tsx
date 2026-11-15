@@ -31,7 +31,7 @@ export function ArticleImage({ src, alt, category, width = 800, className, eager
   if (!current) {
     return (
       // No photograph: the section's engraving, as old papers filled a column with a cut.
-      <div className={cn('article-placeholder flex items-center justify-center', className)} data-section={style.key ?? undefined} role="img" aria-label={alt}>
+      <div className={cn('article-placeholder flex items-center justify-center', className)} data-section={style.key ?? undefined} {...(alt ? { role: 'img', 'aria-label': alt } : { 'aria-hidden': true })}>
         <Engraving name={style.engraving} className="h-[56%] max-w-[64%] opacity-80" />
       </div>
     );

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/toast';
-import { clearGuestClippings, getGuestClippings } from '@/lib/guest-clippings';
+import { clearGuestClippings, getGuestClippings, keepOnlyGuestClippings } from '@/lib/guest-clippings';
 import { useI18n } from '@/lib/i18n/client';
 import { createClient } from '@/lib/supabase/client';
 
@@ -11,7 +11,9 @@ import { createClient } from '@/lib/supabase/client';
  * After a visitor signs in (or signs up), the clippings they kept in this
  * browser move into their account: folders (matched by name), stories, notes
  * and read marks. Stories already saved in the account keep the account's
- * copy; stories that have since left the paper are skipped. Renders nothing.
+ * copy; stories that have since left the paper are skipped. Clippings that could
+ * not be moved (no connection, a full account) stay in this browser and are
+ * tried again on the next visit. Renders nothing.
  */
 export function GuestImport({ userId }: { userId: string }) {
   const { showToast } = useToast();
@@ -28,11 +30,16 @@ export function GuestImport({ userId }: { userId: string }) {
     void (async () => {
       const supabase = createClient();
 
-      // Folders: reuse the account's folder of the same name, create the rest.
+      // Folders: reuse the account's folder of the same name, create the rest. If the account cannot
+      // be reached, nothing is moved: everything stays in this browser for the next visit.
       const folderIds = new Map<string, string>();
-      const { data: existing } = await supabase.from('saved_folders').select('id, name');
+      const { data: existing, error: foldersError } = await supabase.from('saved_folders').select('id, name');
+      if (foldersError) {
+        started.current = false;
+        return;
+      }
       for (const folder of folders) {
-        const match = existing?.find((f) => f.name.toLowerCase() === folder.name.toLowerCase());
+        const match = (existing ?? []).find((f) => f.name.toLowerCase() === folder.name.toLowerCase());
         if (match) {
           folderIds.set(folder.id, match.id);
           continue;
@@ -50,6 +57,8 @@ export function GuestImport({ userId }: { userId: string }) {
         saved_at: a.saved_at,
       }));
       let moved = 0;
+      // Clippings that could not be moved for a passing reason (no connection, a full account) stay here.
+      const kept = new Set<string>();
       const { error } = await supabase.from('saved_articles').upsert(rows, { onConflict: 'user_id,article_id', ignoreDuplicates: true });
       if (!error) {
         moved = rows.length;
@@ -58,10 +67,13 @@ export function GuestImport({ userId }: { userId: string }) {
         for (const row of rows) {
           const { error: rowError } = await supabase.from('saved_articles').upsert(row, { onConflict: 'user_id,article_id', ignoreDuplicates: true });
           if (!rowError) moved++;
+          // 23503: the story is no longer in the paper, so there is nothing left to keep.
+          else if (rowError.code !== '23503') kept.add(row.article_id);
         }
       }
 
-      clearGuestClippings();
+      if (kept.size === 0) clearGuestClippings();
+      else keepOnlyGuestClippings(kept);
       if (moved > 0) {
         showToast({
           type: 'success',

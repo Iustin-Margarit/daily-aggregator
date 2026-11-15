@@ -957,15 +957,20 @@
       background-color 0.2s,
       box-shadow 0.2s;
   }
-  /* A pencilled, dashed "Choose" ring: present, but never competing with a real postmark. */
+  /*
+   * A pencilled, dashed "Choose" ring: present, but never competing with a real postmark. Only the circle
+   * is faint; the word is printed in full pencil so it can be read (WCAG contrast, older eyes).
+   */
   & .choose-ring {
     color: hsl(var(--muted-foreground));
-    opacity: 0.45;
     transform: rotate(-6deg);
     transition:
-      opacity 0.2s,
       color 0.2s,
       transform 0.2s;
+  }
+  & .choose-ring-circle {
+    opacity: 0.45;
+    transition: opacity 0.2s;
   }
   /* Pointing: a gentle lift and a light preview tint, well short of a chosen stamp. */
   &:hover {
@@ -978,8 +983,10 @@
   }
   &:hover .choose-ring {
     color: var(--stamp-ink);
-    opacity: 0.75;
     transform: rotate(-10deg) scale(1.05);
+  }
+  &:hover .choose-ring-circle {
+    opacity: 0.75;
   }
   /* Chosen: a rich tint, a crisp double frame line in the stamp's ink, raised off the page, postmarked. */
   &[data-chosen] {
@@ -1015,14 +1022,21 @@
     background-color: color-mix(in oklab, var(--stamp-ink) 30%, hsl(var(--card)));
   }
 }
-/* Morning: the unchosen "Choose" ring in a brown pencil, faint but legible on the pale stamps. */
+/* Morning: the brightened orange of Sports read at 4.2:1 on its pale stamp; a little darker passes 4.5:1. */
+html:not(.dark) .section-stamp[data-section='sports'] {
+  --stamp-ink: oklch(from var(--section) calc(l - 0.03) calc(c * 1.5) h);
+}
+/* Morning: the unchosen "Choose" ring in a brown pencil on the pale stamps; the circle faint, the word legible. */
 html:not(.dark) .section-stamp:not(:hover) .choose-ring {
   color: hsl(28 22% 30%);
+}
+html:not(.dark) .section-stamp:not(:hover) .choose-ring-circle {
   opacity: 0.5;
 }
 @media (prefers-reduced-motion: reduce) {
   .section-stamp,
-  .section-stamp .choose-ring {
+  .section-stamp .choose-ring,
+  .section-stamp .choose-ring-circle {
     transition: none;
   }
 }
@@ -1584,6 +1598,36 @@ article:focus-within .photo-plate::after,
    * as one more section: a boxed ticket in a double rule with Pforr's funnel
    * in brass, the type in full ink.
    */
+  /*
+   * "Skip to main content" (components/site/skip-link.tsx): off screen until a keyboard reader reaches it,
+   * then a printed slip pinned at the top left, above the header.
+   */
+  .skip-link {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.95rem;
+    border: 3px double var(--ink-gold);
+    border-radius: 3px;
+    background: hsl(var(--popover));
+    box-shadow: var(--shadow-float);
+    font-family: var(--font-jost), ui-sans-serif, sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground));
+    transform: translateY(calc(-100% - 1rem));
+    &:focus {
+      transform: none;
+      outline: 2px solid hsl(var(--ring));
+      outline-offset: 2px;
+    }
+  }
   .filter-ticket {
     display: inline-flex;
     flex: none;

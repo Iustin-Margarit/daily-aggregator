@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
 import localFont from 'next/font/local';
+import { NavigationTracker } from '@/components/site/navigation-tracker';
 import { SoundTicket } from '@/components/site/sound-ticket';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
@@ -110,6 +111,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <div className="sheet">{children}</div>
               {/* Stop the street sound from any page once the banner is out of sight. */}
               <SoundTicket />
+              {/* Remembers the page the reader came from, for the Back links. */}
+              <NavigationTracker />
             </ToastProvider>
           </I18nProvider>
         </ThemeProvider>

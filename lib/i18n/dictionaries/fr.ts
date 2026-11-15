@@ -41,6 +41,7 @@ const fr: Dictionary = {
     logIn: 'Se connecter',
     createAccount: 'Créer un compte',
     storageBlocked: 'Votre navigateur n’a pas permis de l’enregistrer (navigation privée ou stockage plein).',
+    errorNote: 'Vérifiez votre connexion internet et réessayez dans un instant.',
   },
 
   nav: {
@@ -55,6 +56,7 @@ const fr: Dictionary = {
     settings: 'Réglages',
     settingsNote: 'le registre du lecteur',
     settingsHint: 'Réglages de lecture et d’impression',
+    skipToContent: 'Aller au contenu principal',
     theEdition: 'L’édition',
     logOut: 'Se déconnecter',
     toMorning: 'Passer à l’édition du matin',
@@ -585,6 +587,12 @@ const fr: Dictionary = {
       muteWord: 'Masquer le mot',
       noWords: 'Aucun mot masqué.',
       yourWords: 'Vos mots masqués',
+      hiddenStories: 'Articles masqués',
+      hiddenStoriesNote: 'Les articles que vous avez masqués de votre journal. Réaffichez-en un pour le retrouver.',
+      showAgain: 'Réafficher',
+      showAgainLabel: 'Réafficher « {title} »',
+      shownAgain: 'De retour dans votre journal',
+      showAgainFailed: 'Impossible de réafficher l’article',
       unmuteWord: 'Réafficher « {word} »',
       alreadyMuted: '« {word} » est déjà masqué.',
       tooManyWords: 'Vous pouvez masquer {max} mots au plus. Réaffichez-en un d’abord.',

@@ -493,7 +493,12 @@ export type Database = {
         }[]
       }
       get_related_articles: {
-        Args: { p_article_id: string; p_limit?: number }
+        Args: {
+          p_article_id: string
+          p_limit?: number
+          p_muted_source_ids?: string[]
+          p_muted_words?: string[]
+        }
         Returns: {
           category_name: string
           id: string

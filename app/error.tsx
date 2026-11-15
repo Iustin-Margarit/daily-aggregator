@@ -12,8 +12,10 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error]);
 
   return (
-    <div className="container max-w-2xl py-16">
+    // The whole page in its place (this boundary sits above the reader's layout), so it is the main landmark.
+    <main id="main" className="container max-w-2xl py-16">
       <EmptyState
+        level={1}
         engraving="press"
         title={t.errors.stopPresses}
         description={t.errors.stopPressesNote}
@@ -26,6 +28,6 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
           </>
         }
       />
-    </div>
+    </main>
   );
 }

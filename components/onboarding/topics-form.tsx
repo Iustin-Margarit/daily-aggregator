@@ -217,8 +217,8 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
                 ) : (
                   <span className="choose-ring pointer-events-none absolute right-2 top-1 w-[4rem]" aria-hidden="true">
                     {/* A faint dashed ring, pencilled in where the postmark will go; only a chosen stamp gets the real one. */}
-                    <span className="block aspect-square w-full rounded-full border-[1.5px] border-dashed border-current" />
-                    <span className="absolute inset-0 flex items-center justify-center font-typewriter text-[0.62rem] tracking-[0.1em]">
+                    <span className="choose-ring-circle block aspect-square w-full rounded-full border-[1.5px] border-dashed border-current" />
+                    <span className="absolute inset-0 flex items-center justify-center font-typewriter text-[0.68rem] tracking-[0.08em]">
                       {w.choose}
                     </span>
                   </span>

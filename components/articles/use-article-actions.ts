@@ -4,9 +4,11 @@ import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { articleShareUrl, shareLink } from '@/components/articles/share';
 import { useToast } from '@/components/ui/toast';
-import { addGuestClipping, guestErrorText, isGuestClipped, removeGuestClipping, subscribeGuestClippings, toClipping } from '@/lib/guest-clippings';
+import { addGuestClipping, isGuestClipped, removeGuestClipping, subscribeGuestClippings, toClipping } from '@/lib/guest-clippings';
+import { errorText } from '@/lib/error-text';
 import { useI18n } from '@/lib/i18n/client';
 import { createClient } from '@/lib/supabase/client';
+import { cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 
 /**
@@ -41,7 +43,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
     if (guestSaved) {
       const { error } = removeGuestClipping(article.id);
       if (error) {
-        showToast({ type: 'error', title: s.removeFailed, message: guestErrorText(error, t) });
+        showToast({ type: 'error', title: s.removeFailed, message: errorText(error, t) });
         return;
       }
       showToast({
@@ -57,7 +59,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       showToast({
         type: 'error',
         title: full ? s.guestFull : s.saveFailed,
-        message: full ? s.guestFullNote : guestErrorText(error, t),
+        message: full ? s.guestFullNote : errorText(error, t),
       });
       return;
     }
@@ -85,9 +87,9 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       });
       return false;
     }
-    showToast({ type: 'error', title: s.saveFailed, message: error.message });
+    showToast({ type: 'error', title: s.saveFailed, message: errorText(error, t) });
     return false;
-  }, [userId, article.id, showToast, router, s, t.common.openSaved]);
+  }, [userId, article.id, showToast, router, s, t]);
 
   const toggleSave = async () => {
     if (!userId) {
@@ -106,7 +108,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
         .eq('article_id', article.id);
       if (error) {
         setSaved(true);
-        showToast({ type: 'error', title: s.removeFailed, message: error.message });
+        showToast({ type: 'error', title: s.removeFailed, message: errorText(error, t) });
       } else {
         showToast({ type: 'success', title: s.removed, action: { label: t.common.undo, onClick: () => void save() } });
       }
@@ -129,7 +131,8 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
 
   /** The share sheet where the device has one, else the clipboard; the Share button shows "Copied" itself. */
   const share = async () => {
-    const result = await shareLink(article.title, articleShareUrl(article.slug));
+    // The headline as printed (feeds bring entities and tags), not as the feed sent it.
+    const result = await shareLink(cleanText(article.title), articleShareUrl(article.slug));
     if (result === 'failed') showToast({ type: 'error', title: s.shareFailed });
     return result;
   };

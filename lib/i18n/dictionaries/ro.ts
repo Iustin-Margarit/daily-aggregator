@@ -46,6 +46,7 @@ const ro: Dictionary = {
     logIn: 'Intră în cont',
     createAccount: 'Creează un cont',
     storageBlocked: 'Browserul nu a permis acestei pagini să-l păstreze (navigare privată sau spațiu de stocare plin).',
+    errorNote: 'Verifică conexiunea la internet și încearcă din nou peste câteva clipe.',
   },
 
   nav: {
@@ -60,6 +61,7 @@ const ro: Dictionary = {
     settings: 'Setări',
     settingsNote: 'registrul cititorului',
     settingsHint: 'Setări pentru citire și tipar',
+    skipToContent: 'Sari la conținutul principal',
     theEdition: 'Ediția',
     logOut: 'Ieși din cont',
     toMorning: 'Treci la ediția de dimineață',
@@ -592,6 +594,12 @@ const ro: Dictionary = {
       muteWord: 'Ascunde cuvântul',
       noWords: 'Niciun cuvânt ascuns.',
       yourWords: 'Cuvintele tale ascunse',
+      hiddenStories: 'Articole ascunse',
+      hiddenStoriesNote: 'Articolele pe care le-ai ascuns din ziarul tău. Reafișează unul ca să-l aduci înapoi.',
+      showAgain: 'Reafișează',
+      showAgainLabel: 'Reafișează „{title}”',
+      shownAgain: 'Din nou în ziarul tău',
+      showAgainFailed: 'Nu am putut reafișa articolul',
       unmuteWord: 'Nu mai ascunde „{word}”',
       alreadyMuted: '„{word}” este deja ascuns.',
       tooManyWords: 'Poți ascunde cel mult {max} de cuvinte. Renunță mai întâi la unul.',

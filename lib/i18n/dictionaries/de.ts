@@ -41,6 +41,7 @@ const de: Dictionary = {
     logIn: 'Anmelden',
     createAccount: 'Konto erstellen',
     storageBlocked: 'Ihr Browser hat das Speichern nicht erlaubt (privates Fenster oder voller Speicher).',
+    errorNote: 'Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es gleich noch einmal.',
   },
 
   nav: {
@@ -55,6 +56,7 @@ const de: Dictionary = {
     settings: 'Einstellungen',
     settingsNote: 'das Leserbuch',
     settingsHint: 'Einstellungen für Lesen und Druck',
+    skipToContent: 'Zum Hauptinhalt springen',
     theEdition: 'Die Ausgabe',
     logOut: 'Abmelden',
     toMorning: 'Zur Morgenausgabe wechseln',
@@ -576,6 +578,12 @@ const de: Dictionary = {
       muteWord: 'Wort stummschalten',
       noWords: 'Kein Wort stummgeschaltet.',
       yourWords: 'Ihre stummgeschalteten Wörter',
+      hiddenStories: 'Ausgeblendete Artikel',
+      hiddenStoriesNote: 'Artikel, die Sie in Ihrer Zeitung ausgeblendet haben. Zeigen Sie einen wieder an, um ihn zurückzuholen.',
+      showAgain: 'Wieder anzeigen',
+      showAgainLabel: '„{title}“ wieder anzeigen',
+      shownAgain: 'Wieder in Ihrer Zeitung',
+      showAgainFailed: 'Der Artikel konnte nicht wieder angezeigt werden',
       unmuteWord: '„{word}“ wieder zeigen',
       alreadyMuted: '„{word}“ ist bereits stummgeschaltet.',
       tooManyWords: 'Sie können höchstens {max} Wörter stummschalten. Heben Sie zuerst eines auf.',

@@ -89,6 +89,33 @@ function cleanAuthor(raw: string | null): string | null {
   return truncate(text, 100);
 }
 
+/*
+ * Headlines that are advertising or gambling, never news, kept off the paper at
+ * ingestion (sports feeds in particular carry sportsbook promotions and betting
+ * tips as articles). Two lists so either can be loosened on its own.
+ */
+const ADVERT_TITLE = [
+  /\b(promo|bonus|coupon|referral|discount) codes?\b/i,
+  /\bbonus bets?\b/i,
+  /\b(betting|sportsbook|casino) (promos?|bonus(es)?|offers?|apps?)\b/i,
+  /\bsportsbooks?\b/i,
+  /^\s*(sponsored|advertisement|advertorial|paid post|partner content)\b/i,
+];
+const BETTING_TITLE = [
+  /\bparlays?\b/i,
+  /\bbest bets\b/i,
+  /\bplayer props\b/i,
+  /\bagainst the spread\b/i,
+  /\bbetting (guide|preview|lines|picks|tips)\b/i,
+  /\bodds\b.*\b(picks?|predictions?|spreads?|lines)\b/i,
+  /\b(picks?|predictions?)\b.*\bodds\b/i,
+];
+
+/** True when a headline is an advert or a betting tip rather than news. */
+export function isAdvertTitle(title: string): boolean {
+  return ADVERT_TITLE.some((pattern) => pattern.test(title)) || BETTING_TITLE.some((pattern) => pattern.test(title));
+}
+
 export type NormalizeOptions = {
   /** Used to resolve relative links. */
   baseUrl?: string | null;
@@ -101,7 +128,7 @@ export function normalizeItem(item: ParsedFeedItem, options: NormalizeOptions = 
   const now = options.now ?? Date.now();
 
   const title = truncate(cleanText(item.title), 300);
-  if (title.length < 3) return null;
+  if (title.length < 3 || isAdvertTitle(title)) return null;
 
   const url = normalizeUrl(item.link, options.baseUrl);
   if (!url) return null;

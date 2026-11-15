@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
-import { feedRpcArgs, filtersToQueryString, hasFrontPage, pageCount } from '@/lib/feed';
+import { feedRpcArgs, filtersFromSearchParams, filtersToQueryString, hasFrontPage, pageCount, pageFromSearchParams } from '@/lib/feed';
+import { errorText } from '@/lib/error-text';
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
 import { getCategoryStyle } from '@/lib/category-styles';
@@ -179,6 +180,36 @@ export function FeedView({
     [categories, preferredCategoryIds],
   );
 
+  /*
+   * A new printing from the server (the Front Page tab, a link to /feed?…, a refresh) replaces what this
+   * page had turned to by itself: page turns, filters and searches only change the address in the browser,
+   * so without this the tab would show /feed with page 2 still on it. Every printing has its own snapshot
+   * time, which tells them apart.
+   */
+  const [printed, setPrinted] = useState(initialAsOf);
+  /** Counts the printings that showed a different page or filters, so the reader is taken to the top (a refresh of the same page stays put). */
+  const [reprints, setReprints] = useState(0);
+  if (printed !== initialAsOf) {
+    if (urlFor(filters, page) !== urlFor(initialFilters, initialPage)) setReprints((n) => n + 1);
+    setPrinted(initialAsOf);
+    setFilters(initialFilters);
+    setPage(initialPage);
+    setArticles(initialArticles);
+    setTotal(totalOf(initialArticles));
+    setStatus(initialError ? 'error' : 'idle');
+    setTurn(null);
+  }
+  useEffect(() => {
+    requestId.current++; // a page still loading from before is no longer wanted
+    asOfRef.current = initialAsOf;
+    filtersRef.current = initialFilters;
+    // Only when a new printing arrives (the other props come with it).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAsOf]);
+  useEffect(() => {
+    if (reprints > 0) window.scrollTo({ top: 0 });
+  }, [reprints]);
+
   /** Loads one page. `fresh` takes a new snapshot so newly fetched stories appear. */
   const load = useCallback(
     async (nextFilters: FeedFilters, nextPage: number, fresh: boolean) => {
@@ -191,7 +222,7 @@ export function FeedView({
 
       if (error) {
         setStatus('error');
-        showToast({ type: 'error', title: t.feed.loadFailed, message: error.message });
+        showToast({ type: 'error', title: t.feed.loadFailed, message: errorText(error, t) });
         return;
       }
       const rows = (data ?? []) as FeedArticle[];
@@ -230,18 +261,28 @@ export function FeedView({
     [load, urlFor],
   );
 
-  // Back / forward buttons move between pages.
+  /**
+   * Shows what the address says (page, sections, papers, search, order). Back / forward move between pages
+   * this way, and a page the browser restores (Back from a story to page 2) starts on the page in its address.
+   */
+  const followAddress = useCallback(() => {
+    if (window.location.pathname !== '/feed') return;
+    const params = Object.fromEntries(new URLSearchParams(window.location.search));
+    const nextFilters = filtersFromSearchParams(params, categories, preferredCategoryIds);
+    const target = pageFromSearchParams(params);
+    if (urlFor(nextFilters, target) === urlFor(filtersRef.current, pageRef.current)) return;
+    if (target !== pageRef.current) turnDir.current = target > pageRef.current ? 'next' : 'prev';
+    filtersRef.current = nextFilters;
+    setFilters(nextFilters);
+    void load(nextFilters, target, false);
+  }, [categories, preferredCategoryIds, urlFor, load]);
+
   useEffect(() => {
-    const onPop = () => {
-      if (window.location.pathname !== '/feed') return;
-      const value = Number.parseInt(new URLSearchParams(window.location.search).get('page') ?? '1', 10);
-      const target = Number.isFinite(value) && value > 1 ? value : 1;
-      if (target !== pageRef.current) turnDir.current = target > pageRef.current ? 'next' : 'prev';
-      void load(filtersRef.current, target, false);
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [load]);
+    // The server printed what it was asked for; the browser may show a later address for this page.
+    followAddress();
+    window.addEventListener('popstate', followAddress);
+    return () => window.removeEventListener('popstate', followAddress);
+  }, [followAddress]);
 
   // First run on an empty database: poll until the background ingestion lands.
   useEffect(() => {
@@ -375,6 +416,7 @@ export function FeedView({
         ) : isEmpty ? (
           status === 'error' ? (
             <EmptyState
+              level={2}
               engraving="press"
               title={t.feed.jammed}
               description={t.feed.jammedNote}
@@ -382,6 +424,7 @@ export function FeedView({
             />
           ) : page > 1 ? (
             <EmptyState
+              level={2}
               engraving="kitten-peer"
               title={fmt(t.feed.noPage, { n: page })}
               description={t.feed.noPageNote}
@@ -389,6 +432,7 @@ export function FeedView({
             />
           ) : databaseEmptyWithoutIngestion ? (
             <EmptyState
+              level={2}
               engraving="press"
               title={t.feed.notPrinted}
               description={rich(t.feed.notPrintedNote, { command: code('npm run ingest'), key: code('SUPABASE_SERVICE_ROLE_KEY'), file: code('.env.local') })}
@@ -396,6 +440,7 @@ export function FeedView({
             />
           ) : filters.search ? (
             <EmptyState
+              level={2}
               engraving="kitten-peer"
               title={fmt(t.feed.nothingAbout, { q: filters.search })}
               description={t.feed.nothingAboutNote}
@@ -412,6 +457,7 @@ export function FeedView({
             />
           ) : (
             <EmptyState
+              level={2}
               engraving="kitten-curious"
               title={t.feed.noStories}
               description={t.feed.noStoriesNote}

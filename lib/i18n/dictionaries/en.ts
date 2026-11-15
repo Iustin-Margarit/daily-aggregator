@@ -52,6 +52,8 @@ const en = {
     createAccount: 'Create an account',
     /** Shown when the browser refuses to store a visitor's saved stories. */
     storageBlocked: 'Your browser did not let this page store it (private browsing or full storage).',
+    /** Under a failed action: the technical reason goes to the console, the reader gets this. */
+    errorNote: 'Please check your internet connection and try again in a moment.',
   },
 
   nav: {
@@ -67,6 +69,8 @@ const en = {
     settingsNote: 'the reader’s ledger',
     /** The Settings button's tooltip (the cog by the edition toggle). */
     settingsHint: 'Settings for reading and printing',
+    /** The first stop for keyboard readers: jumps over the header, the masthead tabs and the language stamp. */
+    skipToContent: 'Skip to main content',
     theEdition: 'The edition',
     logOut: 'Log out',
     toMorning: 'Switch to the Morning edition',
@@ -349,9 +353,9 @@ const en = {
     back: 'Back to the paper',
     thisStory: 'This story',
     shareTitle: 'Share this story with someone',
-    hideFromFeed: 'Hide from my feed',
-    hiddenFromFeed: 'Hidden from your feed',
-    mutedNote: 'Their stories will no longer appear in your feed. Undo from your profile.',
+    hideFromFeed: 'Hide from my paper',
+    hiddenFromFeed: 'Hidden from your paper',
+    mutedNote: 'Their stories will no longer appear in your paper. You can bring them back in Settings.',
     dateline: 'Dateline',
     at: 'at {time}',
     filedBy: 'Filed by',
@@ -596,6 +600,12 @@ const en = {
       muteWord: 'Mute word',
       noWords: 'No words muted.',
       yourWords: 'Your muted words',
+      hiddenStories: 'Hidden stories',
+      hiddenStoriesNote: 'Stories you hid from your paper. Show one again to bring it back.',
+      showAgain: 'Show again',
+      showAgainLabel: 'Show “{title}” again',
+      shownAgain: 'Back in your paper',
+      showAgainFailed: 'Could not show the story again',
       unmuteWord: 'Unmute “{word}”',
       alreadyMuted: '“{word}” is already muted.',
       tooManyWords: 'You can mute at most {max} words. Unmute one first.',

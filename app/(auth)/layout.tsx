@@ -2,6 +2,7 @@ import { BackLink } from '@/components/article/back-link';
 import { EditionName, EditionSelector } from '@/components/site/edition-selector';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Masthead, MottoRibbon } from '@/components/site/logo';
+import { SkipLink } from '@/components/site/skip-link';
 import { getI18n } from '@/lib/i18n/server';
 
 /** The three benefits beside the forms, with their engravings (words: auth.benefits). */
@@ -11,6 +12,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   const { t } = await getI18n();
   return (
     <div className="flex min-h-screen flex-col">
+      <SkipLink />
       <header className="container flex flex-col items-center pt-2 text-center sm:pt-3">
         {/* Back to reading on the left; the same edition stamp as in the header bar of every other page, in the
             same corner, on the right. The masthead below links to the front page too. */}
@@ -25,7 +27,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         </div>
       </header>
 
-      <main className="container flex flex-1 justify-center py-8 sm:py-10">
+      <main id="main" className="container flex flex-1 justify-center py-8 sm:py-10">
         <div className="card-paper grid w-full min-w-0 max-w-5xl grid-cols-1 overflow-hidden md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           {/* The reader of 1897 and what an account gives you. */}
           <aside className="hidden flex-col gap-6 bg-panel/60 p-8 md:flex lg:p-10">

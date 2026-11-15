@@ -7,7 +7,7 @@ import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
 import { X } from 'lucide-react';
 import { deleteAccount, saveAccentInk, saveFontSize, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
-import { muteSource, unmuteSource } from '@/components/articles/moderation';
+import { muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
 import { ledgerIndex, type LedgerEntryId, type LedgerIndex } from '@/components/profile/ledger-index';
 import { CategoryBadge } from '@/components/articles/category-badge';
@@ -27,6 +27,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { accentVariables } from '@/lib/colors';
+import { errorText } from '@/lib/error-text';
 import { GUEST_MAX_MUTED_WORDS, guestMutedWordsFit } from '@/lib/guest';
 import { applyAccent, applyFontSize, readGuestMutes, saveGuestAccent, saveGuestFontSize, saveGuestMutes } from '@/lib/guest-prefs';
 import { sectionText } from '@/lib/i18n';
@@ -39,6 +40,7 @@ import type { ActionResult, Category, FontSize, SourceOption } from '@/lib/types
 import { MAX_MUTED_KEYWORDS, normalizeMutedKeyword } from '@/lib/validation';
 import { useHydrated } from '@/lib/use-client-value';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
+import { cleanText } from '@/lib/text';
 import { cn } from '@/lib/utils';
 
 /*
@@ -460,7 +462,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
       const { error } = await createClient().from('muted_keywords').insert({ user_id: userId, keyword: result.keyword });
       setBusy(false);
       if (error) {
-        showToast({ type: 'error', title: w.muteWordFailed, message: error.message });
+        showToast({ type: 'error', title: w.muteWordFailed, message: errorText(error, t) });
         return;
       }
     } else {
@@ -482,7 +484,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
     const { error } = await createClient().from('muted_keywords').delete().eq('user_id', userId).eq('keyword', keyword);
     if (error) {
       setKeywords((list) => [...list, keyword].sort());
-      showToast({ type: 'error', title: w.unmuteFailed, message: error.message });
+      showToast({ type: 'error', title: w.unmuteFailed, message: errorText(error, t) });
     }
   };
 
@@ -588,7 +590,7 @@ function MutedPapers({
       const { error } = await muteSource(userId, paper.id);
       setBusy(false);
       if (error) {
-        showToast({ type: 'error', title: w.mutePaperFailed, message: error.message });
+        showToast({ type: 'error', title: w.mutePaperFailed, message: errorText(error, t) });
         return;
       }
     } else {
@@ -610,7 +612,7 @@ function MutedPapers({
     const { error } = await unmuteSource(userId, paper.id);
     if (error) {
       setList((current) => [...current, paper].sort((a, b) => a.name.localeCompare(b.name)));
-      showToast({ type: 'error', title: w.unmuteFailed, message: error.message });
+      showToast({ type: 'error', title: w.unmuteFailed, message: errorText(error, t) });
     } else {
       showToast({ type: 'success', title: fmt(w.unmuted, { name: paper.name }) });
     }
@@ -658,6 +660,51 @@ function MutedPapers({
   );
 }
 
+/** A story the reader hid from their paper (story page > More > Hide). */
+export type HiddenStory = { id: string; title: string; slug: string };
+
+/**
+ * The stories an account hid, with a way to bring each one back. Only shown once
+ * something is hidden (hiding is for accounts; visitors mute newspapers instead).
+ */
+function HiddenStories({ userId, initial }: { userId: string; initial: HiddenStory[] }) {
+  const [list, setList] = useState(initial);
+  const { showToast } = useToast();
+  const { t, fmt } = useI18n();
+  const w = t.settings.sections;
+  if (list.length === 0) return null;
+
+  const showAgain = async (story: HiddenStory) => {
+    setList((current) => current.filter((s) => s.id !== story.id));
+    const { error } = await unhideArticle(userId, story.id);
+    if (error) {
+      setList((current) => [story, ...current]);
+      showToast({ type: 'error', title: w.showAgainFailed, message: errorText(error, t) });
+    } else {
+      showToast({ type: 'success', title: w.shownAgain });
+    }
+  };
+
+  return (
+    <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
+      <SubHead>{w.hiddenStories}</SubHead>
+      <Hint>{w.hiddenStoriesNote}</Hint>
+      <ul className="divide-y divide-dashed divide-rule/40 border-y border-rule/40" aria-label={w.hiddenStories}>
+        {list.map((story) => (
+          <li key={story.id} className="flex items-center justify-between gap-3 py-2">
+            <Link href={`/article/${story.slug}`} className="min-w-0 font-display text-[1rem] font-semibold leading-snug underline-offset-4 hover:underline">
+              {cleanText(story.title)}
+            </Link>
+            <Button variant="stamp" size="sm" onClick={() => showAgain(story)} aria-label={fmt(w.showAgainLabel, { title: cleanText(story.title) })}>
+              {w.showAgain}
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function SectionsAndSourcesSection({
   topics,
   userId,
@@ -665,6 +712,7 @@ export function SectionsAndSourcesSection({
   sources,
   categories,
   keywords,
+  hidden = [],
 }: {
   topics: string[];
   /** null for a visitor: everything is kept in this browser. */
@@ -674,6 +722,8 @@ export function SectionsAndSourcesSection({
   sources: SourceOption[];
   categories: Category[];
   keywords: string[];
+  /** The account's hidden stories, newest first. */
+  hidden?: HiddenStory[];
 }) {
   const w = useI18n().t.settings.sections;
 
@@ -701,6 +751,7 @@ export function SectionsAndSourcesSection({
       <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
         <MutedWords userId={userId} initialKeywords={keywords} />
       </div>
+      {userId && <HiddenStories userId={userId} initial={hidden} />}
     </LedgerEntry>
   );
 }

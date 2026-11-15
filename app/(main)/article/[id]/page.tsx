@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { ArticleActionsBar } from '@/components/article/article-actions-bar';
 import { BackLink } from '@/components/article/back-link';
@@ -13,7 +14,9 @@ import { Ornament } from '@/components/site/ornament';
 import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { mutedArgs } from '@/lib/feed';
 import { formatReadingTime } from '@/lib/format';
+import { guestMutesFrom } from '@/lib/guest';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { createClient, getSessionUser } from '@/lib/supabase/server';
@@ -62,8 +65,11 @@ export default async function ArticlePage({ params }: PageProps) {
   const [article, user, { t, fmt, locale }] = await Promise.all([getArticle(id), getSessionUser(), getI18n()]);
   if (!article) notFound();
 
-  const supabase = await createClient();
-  const { data: related } = await supabase.rpc('get_related_articles', { p_article_id: article.id, p_limit: 6 });
+  // "More from the desk" leaves out what the front page leaves out: an account's lists are in the database,
+  // a visitor's muted newspapers and words in their cookies (Settings).
+  const [supabase, jar] = await Promise.all([createClient(), cookies()]);
+  const guestMutes = user ? undefined : guestMutesFrom((name) => jar.get(name)?.value);
+  const { data: related } = await supabase.rpc('get_related_articles', { p_article_id: article.id, p_limit: 6, ...mutedArgs(guestMutes) });
 
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
@@ -128,7 +134,8 @@ export default async function ArticlePage({ params }: PageProps) {
           <div className="story-main">
             <figure>
               <div className="photo-plate">
-                <ArticleImage src={article.image_url} alt={title} category={article.category_name} width={1600} eager className="aspect-video w-full" />
+                {/* The headline is printed right above: the photograph is not described again for screen readers. */}
+                <ArticleImage src={article.image_url} alt="" category={article.category_name} width={1600} eager className="aspect-video w-full" />
               </div>
               <figcaption className="mt-2 text-right font-label text-[0.8rem] italic text-muted-foreground">{fmt(t.article.photoVia, { source: article.source_name })}</figcaption>
             </figure>

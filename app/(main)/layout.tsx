@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { GuestImport } from '@/components/saved/guest-import';
 import { FontSizeSync } from '@/components/site/font-size-sync';
 import { GuestPrefsKeeper } from '@/components/site/guest-prefs-keeper';
+import { SkipLink } from '@/components/site/skip-link';
 import { SiteFooter } from '@/components/site/site-footer';
 import { BottomNav, SiteHeader, type HeaderUser } from '@/components/site/site-header';
 import { accentVariables } from '@/lib/colors';
@@ -28,6 +29,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   return (
     <>
       {/* Settings changes the ink at once through this element's variables (lib/guest-prefs.ts). */}
+      <SkipLink />
       <div id={PAPER_ID} data-accent="" style={accentVariables(accent)} className="flex min-h-screen flex-col">
         <SiteHeader user={headerUser} />
         <main id="main" className="flex-1">

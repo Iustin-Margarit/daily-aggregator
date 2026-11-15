@@ -40,6 +40,7 @@ const es: Dictionary = {
     logIn: 'Iniciar sesión',
     createAccount: 'Crear una cuenta',
     storageBlocked: 'Tu navegador no ha permitido guardarlo (navegación privada o almacenamiento lleno).',
+    errorNote: 'Comprueba tu conexión a internet y vuelve a intentarlo en un momento.',
   },
 
   nav: {
@@ -54,6 +55,7 @@ const es: Dictionary = {
     settings: 'Ajustes',
     settingsNote: 'el libro del lector',
     settingsHint: 'Ajustes de lectura e impresión',
+    skipToContent: 'Ir al contenido principal',
     theEdition: 'La edición',
     logOut: 'Cerrar sesión',
     toMorning: 'Pasar a la edición de la mañana',
@@ -575,6 +577,12 @@ const es: Dictionary = {
       muteWord: 'Silenciar palabra',
       noWords: 'No has silenciado ninguna palabra.',
       yourWords: 'Tus palabras silenciadas',
+      hiddenStories: 'Noticias ocultas',
+      hiddenStoriesNote: 'Las noticias que has ocultado de tu periódico. Vuelve a mostrar una para recuperarla.',
+      showAgain: 'Volver a mostrar',
+      showAgainLabel: 'Volver a mostrar «{title}»',
+      shownAgain: 'De nuevo en tu periódico',
+      showAgainFailed: 'No se ha podido volver a mostrar la noticia',
       unmuteWord: 'Dejar de silenciar «{word}»',
       alreadyMuted: '«{word}» ya está silenciada.',
       tooManyWords: 'Puedes silenciar {max} palabras como máximo. Deja de silenciar alguna primero.',

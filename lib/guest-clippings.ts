@@ -95,10 +95,6 @@ export type GuestResult = { error: { message: string; code?: string } | null };
 const ok: GuestResult = { error: null };
 const storageError: GuestResult = { error: { message: 'STORAGE_BLOCKED' } };
 
-/** The words for a failed guest action: the browser would not store it, or the message as given. */
-export function guestErrorText(error: { message: string }, t: { common: { storageBlocked: string } }): string {
-  return error.message === 'STORAGE_BLOCKED' ? t.common.storageBlocked : error.message;
-}
 
 export function isGuestClipped(articleId: string): boolean {
   return getGuestClippings().articles.some((a) => a.article_id === articleId);
@@ -168,4 +164,16 @@ export function deleteGuestFolder(id: string): GuestResult {
 
 export function clearGuestClippings() {
   write(EMPTY);
+}
+
+/**
+ * Keeps only these clippings (and the folders they are in), so the ones that
+ * could not be moved into the account stay in this browser for the next try.
+ */
+export function keepOnlyGuestClippings(articleIds: Set<string>) {
+  update((c) => {
+    const articles = c.articles.filter((a) => articleIds.has(a.article_id));
+    const folderIds = new Set(articles.map((a) => a.folder_id).filter(Boolean));
+    return { articles, folders: c.folders.filter((f) => folderIds.has(f.id)) };
+  });
 }
