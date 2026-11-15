@@ -1,5 +1,6 @@
 import { HEX_COLOR } from '@/lib/colors';
 import { normalizeMutedKeyword } from '@/lib/validation';
+import { UUID } from '@/lib/uuid';
 
 /*
  * Visitors without an account can read the whole paper, choose their sections,
@@ -27,7 +28,6 @@ const MAX_WORDS_COOKIE_LENGTH = 3000;
 
 export type GuestMutes = { sourceIds: string[]; words: string[] };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function uuidList(value: string | undefined | null, max: number): string[] {
   if (!value) return [];
@@ -37,10 +37,6 @@ function uuidList(value: string | undefined | null, max: number): string[] {
 /** The category ids in a guest-sections cookie (invalid entries are dropped). */
 export function parseGuestSections(value: string | undefined | null): string[] {
   return uuidList(value, 50);
-}
-
-export function isUuid(value: string): boolean {
-  return UUID.test(value);
 }
 
 /** The source ids in a guest-muted-papers cookie. */

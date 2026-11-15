@@ -5,7 +5,6 @@ import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
-import { X } from 'lucide-react';
 import { deleteAccount, saveAccentInk, saveFontSize, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
 import { muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
@@ -532,7 +531,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
                 aria-label={fmt(w.unmuteWord, { word: keyword })}
                 title={w.unmute}
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <span aria-hidden="true" className="block px-0.5 font-display text-[1.25rem] leading-none">×</span>
               </button>
             </li>
           ))}

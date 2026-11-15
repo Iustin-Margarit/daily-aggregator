@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
-import { Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -18,7 +17,8 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
       {...props}
     >
       <CheckboxPrimitive.Indicator className="ink-tick absolute -top-1.5 left-0 flex text-(--ink-accent)">
-        <Check className="h-[1.15rem] w-[1.15rem] -rotate-6" strokeWidth={3.2} />
+        {/* A pen tick, typeset (U+2713, never drawn as an emoji). */}
+        <span aria-hidden="true" className="block -rotate-6 font-display text-[1.25rem] font-bold leading-none">✓</span>
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   ),

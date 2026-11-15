@@ -20,8 +20,8 @@ const config = [
       // New in eslint-plugin-react-hooks 7 (Next.js 16). The existing UI components break these
       // rules in harmless ways; they are warnings until the redesign rewrites those components.
       // Back to errors once `npm run lint` shows none.
-      'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs': 'warn',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/refs': 'error',
     },
   },
 ];

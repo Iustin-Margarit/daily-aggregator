@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -25,12 +25,15 @@ export function FolderDialog({ open, onOpenChange, initialName = '', onSubmit }:
   const { t } = useI18n();
   const w = t.saved.folder;
 
-  useEffect(() => {
+  // Opening the dialog starts again from the folder's name.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       setName(initialName);
       setError(null);
     }
-  }, [open, initialName]);
+  }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();

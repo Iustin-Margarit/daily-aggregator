@@ -1,18 +1,22 @@
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Ornament } from '@/components/site/ornament';
 import en, { type Dictionary } from '@/lib/i18n/dictionaries/en';
 import { cn } from '@/lib/utils';
 
+/**
+ * A notice above a form, printed like the toasts (components/ui/toast.tsx): a rule down its left edge, red for a
+ * problem, brass with a wax seal when something went through.
+ */
 export function FormMessage({ type, children }: { type: 'error' | 'success'; children: React.ReactNode }) {
-  const Icon = type === 'error' ? AlertCircle : CheckCircle2;
+  const failed = type === 'error';
   return (
     <div
-      role={type === 'error' ? 'alert' : 'status'}
+      role={failed ? 'alert' : 'status'}
       className={cn(
-        'flex gap-2.5 rounded-xl px-3.5 py-3 text-[0.92rem]',
-        type === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-panel text-foreground',
+        'flex gap-3 rounded-[2px] border-l-[3px] px-3.5 py-3 text-[0.92rem]',
+        failed ? 'border-destructive/70 bg-destructive/8 text-destructive' : 'border-(--ink-gold) bg-panel text-foreground',
       )}
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+      {!failed && <Ornament name="seal" className="mt-0.5 h-[1.15rem] shrink-0 [--ornament-ink:var(--brass-ink)]" />}
       <div>{children}</div>
     </div>
   );

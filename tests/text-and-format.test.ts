@@ -2,7 +2,7 @@ import { parseGuestSections } from '../lib/guest';
 import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { bannerGradient, isLightColor, shade } from '../lib/colors';
+import { isLightColor, shade } from '../lib/colors';
 import { FEED_PAGE_SIZE, FRONT_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, pageCount, pageFromSearchParams, sinceFor } from '../lib/feed';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
@@ -122,7 +122,6 @@ describe('validateUsername', () => {
 describe('colors', () => {
   it('derives a darker gradient end and detects light colours', () => {
     assert.equal(shade('#ffffff', 0.5), '#808080');
-    assert.match(bannerGradient('#3B82F6'), /linear-gradient\(120deg, #3B82F6 0%, #[0-9a-f]{6} 100%\)/);
     assert.equal(isLightColor('#F59E0B'), true);
     assert.equal(isLightColor('#27272A'), false);
   });

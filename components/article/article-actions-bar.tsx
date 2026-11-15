@@ -1,9 +1,9 @@
 'use client';
 
-import { EyeOff, VolumeX } from 'lucide-react';
 import { hideArticle, muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
 import { ActionDivider, MoreButton, ReadOnLink, SaveButton, ShareButton } from '@/components/articles/story-actions';
 import { useArticleActions } from '@/components/articles/use-article-actions';
+import { Ornament } from '@/components/site/ornament';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/toast';
 import { errorText } from '@/lib/error-text';
@@ -103,11 +103,11 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
             {/* Hiding one story is kept in an account; muting a whole newspaper works for visitors too. */}
             {userId && (
               <DropdownMenuItem onSelect={hide}>
-                <EyeOff className="mr-2 h-4 w-4" /> {t.article.hideFromFeed}
+                <Ornament name="scissors" className="mr-3 h-[0.8rem] [--ornament-ink:var(--brass-ink)]" /> {t.article.hideFromFeed}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onSelect={mute}>
-              <VolumeX className="mr-2 h-4 w-4" /> {fmt(t.story.mute, { source: article.source_name })}
+              <Ornament name="broadsheet" className="mr-3 h-[0.95rem] [--ornament-ink:var(--brass-ink)]" /> {fmt(t.story.mute, { source: article.source_name })}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

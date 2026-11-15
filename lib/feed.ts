@@ -1,5 +1,6 @@
 import type { GuestMutes } from '@/lib/guest';
 import type { Category, DateRange, FeedFilters, FeedSort } from '@/lib/types';
+import { UUID } from '@/lib/uuid';
 
 /**
  * Stories per page, so every page ends on full rows of three columns:
@@ -25,7 +26,6 @@ export function pageWindow(page: number, front: boolean): { limit: number; offse
 
 const RANGES: DateRange[] = ['any', 'today', 'week'];
 const SORTS: FeedSort[] = ['latest', 'for_you'];
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Oldest published_at for a date range, or undefined for the default 30-day window. */
 export function sinceFor(range: DateRange, asOf: string): string | undefined {

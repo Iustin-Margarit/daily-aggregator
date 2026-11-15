@@ -2,10 +2,11 @@
 
 import { memo, useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Check, FolderInput, NotebookPen, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { PrintClipping } from '@/components/saved/print-clipping';
+import { Engraving } from '@/components/site/engraving';
+import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +36,13 @@ type SavedItemProps = {
   onRemove: (article: SavedArticle) => void;
 };
 
-/** One saved story: picture, headline, the reader's note and plainly labelled actions. */
+/** The engraved mark at the head of each action, printed in the button's own ink. */
+const mark = 'h-[0.95rem] [--ornament-ink:currentColor]';
+
+/**
+ * One saved story: picture, headline, the reader's note and plainly labelled actions, each led by an engraving:
+ * spectacles (read), the printer's fist (folder), a pen nib (note), the press (print) and scissors (remove).
+ */
 function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFolder, onEditNote, onRemove }: SavedItemProps) {
   const folder = folders.find((f) => f.id === article.folder_id);
   const href = `/article/${article.slug}`;
@@ -74,7 +81,7 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
           )}
           {article.is_read && (
             <span className="ml-1 inline-flex items-center gap-1 rounded-[1px] border-[3px] border-double border-current/35 px-1.5 font-typewriter text-[0.72rem] uppercase tracking-[0.08em] text-foreground/70">
-              <Check className="h-3 w-3" /> {w.read}
+              <span aria-hidden="true">✓</span> {w.read}
             </span>
           )}
         </p>
@@ -109,13 +116,13 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
       {/* Full width under the picture on phones, beside it on larger screens. */}
       <div className="col-span-2 mt-3 flex flex-wrap gap-2 sm:col-span-1 sm:col-start-2">
         <Button variant="stamp" size="sm" onClick={() => onToggleRead(article)}>
-          {article.is_read ? <RotateCcw /> : <Check />}
+          <Ornament name="spectacles" className={mark} />
           {article.is_read ? w.markUnread : w.markRead}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="stamp" size="sm">
-              <FolderInput /> {folder ? w.changeFolder : w.putInFolder}
+              <Ornament name="fist" className={mark} /> {folder ? w.changeFolder : w.putInFolder}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-60">
@@ -133,13 +140,13 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
           </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="stamp" size="sm" onClick={() => onEditNote(article)}>
-          <NotebookPen /> {article.notes ? w.editNote : w.addNote}
+          <Ornament name="nib" className={mark} /> {article.notes ? w.editNote : w.addNote}
         </Button>
         <Button variant="stamp" size="sm" onClick={() => setPrintRun((run) => run + 1)} title={w.printTitle}>
-          <Printer /> {w.print}
+          <Engraving name="press" className="h-[1.15rem] [--engraving-ink:currentColor]" /> {w.print}
         </Button>
         <Button variant="stamp" size="sm" onClick={() => onRemove(article)} className="text-destructive hover:text-destructive">
-          <Trash2 /> {w.remove}
+          <Ornament name="scissors" className={mark} /> {w.remove}
         </Button>
       </div>
       {printRun > 0 && <PrintClipping key={printRun} article={article} onDone={printDone} />}

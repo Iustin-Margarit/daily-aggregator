@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { EmptyState } from '@/components/site/empty-state';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,9 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         action={
           <>
             <Button onClick={reset}>{t.common.tryAgain}</Button>
-            <Button variant="outline" onClick={() => (window.location.href = '/')}>
-              {t.errors.frontPage}
+            {/* Back to the front page; Try again above retries this one. */}
+            <Button variant="outline" asChild>
+              <Link href="/">{t.errors.frontPage}</Link>
             </Button>
           </>
         }

@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { FolderOpen, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { FolderDialog } from '@/components/saved/folder-dialog';
 import { NoteDialog } from '@/components/saved/note-dialog';
 import type { SavedBackend } from '@/components/saved/saved-backend';
@@ -58,8 +57,6 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
   const [folderToDelete, setFolderToDelete] = useState<SavedFolder | null>(null);
   const [noteFor, setNoteFor] = useState<SavedArticle | null>(null);
 
-  const articlesRef = useRef(articles);
-  articlesRef.current = articles;
   const viewRef = useRef(view);
 
   // Keep the URL in sync. This runs in event handlers, never inside a state
@@ -269,7 +266,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               ))}
             </nav>
             <Button variant="outline" size="sm" className="mt-3 w-full lg:mt-4" onClick={() => setFolderDialog({ mode: 'create' })}>
-              <Plus /> {w.newFolder}
+              <span aria-hidden="true" className="font-display text-[1.15rem] leading-none">+</span> {w.newFolder}
             </Button>
           </aside>
 
@@ -287,10 +284,10 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               {activeFolder && (
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" onClick={() => setFolderDialog({ mode: 'rename', folder: activeFolder })}>
-                    <Pencil /> {w.renameFolder}
+                    <Ornament name="nib" className="h-[0.95rem] [--ornament-ink:currentColor]" /> {w.renameFolder}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setFolderToDelete(activeFolder)}>
-                    <Trash2 /> {w.deleteFolder}
+                    <Ornament name="scissors" className="h-[0.95rem] [--ornament-ink:currentColor]" /> {w.deleteFolder}
                   </Button>
                 </div>
               )}
@@ -316,7 +313,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
                     className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
                     aria-label={w.clearSearch}
                   >
-                    <X className="h-4 w-4" />
+                    <span aria-hidden="true" className="block px-0.5 font-display text-[1.25rem] leading-none">×</span>
                   </button>
                 )}
               </div>
@@ -332,7 +329,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
               <div className="mt-8">
                 {inView.length === 0 && activeFolder ? (
                   <EmptyState
-                    icon={FolderOpen}
+                    engraving="kitten-pounce"
                     title={w.emptyFolder}
                     description={w.emptyFolderNote}
                     action={

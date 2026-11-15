@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
@@ -21,9 +21,12 @@ export function NoteDialog({ open, onOpenChange, articleTitle, initialNote, onSa
   const { t } = useI18n();
   const w = t.saved.note;
 
-  useEffect(() => {
+  // Opening the dialog starts again from the saved note.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) setNote(initialNote);
-  }, [open, initialNote]);
+  }
 
   const save = async () => {
     setBusy(true);

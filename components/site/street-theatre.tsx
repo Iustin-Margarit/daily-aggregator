@@ -2,7 +2,6 @@
 
 import '@/styles/street-theatre.css';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { Pause, Play } from 'lucide-react';
 import { Ornament } from '@/components/site/ornament';
 import { isAmbiencePlaying, setAmbience, setAmbienceStage, setAmbienceStageInView, subscribeAmbience } from '@/lib/ambience';
 import { useI18n } from '@/lib/i18n/client';
@@ -399,7 +398,12 @@ export function StreetTheatre({ className }: { className?: string }) {
           aria-pressed={paused}
           title={paused ? t.street.playTitle : t.street.pauseTitle}
         >
-          {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+          {/* Play: a typeset triangle (U+25B6 with U+FE0E, so phones never draw an emoji); pause: two printer's rules. */}
+          {paused ? (
+            <span aria-hidden="true" className="st-mark">{'\u25B6\uFE0E'}</span>
+          ) : (
+            <span aria-hidden="true" className="st-mark st-mark-pause" />
+          )}
           <span className="st-label">{paused ? t.street.play : t.street.pause}</span>
           <span className="sr-only">{t.street.motionSr}</span>
         </button>

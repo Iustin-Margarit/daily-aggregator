@@ -54,9 +54,3 @@ export function accentVariables(hex: string | null | undefined): React.CSSProper
   const night = base.toUpperCase() === DEFAULT_ACCENT ? '#E6A395' : shade(base, -0.45);
   return { '--accent-day': day, '--accent-night': night } as React.CSSProperties;
 }
-
-/** Preview background used by the accent picker. */
-export function bannerGradient(hex: string): string {
-  const base = HEX_COLOR.test(hex) ? hex : DEFAULT_ACCENT;
-  return `linear-gradient(120deg, ${base} 0%, ${shade(base, 0.35)} 100%)`;
-}

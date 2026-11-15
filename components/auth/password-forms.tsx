@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { KeyRound } from 'lucide-react';
+import { Ornament } from '@/components/site/ornament';
 import { AuthHeading, FormMessage, friendlyAuthError } from '@/components/auth/form-message';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,7 +134,7 @@ export function UpdatePasswordForm() {
     return (
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] border-[3px] border-double border-rule/30 bg-panel">
-          <KeyRound className="h-6 w-6 text-muted-foreground" />
+          <Ornament name="key" className="h-[0.85rem] -rotate-[30deg] [--ornament-ink:var(--brass-ink)]" />
         </div>
         <AuthHeading title={w.expired} description={w.expiredNote} />
         <Button asChild className="h-auto min-h-10 w-full whitespace-normal py-2 text-center text-balance">

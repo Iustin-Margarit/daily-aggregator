@@ -79,7 +79,7 @@ function EndOfEdition() {
         width={1000}
         height={819}
         loading="lazy"
-        className="w-44 shrink-0 rounded-xl shadow-paper"
+        className="w-44 shrink-0 rounded-[2px] border border-rule/40 bg-card p-1.5 shadow-paper"
       />
       <div>
         <p className="font-display text-2xl font-semibold tracking-[0.3em]">— 30 —</p>

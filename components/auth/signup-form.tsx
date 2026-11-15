@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MailCheck } from 'lucide-react';
+import { Ornament } from '@/components/site/ornament';
 import { AuthHeading, FormMessage, friendlyAuthError } from '@/components/auth/form-message';
 import { GoogleButton, OrDivider } from '@/components/auth/google-button';
 import { Button } from '@/components/ui/button';
@@ -75,7 +75,8 @@ export function SignupForm({ googleEnabled = false }: { googleEnabled?: boolean 
     return (
       <div className="text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[2px] border-[3px] border-double border-rule/30 bg-panel">
-          <MailCheck className="h-6 w-6" />
+          {/* The carrier pigeon with its letter: the confirmation is on its way. */}
+          <Ornament name="pigeon" className="h-[1.5rem] [--ornament-ink:var(--brass-ink)]" />
         </div>
         <AuthHeading
           title={w.checkInbox}

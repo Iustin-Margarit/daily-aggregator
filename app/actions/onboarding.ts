@@ -8,10 +8,10 @@ import { getI18n } from '@/lib/i18n/server';
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResult } from '@/lib/types';
 import { profileSaveError, validateUsername } from '@/lib/validation';
+import { UUID } from '@/lib/uuid';
 
 const fail = (message: string): ActionResult => ({ ok: false, message, at: Date.now() });
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * The Sections page saves each stamp the moment it is pressed: the whole choice

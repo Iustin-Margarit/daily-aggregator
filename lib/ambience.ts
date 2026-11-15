@@ -4,7 +4,6 @@
  * Freesound links in docs/ASSETS.md), mixed in the browser with the Web Audio
  * API. Nothing is synthesised, and there is no wind and no drone.
  *
- *   people     an old-town street: people strolling and talking, looped
  *              (switched off for now: see MIX)
  *   birds      daytime birdsong, looped (Morning Edition only)
  *   steps      every few seconds someone walks past on the stones
@@ -31,9 +30,6 @@ const BASE = '/sounds/street/';
  * Swapping a clip: keep the new one at a similar loudness, or move its gain.
  */
 const MIX = {
-  /** Background street of people talking (-22.2 LUFS file -> about -30 LUFS at 0.41). */
-  // Off (owner's choice, 2026-11-14): only the occasional passing group talks. 0.41 brings it back; at 0 the file is not even fetched.
-  people: { file: 'people.mp3', gain: 0 },
   /** Birdsong by day (-22.4 LUFS -> about -31 LUFS). Off in the Night Edition. */
   birds: { file: 'birds.mp3', gain: 0.37 },
   /** Hooves and wheels at the moment the cab is closest (-20.3 LUFS -> about -21.7 LUFS): the loudest thing on the street. */
@@ -69,7 +65,6 @@ const PIGEON_IN_SKY = 0.4;
 
 type Clip = { buffer: AudioBuffer; gain: number };
 type Buffers = {
-  people: Clip | null;
   birds: Clip | null;
   carriage: Clip | null;
   steps: Clip[];
@@ -172,8 +167,7 @@ async function decode(ctx: AudioContext, entry: { file: string; gain: number }):
 }
 
 async function load(ctx: AudioContext): Promise<Buffers> {
-  const [people, birds, carriage, voices, pigeon, wings, ...steps] = await Promise.all([
-    decode(ctx, MIX.people),
+  const [birds, carriage, voices, pigeon, wings, ...steps] = await Promise.all([
     decode(ctx, MIX.birds),
     decode(ctx, MIX.carriage),
     decode(ctx, MIX.voices),
@@ -181,7 +175,7 @@ async function load(ctx: AudioContext): Promise<Buffers> {
     decode(ctx, MIX.wings),
     ...MIX.steps.map((entry) => decode(ctx, entry)),
   ]);
-  return { people, birds, carriage, voices, pigeon, wings, steps: steps.filter((clip): clip is Clip => clip !== null) };
+  return { birds, carriage, voices, pigeon, wings, steps: steps.filter((clip): clip is Clip => clip !== null) };
 }
 
 // ---------------------------------------------------------------- the street
@@ -461,7 +455,7 @@ function start() {
 
   void load(ctx).then((buffers) => {
     if (player !== p) return; // switched off while loading
-    const any = buffers.people || buffers.birds || buffers.carriage || buffers.voices || buffers.pigeon || buffers.wings || buffers.steps.length > 0;
+    const any = buffers.birds || buffers.carriage || buffers.voices || buffers.pigeon || buffers.wings || buffers.steps.length > 0;
     if (!any) {
       setAmbience(false); // nothing could be loaded
       return;
@@ -473,7 +467,6 @@ function start() {
     p.nextCoo = now + between(3, 8);
     p.nextWings = now + between(20, 40);
     p.nextCarriage = now + between(8, 14);
-    if (buffers.people) playBed(p, buffers.people, master);
     if (buffers.birds) playBed(p, buffers.birds, birds);
     p.timer = window.setInterval(() => tick(p), 500);
     if (paused) {

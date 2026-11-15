@@ -1,4 +1,5 @@
--- Local development seed (runs on `supabase db reset` only, never in production).
+-- Seed file kept for the Supabase CLI. Nothing runs it: there is no local database (development uses
+-- the dev cloud project) and production is never reset.
 --
 -- Categories and RSS sources are created by the migrations, so there is nothing
 -- to seed. To get articles, start the app and either:

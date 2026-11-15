@@ -78,7 +78,7 @@ export default async function LandingPage({ searchParams }: { searchParams: Prom
             width={1000}
             height={800}
             loading="lazy"
-            className="aspect-[16/9] w-full rounded-2xl object-cover shadow-lift md:aspect-[5/4]"
+            className="aspect-[16/9] w-full object-cover md:aspect-[5/4] rounded-[2px] border border-rule/40 bg-card p-1.5 shadow-paper"
             style={{ objectPosition: plate.focus }}
           />
           <figcaption className="mt-1.5 text-center font-label text-[0.78rem] text-muted-foreground">{picture.caption}</figcaption>

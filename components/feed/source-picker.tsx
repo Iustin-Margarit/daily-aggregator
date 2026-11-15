@@ -1,8 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Ornament } from '@/components/site/ornament';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
@@ -38,11 +37,21 @@ export function SourceList({ sources, categories, visibleCategoryIds, selected, 
 
   return (
     <div>
+      {/* The same ledger field and magnifier as the front page's search. */}
       <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.toolbar.findPaper} className="h-10 pl-10" aria-label={t.toolbar.findPaperLabel} />
+        <span className="search-glass pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rotate-[-30deg]" aria-hidden="true">
+          <Ornament name="magnifier" className="block h-[1.45rem]" />
+        </span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.toolbar.findPaper}
+          className="ledger-field"
+          aria-label={t.toolbar.findPaperLabel}
+        />
       </div>
-      <div className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-border/70 bg-background/40 p-1.5">
+      <div className="mt-2 max-h-72 overflow-y-auto rounded-[3px] border-[3px] border-double border-rule/35 bg-card/50 p-1.5">
         {groups.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">{t.toolbar.noPapers}</p>}
         {groups.map(({ category, sources: groupSources }) => (
           <div key={category.id} className="py-1" data-section={getCategoryStyle(category.name).key ?? undefined}>
@@ -58,15 +67,19 @@ export function SourceList({ sources, categories, visibleCategoryIds, selected, 
                   role="checkbox"
                   aria-checked={checked}
                   onClick={() => toggle(source.id)}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left font-sans text-[0.95rem] hover:bg-accent"
+                  className="flex w-full items-center gap-2.5 rounded-[2px] px-2 py-2 text-left font-sans text-[0.95rem] hover:bg-foreground/6 focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                 >
+                  {/* A ledger box with a pen tick, as in components/ui/checkbox.tsx. */}
                   <span
                     className={cn(
-                      'flex h-[1.1rem] w-[1.1rem] shrink-0 items-center justify-center rounded-md border',
-                      checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input',
+                      'relative h-5 w-5 shrink-0 rounded-[1px] border-[3px] border-double bg-card',
+                      checked ? 'border-(--ink-gold)' : 'border-rule/70',
                     )}
+                    aria-hidden="true"
                   >
-                    {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+                    {checked && (
+                      <span className="absolute -top-1.5 left-0 block -rotate-6 font-display text-[1.25rem] font-bold leading-none text-(--ink-accent)">✓</span>
+                    )}
                   </span>
                   <span className="truncate">{source.name}</span>
                 </button>

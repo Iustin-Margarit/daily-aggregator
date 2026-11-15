@@ -726,9 +726,20 @@
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
-.st-toggle svg {
+/* Pause / Play as typeset marks (components/site/street-theatre.tsx): a triangle, and two rules for pause. */
+.st-mark {
+  display: inline-block;
   width: 0.75rem;
-  height: 0.75rem;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+.st-mark-pause {
+  width: 0.55rem;
+  height: 0.7rem;
+  border-inline: 0.18rem solid currentColor;
 }
 /* Phones: small icon-only tickets tucked in the corner, so they don't cover the sky; the words stay for screen readers. */
 @media (width < 40rem) {

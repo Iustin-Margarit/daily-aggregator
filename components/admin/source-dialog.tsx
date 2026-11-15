@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CheckCircle2, FlaskConical, ImageIcon, XCircle } from 'lucide-react';
 import { testFeedUrl, type FeedTestResult } from '@/app/actions/admin';
 import { Button } from '@/components/ui/button';
@@ -36,12 +36,16 @@ export function SourceDialog({ open, onOpenChange, categories, initial, onSubmit
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    setDraft(initial ? { ...initial } : { ...EMPTY, category_id: categories[0]?.id ?? '' });
-    setTest(null);
-    setError(null);
-  }, [open, initial, categories]);
+  // Opening the dialog starts again from the source (or a blank one).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setDraft(initial ? { ...initial } : { ...EMPTY, category_id: categories[0]?.id ?? '' });
+      setTest(null);
+      setError(null);
+    }
+  }
 
   const set = (key: keyof SourceDraft) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setDraft((d) => ({ ...d, [key]: event.target.value }));

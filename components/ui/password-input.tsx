@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Ornament } from "@/components/site/ornament";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,15 @@ const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttribut
           size="sm"
           className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
           onClick={() => setShowPassword((prev) => !prev)}
+          aria-pressed={showPassword}
         >
-          {showPassword ? (
-            <EyeOff className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <Eye className="h-4 w-4" aria-hidden="true" />
-          )}
+          {/* Spectacles: read the password; struck through while it is shown, to hide it again. */}
+          <span className="relative inline-flex" aria-hidden="true">
+            <Ornament name="spectacles" className="h-[0.85rem] [--ornament-ink:currentColor]" />
+            {showPassword && (
+              <span className="absolute left-1/2 top-1/2 h-[1.5px] w-[130%] -translate-x-1/2 -translate-y-1/2 -rotate-[25deg] bg-current" />
+            )}
+          </span>
           <span className="sr-only">
             {showPassword ? t.common.hidePassword : t.common.showPassword}
           </span>

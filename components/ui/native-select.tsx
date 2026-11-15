@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** A styled native <select>: accessible and works well on mobile. */
@@ -15,7 +14,8 @@ const NativeSelect = React.forwardRef<HTMLSelectElement, React.ComponentProps<'s
     >
       {children}
     </select>
-    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    {/* The small brass caret the account menu and More use. */}
+    <span aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[0.8rem] text-(--ink-gold)">▾</span>
   </div>
 ));
 NativeSelect.displayName = 'NativeSelect';

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
 import { SourceList } from '@/components/feed/source-picker';
 import { Ornament } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
@@ -140,7 +139,12 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
   const debounce = useRef<number | null>(null);
   const { t } = useI18n();
 
-  useEffect(() => setSearch(value), [value]);
+  // A new value from the page (cleared, or the Front Page tab) replaces what was typed.
+  const [shown, setShown] = useState(value);
+  if (shown !== value) {
+    setShown(value);
+    setSearch(value);
+  }
   useEffect(
     () => () => {
       if (debounce.current) window.clearTimeout(debounce.current);
@@ -185,7 +189,7 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
           className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
           aria-label={t.toolbar.clearSearch}
         >
-          <X className="h-4 w-4" />
+          <span aria-hidden="true" className="block px-0.5 font-display text-[1.25rem] leading-none">×</span>
         </button>
       )}
     </form>

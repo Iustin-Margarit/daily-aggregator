@@ -37,7 +37,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
               alt={t.auth.pictureAlt}
               width={717}
               height={1000}
-              className="mx-auto w-full max-w-[17rem] rounded-2xl shadow-lift"
+              className="mx-auto w-full max-w-[17rem] rounded-[2px] border border-rule/40 bg-card p-1.5 shadow-paper"
             />
             <ul className="space-y-4">
               {t.auth.benefits.map(({ title, text }, index) => (
