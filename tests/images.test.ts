@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { accentVariables, DEFAULT_ACCENT } from '../lib/colors';
-import { canResizeImage, sizedImageUrl } from '../lib/images';
+import { canResizeImage, imageSrcSet, sizedImageUrl } from '../lib/images';
 import { __test__ } from '../lib/ingestion/image-size';
 
 const { parseDimensions } = __test__;
@@ -72,5 +72,27 @@ describe('accent ink', () => {
     assert.equal(vars['--accent-day'], '#1E3A5F');
     assert.notEqual(vars['--accent-night'], '#1E3A5F');
     assert.equal((accentVariables('nonsense') as Record<string, string>)['--accent-day'], DEFAULT_ACCENT);
+  });
+});
+
+describe('imageSrcSet', () => {
+  it('offers sizes up to the largest width asked for', () => {
+    const set = imageSrcSet('https://deadline.com/wp-content/uploads/2026/11/a.jpg', 800)!;
+    const widths = set.split(', ').map((entry) => Number(entry.split(' ')[1].slice(0, -1)));
+    assert.deepEqual(widths, [160, 240, 320, 480, 640, 800]);
+    assert.match(set, /a\.jpg\?w=480 480w/);
+  });
+
+  it('describes the width a fixed-size CDN really serves, once each', () => {
+    const set = imageSrcSet('https://ichef.bbci.co.uk/ace/standard/976/cpsprodpb/a.jpg', 1400)!;
+    const widths = set.split(', ').map((entry) => entry.split(' ')[1]);
+    assert.deepEqual(widths, ['240w', '320w', '480w', '800w', '976w']);
+    assert.match(set, /\/ace\/standard\/480\/cpsprodpb\/a\.jpg 480w/);
+  });
+
+  it('leaves hosts it cannot resize alone', () => {
+    assert.equal(imageSrcSet('https://example.com/photo.jpg', 800), undefined);
+    assert.equal(imageSrcSet('not a url', 800), undefined);
+    assert.equal(imageSrcSet(null, 800), undefined);
   });
 });

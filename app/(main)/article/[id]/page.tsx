@@ -135,7 +135,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <figure>
               <div className="photo-plate">
                 {/* The headline is printed right above: the photograph is not described again for screen readers. */}
-                <ArticleImage src={article.image_url} alt="" category={article.category_name} width={1600} eager className="aspect-video w-full" />
+                <ArticleImage src={article.image_url} alt="" category={article.category_name} width={1600} sizes="(min-width: 1024px) 776px, 100vw" eager className="aspect-video w-full" />
               </div>
               <figcaption className="mt-2 text-right font-label text-[0.8rem] italic text-muted-foreground">{fmt(t.article.photoVia, { source: article.source_name })}</figcaption>
             </figure>

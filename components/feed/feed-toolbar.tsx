@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { SourceList } from '@/components/feed/source-picker';
 import { Ornament } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
+import { LedgerSearch } from '@/components/ui/ledger-search';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Segmented } from '@/components/ui/segmented';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
 import type { Category, DateRange, FeedFilters, SourceOption } from '@/lib/types';
-import { cn } from '@/lib/utils';
 
 type FeedToolbarProps = {
   filters: FeedFilters;
@@ -159,40 +159,23 @@ export function FeedSearch({ value, onChange, className }: { value: string; onCh
   };
 
   return (
-    <form
-      role="search"
-      className={cn('relative min-w-0', className)}
-      onSubmit={(event) => {
-        event.preventDefault();
+    <LedgerSearch
+      value={search}
+      onChange={updateSearch}
+      onClear={() => {
+        if (debounce.current) window.clearTimeout(debounce.current);
+        setSearch('');
+        onChange('');
+      }}
+      onSubmit={() => {
         if (debounce.current) window.clearTimeout(debounce.current);
         onChange(search.trim());
       }}
-    >
-      <span className="search-glass pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rotate-[-30deg]" aria-hidden="true">
-        <Ornament name="magnifier" className="block h-[1.45rem]" />
-      </span>
-      <input
-        type="search"
-        value={search}
-        onChange={(event) => updateSearch(event.target.value)}
-        placeholder={t.toolbar.search}
-        className="ledger-field"
-        aria-label={t.toolbar.searchLabel}
-      />
-      {search && (
-        <button
-          type="button"
-          onClick={() => {
-            setSearch('');
-            onChange('');
-          }}
-          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
-          aria-label={t.toolbar.clearSearch}
-        >
-          <span aria-hidden="true" className="block px-0.5 font-display text-[1.25rem] leading-none">×</span>
-        </button>
-      )}
-    </form>
+      placeholder={t.toolbar.search}
+      label={t.toolbar.searchLabel}
+      clearLabel={t.toolbar.clearSearch}
+      className={className}
+    />
   );
 }
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { improveImageUrl, isAdvertTitle, normalizeItem, normalizeUrl, parseFeedDate } from '../lib/ingestion/normalize';
+import { isResting } from '../lib/ingestion/backoff';
+import { dropRepeatedTitles, improveImageUrl, isAdvertTitle, normalizeItem, normalizeUrl, parseFeedDate, titleKey, undatedFallback } from '../lib/ingestion/normalize';
 import { countStoryWords, readingMinutesFor } from '../lib/ingestion/enrich';
 import type { ParsedFeedItem } from '../lib/ingestion/parse-feed';
 
@@ -173,5 +174,49 @@ describe('adverts and betting tips', () => {
     ]) {
       assert.equal(isAdvertTitle(title), false, title);
     }
+  });
+});
+
+describe('repeated headlines', () => {
+  it('reduces a headline to its words', () => {
+    assert.equal(titleKey('  Café owners: "We\'re open!" '), 'cafe owners we re open');
+  });
+
+  it('drops a paper\'s second address for the same story, in the feed and from recent days', () => {
+    const items = [
+      { title: '49ers vs. Cowboys prediction, odds', url: 'https://ex.com/a-best-bets' },
+      { title: '49ers vs Cowboys: prediction, odds', url: 'https://ex.com/a' },
+      { title: 'Fantasy rankings for Week 10', url: 'https://ex.com/b' },
+      { title: 'A new story', url: 'https://ex.com/c' },
+    ];
+    const kept = dropRepeatedTitles(items, ['Fantasy rankings for week 10']);
+    assert.deepEqual(
+      kept.map((item) => item.url),
+      ['https://ex.com/a-best-bets', 'https://ex.com/c'],
+    );
+  });
+});
+
+describe('undated items', () => {
+  const dated = [{ published_at: '2026-11-16T08:00:00.000Z' }, { published_at: null }, { published_at: '2026-11-14T08:00:00.000Z' }];
+
+  it('are dated at the paper\'s previous successful check', () => {
+    assert.equal(undatedFallback(dated, '2026-11-16T07:00:00.000Z'), '2026-11-16T07:00:00.000Z');
+  });
+
+  it('sink below a new paper\'s dated news on its first check', () => {
+    assert.equal(undatedFallback(dated, null), '2026-11-14T08:00:00.000Z');
+    assert.equal(undatedFallback([{ published_at: null }], null), null);
+  });
+});
+
+describe('feeds that keep failing', () => {
+  const now = Date.parse('2026-11-16T12:00:00Z');
+
+  it('rest for a few hours after ten failures in a row', () => {
+    assert.equal(isResting({ consecutive_failures: 9, last_fetched_at: '2026-11-16T11:00:00Z' }, now), false);
+    assert.equal(isResting({ consecutive_failures: 10, last_fetched_at: '2026-11-16T11:00:00Z' }, now), true);
+    assert.equal(isResting({ consecutive_failures: 25, last_fetched_at: '2026-11-16T05:00:00Z' }, now), false, 'tried again after 6 hours');
+    assert.equal(isResting({ consecutive_failures: 12, last_fetched_at: null }, now), false);
   });
 });

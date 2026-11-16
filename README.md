@@ -255,6 +255,7 @@ tests/                   unit tests (node:test)
 | `npm run build` / `start` | Production build / production server |
 | `npm run preview` | Build and start production locally: the real speed of the site |
 | `npm run check` | Type check + lint + unit tests |
+| `npm run test:db` | Check the feed functions against the development database, as a visitor (read-only) |
 | `npm run ingest` | Fetch all enabled sources once |
 | `npm run make-admin -- <email>` | Give an account the admin role |
 | `npm run db:push:dev` | Apply new migrations to the development project |

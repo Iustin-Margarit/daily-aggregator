@@ -3,8 +3,9 @@ import type { Database, Json } from '@/lib/database.types';
 import { canResizeImage } from '@/lib/images';
 import { inspectPage } from '@/lib/ingestion/enrich';
 import { probeImageSize } from '@/lib/ingestion/image-size';
+import { isResting, RETRY_FAILING_HOURS } from '@/lib/ingestion/backoff';
 import { fetchFeed } from '@/lib/ingestion/fetch-feed';
-import { normalizeItem, type NormalizedArticle } from '@/lib/ingestion/normalize';
+import { dropRepeatedTitles, normalizeItem, REPEAT_WINDOW_HOURS, undatedFallback, type NormalizedArticle } from '@/lib/ingestion/normalize';
 import { parseFeed } from '@/lib/ingestion/parse-feed';
 
 export type IngestionTrigger = 'cron' | 'admin' | 'auto' | 'cli';
@@ -16,6 +17,10 @@ export type SourceResult = {
   found: number;
   inserted: number;
   error?: string;
+  /** The feed answered 304 Not Modified: nothing new since the last run. */
+  unchanged?: boolean;
+  /** Not fetched this time: it has failed too often in a row and is only retried now and then. */
+  resting?: boolean;
   durationMs: number;
 };
 
@@ -28,6 +33,18 @@ type InternalSourceResult = SourceResult & {
 
 /** Images wider than this are replaced (they make scrolling janky). */
 const MAX_IMAGE_WIDTH = 2500;
+
+type IngestSource = {
+  id: string;
+  name: string;
+  rss_url: string;
+  website_url: string | null;
+  consecutive_failures: number;
+  last_fetched_at: string | null;
+  last_success_at: string | null;
+  etag: string | null;
+  last_modified: string | null;
+};
 
 export type IngestionSummary = {
   status: 'skipped' | 'success' | 'partial' | 'failed';
@@ -85,9 +102,7 @@ function shortError(error: unknown): string {
   return message.length > 300 ? `${message.slice(0, 297)}…` : message;
 }
 
-/** Fetches and parses one feed without touching the database (used by "Test feed"). */
-export async function previewFeed(url: string, options: { maxAgeDays?: number } = {}) {
-  const { xml, finalUrl } = await fetchFeed(url);
+function readFeed(xml: string, finalUrl: string, options: { maxAgeDays?: number }) {
   const feed = parseFeed(xml);
   const articles = feed.items
     .map((item) => normalizeItem(item, { baseUrl: feed.link ?? finalUrl, maxAgeDays: options.maxAgeDays }))
@@ -95,21 +110,49 @@ export async function previewFeed(url: string, options: { maxAgeDays?: number } 
   return { title: feed.title, link: feed.link, itemCount: feed.items.length, articles, finalUrl };
 }
 
+/** Fetches and parses one feed without touching the database (used by "Test feed"). */
+export async function previewFeed(url: string, options: { maxAgeDays?: number } = {}) {
+  const fetched = await fetchFeed(url);
+  if (fetched.notModified) throw new Error('The feed answered "not modified" to a plain request');
+  return readFeed(fetched.xml, fetched.finalUrl, options);
+}
+
 async function ingestSource(
   supabase: ServiceClient,
-  source: { id: string; name: string; rss_url: string; website_url: string | null; consecutive_failures: number },
+  source: IngestSource,
   options: Required<Pick<IngestionOptions, 'retentionDays' | 'maxItemsPerSource'>>,
 ): Promise<InternalSourceResult> {
   const started = Date.now();
   try {
-    const preview = await previewFeed(source.rss_url, { maxAgeDays: options.retentionDays });
+    const fetched = await fetchFeed(source.rss_url, { validators: { etag: source.etag, lastModified: source.last_modified } });
+    if (fetched.notModified) {
+      // Nothing new since the last download: no parsing, no articles to write.
+      const now = new Date().toISOString();
+      await supabase
+        .from('sources')
+        .update({ last_fetched_at: now, last_success_at: now, last_error: null, consecutive_failures: 0 })
+        .eq('id', source.id);
+      return { sourceId: source.id, name: source.name, ok: true, found: 0, inserted: 0, unchanged: true, durationMs: Date.now() - started, newArticles: [] };
+    }
+    const preview = readFeed(fetched.xml, fetched.finalUrl, { maxAgeDays: options.retentionDays });
 
     // De-duplicate within the feed and keep the newest items.
     const unique = new Map<string, NormalizedArticle>();
     for (const article of preview.articles) if (!unique.has(article.url)) unique.set(article.url, article);
-    const batch = [...unique.values()]
-      .sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''))
-      .slice(0, options.maxItemsPerSource);
+    const newestFirst = [...unique.values()].sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''));
+
+    // The same story under a second address: the paper's headlines of the last two days.
+    const { data: recent, error: recentError } = await supabase
+      .from('articles')
+      .select('title')
+      .eq('source_id', source.id)
+      .gte('published_at', new Date(Date.now() - REPEAT_WINDOW_HOURS * 3_600_000).toISOString());
+    if (recentError) throw new Error(`Database: ${recentError.message}`);
+    const batch = dropRepeatedTitles(newestFirst, (recent ?? []).map((row) => row.title)).slice(0, options.maxItemsPerSource);
+
+    // Undated items: not "just now" (normalize.ts, undatedFallback).
+    const fallbackDate = undatedFallback(batch, source.last_success_at);
+    if (fallbackDate) for (const article of batch) article.published_at ??= fallbackDate;
 
     let inserted = 0;
     let newArticles: NewArticle[] = [];
@@ -133,6 +176,9 @@ async function ingestSource(
         last_error: preview.itemCount === 0 ? 'Feed returned no items' : null,
         consecutive_failures: 0,
         last_item_count: preview.itemCount,
+        // Kept only now that the stories are in: a failed run must download the feed again.
+        etag: fetched.validators.etag,
+        last_modified: fetched.validators.lastModified,
       })
       .eq('id', source.id);
 
@@ -250,7 +296,7 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
 
     let query = supabase
       .from('sources')
-      .select('id, name, rss_url, website_url, consecutive_failures')
+      .select('id, name, rss_url, website_url, consecutive_failures, last_fetched_at, last_success_at, etag, last_modified')
       .eq('is_enabled', true)
       .order('name');
     if (options.sourceIds?.length) query = query.in('id', options.sourceIds);
@@ -267,11 +313,17 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
         // Left for the next run; not counted as a failure of the feed.
         return { sourceId: source.id, name: source.name, ok: true, found: 0, inserted: 0, durationMs: 0, newArticles: [] };
       }
+      if (!options.sourceIds?.length && isResting(source)) {
+        log(`  … ${source.name}: failed ${source.consecutive_failures} times in a row, retried every ${RETRY_FAILING_HOURS} h`);
+        return { sourceId: source.id, name: source.name, ok: true, found: 0, inserted: 0, resting: true, durationMs: 0, newArticles: [] };
+      }
       const result = await ingestSource(supabase, source, { retentionDays, maxItemsPerSource });
       log(
-        result.ok
-          ? `  ✓ ${result.name}: ${result.inserted} new / ${result.found} items (${result.durationMs} ms)`
-          : `  ✗ ${result.name}: ${result.error}`,
+        !result.ok
+          ? `  ✗ ${result.name}: ${result.error}`
+          : result.unchanged
+            ? `  = ${result.name}: unchanged since the last run (${result.durationMs} ms)`
+            : `  ✓ ${result.name}: ${result.inserted} new / ${result.found} items (${result.durationMs} ms)`,
       );
       return result;
     });

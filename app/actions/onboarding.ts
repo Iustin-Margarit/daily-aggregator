@@ -12,6 +12,22 @@ import { UUID } from '@/lib/uuid';
 
 const fail = (message: string): ActionResult => ({ ok: false, message, at: Date.now() });
 
+type CookieJar = Awaited<ReturnType<typeof cookies>>;
+
+/** The section ids a form or the Sections page sent: real ids only, no repeats, at most 50. */
+function cleanSectionIds(ids: unknown[]): string[] {
+  return [...new Set(ids.map(String))].filter((id) => UUID.test(id)).slice(0, 50);
+}
+
+/** A visitor's sections live in a cookie for a year (lib/guest.ts); none chosen = no cookie. */
+function writeGuestSections(jar: CookieJar, categoryIds: string[]) {
+  if (categoryIds.length > 0) {
+    jar.set(GUEST_SECTIONS_COOKIE, categoryIds.join(','), { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+  } else {
+    jar.delete(GUEST_SECTIONS_COOKIE);
+  }
+}
+
 
 /**
  * The Sections page saves each stamp the moment it is pressed: the whole choice
@@ -19,7 +35,7 @@ const fail = (message: string): ActionResult => ({ ok: false, message, at: Date.
  * Only what changed is written, so a save that overlaps another one stays safe.
  */
 export async function saveSections(ids: string[]): Promise<ActionResult> {
-  const categoryIds = Array.isArray(ids) ? [...new Set(ids.map(String))].filter((id) => UUID.test(id)).slice(0, 50) : [];
+  const categoryIds = Array.isArray(ids) ? cleanSectionIds(ids) : [];
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,11 +43,7 @@ export async function saveSections(ids: string[]): Promise<ActionResult> {
   const jar = await cookies();
 
   if (!user) {
-    if (categoryIds.length > 0) {
-      jar.set(GUEST_SECTIONS_COOKIE, categoryIds.join(','), { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-    } else {
-      jar.delete(GUEST_SECTIONS_COOKIE);
-    }
+    writeGuestSections(jar, categoryIds);
   } else {
     const { t } = await getI18n();
     let remove = supabase.from('user_preferred_categories').delete().eq('user_id', user.id);
@@ -59,17 +71,13 @@ export async function saveTopics(_previous: ActionResult | null, formData: FormD
   const skip = formData.get('intent') === 'skip';
   const categoryIds = skip
     ? []
-    : [...new Set(formData.getAll('categories').map(String))].filter((id) => UUID.test(id)).slice(0, 50);
+    : cleanSectionIds(formData.getAll('categories'));
 
   // A visitor without an account: the sections are kept in a cookie for a year
   // (lib/guest.ts) and move into the account when they sign up.
   if (!user) {
     const jar = await cookies();
-    if (categoryIds.length > 0) {
-      jar.set(GUEST_SECTIONS_COOKIE, categoryIds.join(','), { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', httpOnly: true, secure: process.env.NODE_ENV === 'production' });
-    } else {
-      jar.delete(GUEST_SECTIONS_COOKIE);
-    }
+    writeGuestSections(jar, categoryIds);
     redirect('/feed');
   }
   const rawUsername = formData.get('username');

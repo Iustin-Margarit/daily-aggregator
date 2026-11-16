@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/parse-feed.test.ts tests/normalize.test.ts tests/text-and-format.test.ts tests/images.test.ts tests/security.test.ts tests/auth.test.ts tests/reader-prefs.test.ts tests/i18n.test.ts tests/guest-clippings.test.ts",
     "check": "npm run typecheck && npm run lint && npm run test",
+    "test:db": "tsx --test tests/db/feed.db.test.ts",
     "ingest": "tsx scripts/ingest.ts",
     "make-admin": "tsx scripts/make-admin.ts",
     "db:push:dev": "supabase db push --remote=sppfigcxpmhrcybhvbhp",

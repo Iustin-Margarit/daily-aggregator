@@ -179,7 +179,7 @@ function AccountMenu({ user }: { user: HeaderUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={t.nav.accountMenu}
-        className="group inline-flex h-10 items-center gap-2 rounded-[3px] border-[3px] border-double border-rule/35 bg-card/60 py-1 pl-1 pr-2.5 transition-colors hover:border-(--ink-gold) hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="group inline-flex h-10 items-center gap-2 frame-double rounded-[3px] py-1 pl-1 pr-2.5 transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <ColoredAvatar username={user.username} color={user.avatarColor} size="sm" />
         <span className="hidden max-w-36 truncate font-label text-[0.92rem] font-medium sm:inline">{user.username}</span>
@@ -244,7 +244,7 @@ function EditionToggle() {
       title={label}
       // On every width. Phones: a framed 44px button like the language stamp and Log in beside it; the
       // bar's title shrinks to leave them room (SiteHeader).
-      className="h-11 w-11 shrink-0 rounded-[3px] border-[3px] border-double border-rule/45 bg-card/60 px-0 [--ornament-ink:var(--brass-ink)] hover:border-(--ink-gold) sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
+      className="h-11 w-11 shrink-0 frame-double rounded-[3px] px-0 [--ornament-ink:var(--brass-ink)] sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
     >
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.45rem] sm:h-[1.35rem]" />
     </Button>
@@ -349,7 +349,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
                 href="/login"
                 aria-label={t.nav.logIn}
                 title={t.nav.logIn}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] border-[3px] border-double border-rule/45 bg-card/60 text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:border-(--ink-gold) hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
               >
                 <Ornament name="key" className="h-[0.9rem] -rotate-[30deg]" />
               </Link>

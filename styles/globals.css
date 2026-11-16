@@ -336,6 +336,28 @@
   }
 }
 
+@utility frame-ruled {
+  /* A button framed like a printed panel: a fine rule, a card gap, then a fainter inner rule; gilt when pointed at. */
+  border: 1px solid hsl(var(--rule) / 0.5);
+  background-color: hsl(var(--card) / 0.7);
+  box-shadow:
+    inset 0 0 0 2px hsl(var(--card)),
+    inset 0 0 0 3px hsl(var(--rule) / 0.22);
+  &:hover {
+    border-color: var(--ink-gold);
+    background-color: hsl(var(--card));
+  }
+}
+
+@utility frame-double {
+  /* The header's small framed buttons (key, account, edition): a double rule on card; gilt when pointed at. */
+  border: 3px double hsl(var(--rule) / 0.45);
+  background-color: hsl(var(--card) / 0.6);
+  &:hover {
+    border-color: var(--ink-gold);
+  }
+}
+
 @utility ledger-field {
   /* A search box written on a ledger line: no box, a double rule underneath, a brass glass on the left. */
   @apply h-10 w-full font-serif text-[1rem];
@@ -692,8 +714,11 @@
     @apply font-serif text-foreground antialiased;
     /* The desk (or the street) under the paper; only visible beside the sheet on wide screens. */
     background-color: hsl(var(--desk));
-    background-image: var(--desk-texture);
     background-size: 640px 640px;
+    /* The sheet is at most 1440px wide, so narrower screens never see the desk: they don't download it. */
+    @media (width > 1440px) {
+      background-image: var(--desk-texture);
+    }
   }
   /*
    * Candlelight on the desk, from candles just off the page; it wavers a little

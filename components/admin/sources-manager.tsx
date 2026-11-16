@@ -30,6 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/toast';
+import { FAILING_AFTER, RETRY_FAILING_HOURS } from '@/lib/ingestion/backoff';
 import { createClient } from '@/lib/supabase/client';
 import type { Category } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,7 @@ function Health({ source }: { source: AdminSource }) {
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
           Failing ×{source.consecutive_failures}
+          {source.consecutive_failures >= FAILING_AFTER && ` · retried every ${RETRY_FAILING_HOURS} h`}
           <span className="block max-w-[16rem] truncate text-xs text-muted-foreground">{source.last_error}</span>
         </span>
       </span>

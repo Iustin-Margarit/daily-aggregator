@@ -141,3 +141,25 @@ export function filtersToQueryString(
   const query = params.toString();
   return query ? `?${query.replace(/%2C/gi, ',')}` : '';
 }
+
+/** Page numbers around the current one: 1 … 4 5 [6] 7 8 … 31 */
+export function visiblePages(page: number, pages: number): (number | 'gap')[] {
+  const wanted = new Set([1, pages, page - 2, page - 1, page, page + 1, page + 2].filter((p) => p >= 1 && p <= pages));
+  const sorted = [...wanted].sort((a, b) => a - b);
+  const out: (number | 'gap')[] = [];
+  sorted.forEach((p, index) => {
+    if (index > 0 && p - sorted[index - 1] > 1) out.push(p - sorted[index - 1] === 2 ? p - 1 : 'gap');
+    out.push(p);
+  });
+  return out;
+}
+
+/**
+ * Empty slots in the last row of the story grid, with two and with three
+ * columns. The almanac runs across the grid after the first six stories, so
+ * only the stories after it count (all of them on a short page).
+ */
+export function gridGaps(storiesInGrid: number): { two: number; three: number } {
+  const tail = storiesInGrid > 6 ? storiesInGrid - 6 : storiesInGrid;
+  return { two: tail % 2, three: (3 - (tail % 3)) % 3 };
+}

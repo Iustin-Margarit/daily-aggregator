@@ -12,6 +12,7 @@ import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Label } from '@/components/ui/label';
+import { LedgerSearch } from '@/components/ui/ledger-search';
 import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -294,29 +295,15 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <span className="search-glass pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rotate-[-30deg]" aria-hidden="true">
-                  <Ornament name="magnifier" className="block h-[1.45rem]" />
-                </span>
-                <input
-                  type="search"
-                  value={view.q}
-                  onChange={(e) => updateView({ q: e.target.value })}
-                  placeholder={w.search}
-                  className="ledger-field"
-                  aria-label={w.searchLabel}
-                />
-                {view.q && (
-                  <button
-                    type="button"
-                    onClick={() => updateView({ q: '' })}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-[2px] p-1 text-muted-foreground hover:bg-foreground/7 hover:text-foreground"
-                    aria-label={w.clearSearch}
-                  >
-                    <span aria-hidden="true" className="block px-0.5 font-display text-[1.25rem] leading-none">×</span>
-                  </button>
-                )}
-              </div>
+              <LedgerSearch
+                value={view.q}
+                onChange={(q) => updateView({ q })}
+                onClear={() => updateView({ q: '' })}
+                placeholder={w.search}
+                label={w.searchLabel}
+                clearLabel={w.clearSearch}
+                className="flex-1"
+              />
               <div className="flex items-center gap-2.5">
                 <Checkbox id="hide-read" checked={view.hideRead} onCheckedChange={(hideRead) => updateView({ hideRead: hideRead === true })} />
                 <Label htmlFor="hide-read" className="cursor-pointer">

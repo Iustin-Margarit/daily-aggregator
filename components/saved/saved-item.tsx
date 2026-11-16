@@ -64,7 +64,7 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
         aria-hidden="true"
         className="photo-plate self-start sm:row-span-2"
       >
-        <ArticleImage src={article.image_url} alt="" category={article.category_name} width={400} className="aspect-4/3 w-full" />
+        <ArticleImage src={article.image_url} alt="" category={article.category_name} width={400} sizes="(min-width: 640px) 11rem, 6rem" className="aspect-4/3 w-full" />
       </Link>
 
       <div className="min-w-0">

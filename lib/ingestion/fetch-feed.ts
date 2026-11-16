@@ -6,7 +6,21 @@ const ACCEPT = 'application/rss+xml, application/atom+xml, application/xml;q=0.9
 export type FetchFeedOptions = {
   timeoutMs?: number;
   maxBytes?: number;
+  /** What the feed sent last time: asked back as If-None-Match / If-Modified-Since. */
+  validators?: FeedValidators;
 };
+
+/** A feed's ETag and Last-Modified headers (null when it sent none). */
+export type FeedValidators = { etag: string | null; lastModified: string | null };
+
+export type FetchedFeed =
+  | { notModified: true; finalUrl: string }
+  | { notModified: false; xml: string; finalUrl: string; validators: FeedValidators };
+
+/** A header value worth keeping: present, short, and plain text (it is sent back as a header). */
+function validator(value: string | null): string | null {
+  return value && value.length <= 300 && /^[ -~]+$/.test(value) ? value : null;
+}
 
 function charsetFromContentType(contentType: string | null): string | null {
   return contentType ? (/charset=["']?([\w-]+)/i.exec(contentType)?.[1] ?? null) : null;
@@ -26,16 +40,24 @@ function decode(bytes: Uint8Array, contentType: string | null): string {
   }
 }
 
-/** Downloads a feed, respecting a timeout, a size limit and the declared charset. */
-export async function fetchFeed(url: string, options: FetchFeedOptions = {}): Promise<{ xml: string; finalUrl: string }> {
+/**
+ * Downloads a feed, respecting a timeout, a size limit and the declared charset.
+ * With validators, a feed that has not changed answers 304 and nothing is downloaded.
+ */
+export async function fetchFeed(url: string, options: FetchFeedOptions = {}): Promise<FetchedFeed> {
   const timeoutMs = options.timeoutMs ?? 15_000;
   const maxBytes = options.maxBytes ?? 5_000_000;
 
   let response: Response;
   let finalUrl: string;
   try {
+    const headers: Record<string, string> = { 'User-Agent': USER_AGENT, Accept: ACCEPT };
+    const etag = validator(options.validators?.etag ?? null);
+    const lastModified = validator(options.validators?.lastModified ?? null);
+    if (etag) headers['If-None-Match'] = etag;
+    if (lastModified) headers['If-Modified-Since'] = lastModified;
     ({ response, finalUrl } = await safeFetch(url, {
-      headers: { 'User-Agent': USER_AGENT, Accept: ACCEPT },
+      headers,
       signal: AbortSignal.timeout(timeoutMs),
     }));
   } catch (error) {
@@ -45,6 +67,11 @@ export async function fetchFeed(url: string, options: FetchFeedOptions = {}): Pr
     }
     const cause = error instanceof Error && error.cause instanceof Error ? error.cause.message : null;
     throw new Error(`Network error${cause ? `: ${cause}` : ''}`);
+  }
+
+  if (response.status === 304) {
+    await response.body?.cancel().catch(() => {});
+    return { notModified: true, finalUrl };
   }
 
   if (!response.ok) {
@@ -62,5 +89,10 @@ export async function fetchFeed(url: string, options: FetchFeedOptions = {}): Pr
     throw new Error(`Feed is too large (more than ${Math.round(maxBytes / 1_000_000)} MB)`);
   }
 
-  return { xml: decode(bytes, response.headers.get('content-type')), finalUrl };
+  return {
+    notModified: false,
+    xml: decode(bytes, response.headers.get('content-type')),
+    finalUrl,
+    validators: { etag: validator(response.headers.get('etag')), lastModified: validator(response.headers.get('last-modified')) },
+  };
 }

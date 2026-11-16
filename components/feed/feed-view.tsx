@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
-import { feedRpcArgs, filtersFromSearchParams, filtersToQueryString, hasFrontPage, pageCount, pageFromSearchParams } from '@/lib/feed';
+import { feedRpcArgs, filtersFromSearchParams, filtersToQueryString, gridGaps, hasFrontPage, pageCount, pageFromSearchParams } from '@/lib/feed';
 import { errorText } from '@/lib/error-text';
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
@@ -326,8 +326,7 @@ export function FeedView({
   // The month's almanac runs across the grid after the first six stories; the
   // stories after it may leave empty slots in the last row (always on a short
   // last page, and with an odd count in two columns). A "continued" slip fills them.
-  const tail = rest.length > 6 ? rest.length - 6 : rest.length;
-  const gaps = { two: tail % 2, three: (3 - (tail % 3)) % 3 };
+  const gaps = gridGaps(rest.length);
 
   const story = (article: FeedArticle, index: number, variant?: StoryVariant) => (
     <ArticleCard

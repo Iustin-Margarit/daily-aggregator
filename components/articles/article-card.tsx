@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import Link from 'next/link';
-import { ArticleImage } from '@/components/articles/article-image';
+import { ArticleImage, GRID_SIZES } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { DropCap } from '@/components/articles/drop-cap';
 import { ActionDivider, ReadOnLink, SaveButton, ShareButton } from '@/components/articles/story-actions';
@@ -97,6 +97,8 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
               alt=""
               category={article.category_name}
               width={1400}
+              // Phones and tablets: the full width. Desktops: the lead column, cropped to fill a plate taller than the photo.
+              sizes="(min-width: 1024px) min(75vw, 1100px), 100vw"
               eager={eagerImage}
               className="aspect-video w-full lg:absolute lg:inset-1 lg:aspect-auto lg:h-[calc(100%-0.5rem)] lg:w-[calc(100%-0.5rem)]"
             />
@@ -148,7 +150,7 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
         </div>
         {article.image_url && (
           <Link href={href} tabIndex={-1} aria-hidden="true" className="photo-plate mt-1 w-20 shrink-0 self-start sm:w-24">
-            <ArticleImage src={article.image_url} alt="" category={article.category_name} width={240} className="aspect-square w-full" />
+            <ArticleImage src={article.image_url} alt="" category={article.category_name} width={240} sizes="6rem" className="aspect-square w-full" />
           </Link>
         )}
       </article>
@@ -163,6 +165,7 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
           alt=""
           category={article.category_name}
           width={800}
+          sizes={GRID_SIZES}
           eager={eagerImage}
           className="aspect-[16/10] w-full"
         />

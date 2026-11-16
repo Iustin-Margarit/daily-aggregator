@@ -158,3 +158,48 @@ export function normalizeItem(item: ParsedFeedItem, options: NormalizeOptions = 
     published_at: publishedAt,
   };
 }
+
+/**
+ * A headline reduced to its words, to spot the same story a paper published
+ * twice under two addresses (a reworded URL, a "-best-bets" suffix).
+ */
+export function titleKey(title: string): string {
+  return title
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
+/** How far back the same headline from the same paper counts as a repeat. */
+export const REPEAT_WINDOW_HOURS = 48;
+
+/**
+ * Drops the paper's repeats: a later item with the headline of an earlier one
+ * in the same feed, or of a story the paper already printed recently
+ * (`recentTitles`). Order is kept, so put the newest items first.
+ */
+export function dropRepeatedTitles<T extends { title: string }>(articles: T[], recentTitles: Iterable<string>): T[] {
+  const seen = new Set<string>();
+  for (const title of recentTitles) seen.add(titleKey(title));
+  return articles.filter((article) => {
+    const key = titleKey(article.title);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * The date given to items a feed does not date. Otherwise the database would
+ * print them as "just now" every time a paper is first read. They appeared
+ * after the paper's previous successful check, so that time is used; on its
+ * very first check the oldest dated item of the feed (a new paper's undated
+ * backlog then sinks below its fresh news). Null: no better guess than now.
+ */
+export function undatedFallback(articles: { published_at: string | null }[], lastSuccessAt: string | null): string | null {
+  if (lastSuccessAt) return lastSuccessAt;
+  const dated = articles.map((article) => article.published_at).filter((date): date is string => date !== null);
+  return dated.length > 0 ? dated.reduce((oldest, date) => (date < oldest ? date : oldest)) : null;
+}

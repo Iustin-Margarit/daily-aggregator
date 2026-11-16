@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArticleImage } from '@/components/articles/article-image';
+import { ArticleImage, GRID_SIZES } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { ScrollDivider } from '@/components/site/scroll-divider';
 import { SectionHead } from '@/components/site/section-head';
@@ -22,7 +22,7 @@ export function RelatedArticles({ articles, category, heading }: { articles: Rel
           <div key={article.id}>
             <article className="group flex h-full w-full flex-col" data-section={getCategoryStyle(article.category_name).key ?? undefined}>
               <Link href={`/article/${article.slug}`} tabIndex={-1} aria-hidden="true" className="photo-plate">
-                <ArticleImage src={article.image_url} alt="" category={article.category_name} width={700} className="aspect-[16/10] w-full" />
+                <ArticleImage src={article.image_url} alt="" category={article.category_name} width={700} sizes={GRID_SIZES} className="aspect-[16/10] w-full" />
               </Link>
               <div className="pt-4">
                 <CategoryBadge name={article.category_name} />

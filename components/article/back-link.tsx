@@ -30,7 +30,7 @@ export function BackLink({ href = '/feed', className }: { href?: string; classNa
         }
       }}
       className={cn(
-        'group/read inline-flex h-10 items-center gap-2.5 rounded-[3px] border border-rule/50 bg-card/70 px-4 font-display text-[0.95rem] font-semibold text-muted-foreground shadow-[inset_0_0_0_2px_hsl(var(--card)),inset_0_0_0_3px_hsl(var(--rule)/0.22)] transition-colors hover:border-(--ink-gold) hover:bg-card hover:text-foreground',
+        'group/read inline-flex h-10 items-center gap-2.5 frame-ruled rounded-[3px] px-4 font-display text-[0.95rem] font-semibold text-muted-foreground transition-colors hover:text-foreground',
         className,
       )}
     >

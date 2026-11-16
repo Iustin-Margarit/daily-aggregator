@@ -4,6 +4,11 @@ Every picture on the site (other than the news photographs, which belong to thei
 in the public domain or CC0: free to use, change and publish, no attribution required. They are
 credited here anyway, and in the site footer.
 
+Most of the artwork is printed as a CSS mask: only the alpha channel shows, in the current ink.
+Masks are saved as WebP with black colour and the picture in the alpha. To keep them light, the
+alpha is reduced where the eye cannot tell: the month woodcuts use 16 alpha levels (lossless), the
+star chart 8, and the far street (`street/far.webp`, a soft sky) lossy alpha at quality 70.
+
 ## Engravings (`public/engravings`, ink masks)
 
 Stored as black-on-transparent WebP masks; the site prints them in its own ink colour through CSS

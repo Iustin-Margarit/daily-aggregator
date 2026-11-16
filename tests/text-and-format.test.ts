@@ -3,7 +3,7 @@ import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { isLightColor, shade } from '../lib/colors';
-import { FEED_PAGE_SIZE, FRONT_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, pageCount, pageFromSearchParams, sinceFor } from '../lib/feed';
+import { FEED_PAGE_SIZE, FRONT_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, gridGaps, pageCount, pageFromSearchParams, sinceFor, visiblePages } from '../lib/feed';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
 import { cleanText, decodeEntities, truncate } from '../lib/text';
@@ -147,5 +147,32 @@ describe('guest mode', () => {
     assert.equal(clip.folder_id, null);
     assert.equal(clip.is_read, false);
     assert.ok(!Number.isNaN(Date.parse(clip.saved_at)));
+  });
+});
+
+describe('pagination', () => {
+  it('shows the first, the last and two pages either side, with gaps for the rest', () => {
+    assert.deepEqual(visiblePages(6, 31), [1, 'gap', 4, 5, 6, 7, 8, 'gap', 31]);
+    assert.deepEqual(visiblePages(1, 3), [1, 2, 3]);
+    assert.deepEqual(visiblePages(1, 9), [1, 2, 3, 'gap', 9]);
+  });
+
+  it('prints a single missing page instead of a gap', () => {
+    assert.deepEqual(visiblePages(4, 9), [1, 2, 3, 4, 5, 6, 'gap', 9]);
+    assert.deepEqual(visiblePages(5, 9), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+});
+
+describe('story grid', () => {
+  it('ends on full rows for full pages', () => {
+    // Front page: 16 stories, 4 beside the lead, 12 in the grid. Other pages: 15.
+    assert.deepEqual(gridGaps(FRONT_PAGE_SIZE - 4), { two: 0, three: 0 });
+    assert.deepEqual(gridGaps(FEED_PAGE_SIZE), { two: 1, three: 0 });
+  });
+
+  it('counts the empty slots on a short last page', () => {
+    assert.deepEqual(gridGaps(4), { two: 0, three: 2 });
+    assert.deepEqual(gridGaps(8), { two: 0, three: 1 });
+    assert.deepEqual(gridGaps(0), { two: 0, three: 0 });
   });
 });

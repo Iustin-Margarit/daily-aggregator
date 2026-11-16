@@ -317,11 +317,13 @@ export type Database = {
           consecutive_failures: number
           created_at: string
           description: string | null
+          etag: string | null
           id: string
           is_enabled: boolean
           last_error: string | null
           last_fetched_at: string | null
           last_item_count: number | null
+          last_modified: string | null
           last_success_at: string | null
           name: string
           rss_url: string
@@ -333,11 +335,13 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           description?: string | null
+          etag?: string | null
           id?: string
           is_enabled?: boolean
           last_error?: string | null
           last_fetched_at?: string | null
           last_item_count?: number | null
+          last_modified?: string | null
           last_success_at?: string | null
           name: string
           rss_url: string
@@ -349,11 +353,13 @@ export type Database = {
           consecutive_failures?: number
           created_at?: string
           description?: string | null
+          etag?: string | null
           id?: string
           is_enabled?: boolean
           last_error?: string | null
           last_fetched_at?: string | null
           last_item_count?: number | null
+          last_modified?: string | null
           last_success_at?: string | null
           name?: string
           rss_url?: string
