@@ -10,7 +10,8 @@ export function PageHeader({
   compact = false,
   className,
 }: {
-  kicker: string;
+  /** The small line above the title; left out where the title says it all. */
+  kicker?: string;
   title: string;
   description?: React.ReactNode;
   engraving?: EngravingName;
@@ -21,8 +22,8 @@ export function PageHeader({
   return (
     <header className={cn('flex flex-col items-center text-center', className)}>
       {engraving && <Engraving name={engraving} className="mb-3 h-16 max-w-[8rem]" />}
-      <p className="kicker">{kicker}</p>
-      <h1 className={cn('headline mt-1.5 sm:text-5xl', compact ? 'text-[2rem]' : 'text-[2.4rem]')}>{title}</h1>
+      {kicker && <p className="kicker">{kicker}</p>}
+      <h1 className={cn('headline sm:text-5xl', kicker && 'mt-1.5', compact ? 'text-[2rem]' : 'text-[2.4rem]')}>{title}</h1>
       {description && <p className={cn('mx-auto max-w-xl italic text-muted-foreground sm:mt-2.5 sm:text-[1.05rem]', compact ? 'mt-1 text-pretty text-[0.98rem]' : 'mt-2.5 text-[1.05rem]')}>{description}</p>}
     </header>
   );

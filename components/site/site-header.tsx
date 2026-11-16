@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { accentVariables } from '@/lib/colors';
+import { stayOnCurrentPage } from '@/lib/current-page';
 import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
 import { Engraving } from '@/components/site/engraving';
@@ -26,12 +28,13 @@ import { editionLabel } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { cn } from '@/lib/utils';
-import { FRONT_PATH, LOGIN_PATH, SECTIONS_PATH, SETTINGS_PATH, isPaperPath } from '@/lib/routes';
+import { FRONT_PATH, SECTIONS_PATH, SETTINGS_PATH, isPaperPath, loginPath } from '@/lib/routes';
 
 export type HeaderUser = {
   email: string | null;
   username: string;
-  avatarColor: string;
+  /** The reader's accent ink (their seal is printed in it). */
+  accent: string | null;
   isAdmin: boolean;
 };
 
@@ -182,15 +185,16 @@ function AccountMenu({ user }: { user: HeaderUser }) {
         aria-label={t.nav.accountMenu}
         className="group inline-flex h-10 items-center gap-2 frame-double rounded-[3px] py-1 pl-1 pr-2.5 transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
-        <ColoredAvatar username={user.username} color={user.avatarColor} size="sm" />
+        <ColoredAvatar username={user.username} size="sm" />
         <span className="hidden max-w-36 truncate font-label text-[0.92rem] font-medium sm:inline">{user.username}</span>
         <span className="text-[0.7rem] text-(--ink-gold) transition-transform group-data-[state=open]:rotate-180" aria-hidden="true">
           ▾
         </span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
+      {/* The menu opens outside the paper's element, so it carries the reader's ink itself (for the seal). */}
+      <DropdownMenuContent align="end" className="w-72" data-accent="" style={accentVariables(user.accent)}>
         <DropdownMenuLabel className="flex items-center gap-3 py-2.5 font-normal">
-          <ColoredAvatar username={user.username} color={user.avatarColor} size="md" />
+          <ColoredAvatar username={user.username} size="md" />
           <span className="min-w-0">
             <span className="block truncate font-display text-lg font-semibold leading-tight">{user.username}</span>
             {user.email && <span className="block truncate text-[0.85rem] italic text-muted-foreground">{user.email}</span>}
@@ -267,7 +271,7 @@ function SettingsButton({ pathname }: { pathname: string }) {
       size="sm"
       className={cn('hidden h-10 w-10 px-0 lg:inline-flex', active && 'bg-(--ink-gold)/15')}
     >
-      <Link href={SETTINGS_PATH} aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined}>
+      <Link href={SETTINGS_PATH} aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined} onClick={(event) => stayOnCurrentPage(event, SETTINGS_PATH)}>
         <Ornament name="gear" className="h-[1.2rem] [--ornament-ink:var(--brass-ink)]" />
       </Link>
     </Button>
@@ -287,6 +291,7 @@ function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string
             <Link
               href={href}
               aria-current={active ? 'page' : undefined}
+              onClick={(event) => stayOnCurrentPage(event, href)}
               className={cn(
                 'relative flex items-center gap-2 whitespace-nowrap px-2.5 font-label text-[0.84rem] font-semibold uppercase tracking-[0.1em] transition-colors xl:px-4 xl:tracking-[0.12em] focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                 active
@@ -343,8 +348,9 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <SettingsButton pathname={pathname} />
               {/* Phones: a framed button with an engraved key (a fixed width, so the title
                   keeps its size); its name is read out and shown as a tooltip. From 640px: the words. */}
+              {/* Log in brings the reader back to this page afterwards (new account or not). */}
               <Link
-                href={LOGIN_PATH}
+                href={loginPath(pathname)}
                 aria-label={t.nav.logIn}
                 title={t.nav.logIn}
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
@@ -352,7 +358,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
                 <Ornament name="key" className="h-[0.9rem] -rotate-[30deg]" />
               </Link>
               <Button asChild variant="ghost" size="sm" className="hidden h-10 shrink-0 whitespace-nowrap px-4 text-[0.95rem] sm:inline-flex">
-                <Link href={LOGIN_PATH}>{t.nav.logIn}</Link>
+                <Link href={loginPath(pathname)}>{t.nav.logIn}</Link>
               </Button>
             </>
           )}
@@ -382,7 +388,9 @@ export function BottomNav({ user }: { user: HeaderUser | null }) {
       <div className="h-[calc(56px+24px+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
       <nav
         aria-label={t.nav.main}
-        className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        // Its paper also runs on below its bottom edge (::after): if a browser ever leaves the bar a few pixels above
+        // the screen's edge (its address bar sliding, a bounce at the end of the page), paper shows there, not the page.
+        className="paper fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-32 after:bg-background lg:hidden"
       >
         {/* Sized in px, not rem: one height (56px) and one-line labels whatever the Type size or zoom. */}
         <div className={cn('mx-auto grid h-[56px] max-w-md', items.length === 4 ? 'grid-cols-4' : 'grid-cols-3')}>
@@ -393,6 +401,7 @@ export function BottomNav({ user }: { user: HeaderUser | null }) {
                 key={href}
                 href={href}
                 aria-current={active ? 'page' : undefined}
+                onClick={(event) => stayOnCurrentPage(event, href)}
                 className={cn(
                   'flex h-[56px] min-w-0 flex-col items-center justify-center gap-[3px] whitespace-nowrap px-0.5 font-label text-[11px] font-medium leading-[14px] transition-colors min-[360px]:text-[12px]',
                   active ? 'text-foreground' : 'text-muted-foreground',

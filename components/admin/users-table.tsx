@@ -143,7 +143,7 @@ export function UsersTable({ initialUsers, currentUserId }: { initialUsers: Admi
         onOpenChange={(open) => !open && setToDelete(null)}
         destructive
         title={`Delete ${toDelete?.email ?? 'this user'}?`}
-        description="Their account, saved stories, folders and notes are permanently removed."
+        description="Their account, saved stories and folders are permanently removed."
         confirmLabel="Delete user"
         onConfirm={remove}
       />

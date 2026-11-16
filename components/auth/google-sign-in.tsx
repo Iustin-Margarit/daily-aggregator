@@ -10,8 +10,8 @@ import { safeNextPath } from '@/lib/redirect';
 const LINK_ERRORS = { link_invalid: 'linkInvalid', session_expired: 'sessionExpired', sign_in_failed: 'signInFailed' } as const;
 
 /**
- * Signing in is one button: Google. A new reader gets an account on the first press (and is shown
- * Sections once); an existing account with the same address is used. `?next=` brings the reader back.
+ * Signing in is one button: Google. A new reader gets an account on the first press; an existing account
+ * with the same address is used. Either way `?next=` brings the reader back to the page they were on.
  */
 export function GoogleSignIn({ googleEnabled }: { googleEnabled: boolean }) {
   const searchParams = useSearchParams();

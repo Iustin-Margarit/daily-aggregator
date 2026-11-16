@@ -161,10 +161,16 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
   if (error) console.error('[list] could not load the stories:', error.message);
   after(() => refreshNewsIfStale());
 
+  // On the search page the departments stand above the form, so the ribbon's Search ticket (where you are) is
+  // not mistaken for the form's own Search button beneath it.
+  const searching = list.kind === 'search';
+  const ribbon = <SectionRibbon categories={categories} current={place} className={searching ? 'mb-6 sm:mb-8' : 'mt-6 sm:mt-8'} />;
+
   return (
     <div className="container pt-6 sm:pt-9">
+      {searching && ribbon}
       {head}
-      <SectionRibbon categories={categories} current={place} className="mt-6 sm:mt-8" />
+      {!searching && ribbon}
       {!nothingToFind && (
         <StoryList
           articles={(data ?? []) as FeedArticle[]}

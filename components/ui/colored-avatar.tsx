@@ -15,13 +15,14 @@ type ColoredAvatarProps = {
 };
 
 /**
- * The reader's monogram pressed into a blob of sealing wax in their chosen
- * colour. The wax's outline is a public-domain seal (public/ornaments/seal.webp);
+ * The reader's monogram pressed into a blob of sealing wax, in their accent ink
+ * (Settings > Appearance) unless a colour is given: the ink's variable, so the seal
+ * changes with the ink at once. The wax's outline is a public-domain seal (public/ornaments/seal.webp);
  * the light, the pressed ring and the raised letter are shading on top.
  */
 export function ColoredAvatar({ username, color, size = 'md', className }: ColoredAvatarProps) {
   const initial = username?.trim().charAt(0).toUpperCase() || '?';
-  const wax = color || '#1E3A5F';
+  const wax = color || 'var(--ink-accent)';
   return (
     <span aria-hidden="true" className={cn('inline-flex shrink-0 select-none drop-shadow-[0_1px_1.5px_rgb(0_0_0/0.35)]', SIZES[size], className)}>
       <span

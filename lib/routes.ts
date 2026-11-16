@@ -9,10 +9,17 @@ export const LATEST_PATH = '/latest';
 export const SECTIONS_PATH = '/sections';
 export const SETTINGS_PATH = '/settings';
 export const SEARCH_PATH = '/search';
+export const SAVED_PATH = '/saved';
 export const SECTION_PREFIX = '/section/';
 export const PAPER_PREFIX = '/paper/';
 /** Log in, which is also where a new reader's account is made: Continue with Google. */
 export const LOGIN_PATH = '/login';
+
+/** Log in, then come back to `here` (the page the reader is on; the front page by default). */
+export function loginPath(here?: string | null): string {
+  if (!here || here === FRONT_PATH || here.startsWith(LOGIN_PATH)) return LOGIN_PATH;
+  return `${LOGIN_PATH}?next=${encodeURIComponent(here)}`;
+}
 
 /** The address part of a section's name: "World" -> "world". */
 export function sectionSlug(name: string): string {

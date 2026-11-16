@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/toast';
 import { getGuestClippings } from '@/lib/guest-clippings';
 import { importGuestClippings } from '@/lib/guest-import';
 import { useI18n } from '@/lib/i18n/client';
+import { SAVED_PATH } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -37,7 +38,7 @@ export function GuestImport({ userId }: { userId: string }) {
           type: 'success',
           title: plural(t.saved.imported, result.moved),
           message: t.saved.importedNote,
-          action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
+          action: { label: t.common.openSaved, onClick: () => router.push(SAVED_PATH) },
         });
         router.refresh();
       }

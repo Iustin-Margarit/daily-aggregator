@@ -93,12 +93,20 @@ export function stripHtml(text: string): string {
     .replace(/<[^>]+>/g, '');
 }
 
+/**
+ * Unfilled template and tracking placeholders that some feeds leak into their text (The Hill's newsletters print
+ * "{beacon}"): a bare name in braces, double braces or double percent signs, like {beacon}, {{ pixel }} or
+ * %%tracker%%. Only a single identifier counts, so real text in braces ("{see below}") is left alone.
+ */
+const PLACEHOLDER = /\{\{\s*[a-z_][\w.-]{0,40}\s*\}\}|\{[a-z_][\w.-]{0,40}\}|%%[a-z_][\w.-]{0,40}%%/gi;
+
 /** Plain, single-line text safe to render. */
 export function cleanText(text: string | null | undefined): string {
   if (!text) return '';
   // Decode first so entity-encoded tags (&lt;p&gt;) are stripped too, then
   // decode again for entities that were inside the markup.
   return decodeEntities(stripHtml(decodeEntities(stripHtml(text))))
+    .replace(PLACEHOLDER, ' ')
     .replace(/[​-‍﻿]/g, '')
     .replace(/\s+/g, ' ')
     .trim();

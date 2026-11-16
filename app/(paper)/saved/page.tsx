@@ -14,7 +14,6 @@ export default async function SavedPage({ searchParams }: { searchParams: Promis
   const [user, params] = await Promise.all([getSessionUser(), searchParams]);
   const view: SavedView = {
     folder: params.folder ?? 'all',
-    hideRead: params.hide_read === '1',
     q: (params.q ?? '').slice(0, 100),
   };
 

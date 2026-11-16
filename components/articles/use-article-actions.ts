@@ -1,36 +1,47 @@
 'use client';
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { articleShareUrl, shareLink } from '@/components/articles/share';
 import { useToast } from '@/components/ui/toast';
 import { addGuestClipping, isGuestClipped, removeGuestClipping, subscribeGuestClippings, toClipping } from '@/lib/guest-clippings';
 import { errorText } from '@/lib/error-text';
 import { useI18n } from '@/lib/i18n/client';
+import { savedState, setSavedState, subscribeSavedState } from '@/lib/saved-state';
+import { SAVED_PATH } from '@/lib/routes';
 import { createClient } from '@/lib/supabase/client';
 import { cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 
 /**
- * Save (clip) / share with optimistic updates and friendly errors. Readers
+ * Save (clip) / share with optimistic updates and friendly errors. A notice (toast) appears only when it
+ * offers something the button cannot: Undo after a removal, or what went wrong. Readers
  * without an account clip into this browser (lib/guest-clippings.ts); signing
  * in moves those clippings into the account.
  */
 export function useArticleActions(article: FeedArticle, userId: string | null) {
   const router = useRouter();
+  const pathname = usePathname();
   const { showToast } = useToast();
   const { t } = useI18n();
   const s = t.story;
 
-  const [saved, setSaved] = useState(article.is_saved);
+  // The toast's "Open saved stories". From inside the sheet it takes the sheet's place in the history (Back
+  // then returns to the page the sheet opened over, not to the sheet); from the page it is an ordinary visit.
+  const inSheet = pathname.startsWith('/article/');
+  const openSaved = useCallback(() => (inSheet ? router.replace(SAVED_PATH) : router.push(SAVED_PATH)), [inSheet, router]);
+
   const [busy, setBusy] = useState(false);
 
-  // When the page hands over a different story (or fresh data), start again from it.
-  const [shown, setShown] = useState({ id: article.id, isSaved: article.is_saved });
-  if (shown.id !== article.id || shown.isSaved !== article.is_saved) {
-    setShown({ id: article.id, isSaved: article.is_saved });
-    setSaved(article.is_saved);
-  }
+  // Shared by every copy of this story on screen (the card, the sheet, the "s" key): lib/saved-state.ts.
+  const changed = useSyncExternalStore(
+    subscribeSavedState,
+    () => savedState(article.id),
+    () => undefined,
+  );
+  const saved = changed ?? article.is_saved;
+  const articleId = article.id;
+  const setSaved = useCallback((value: boolean) => setSavedState(articleId, value), [articleId]);
 
   const guestSaved = useSyncExternalStore(
     subscribeGuestClippings,
@@ -63,12 +74,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
       });
       return;
     }
-    showToast({
-      type: 'success',
-      title: s.guestSaved,
-      message: s.guestSavedNote,
-      action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
-    });
+    // No notice: the Save button itself shows the story saved (toasts are for Undo and errors only).
   };
 
   const save = useCallback(async (): Promise<boolean> => {
@@ -83,13 +89,13 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
         type: 'error',
         title: s.accountFull,
         message: s.accountFullNote,
-        action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
+        action: { label: t.common.openSaved, onClick: () => openSaved() },
       });
       return false;
     }
     showToast({ type: 'error', title: s.saveFailed, message: errorText(error, t) });
     return false;
-  }, [userId, article.id, showToast, router, s, t]);
+  }, [userId, article.id, setSaved, showToast, openSaved, s, t]);
 
   const toggleSave = async () => {
     if (!userId) {
@@ -115,15 +121,7 @@ export function useArticleActions(article: FeedArticle, userId: string | null) {
     } else {
       // Shown as saved at once (the quill's stamp plays now); put back if the database says no.
       setSaved(true);
-      if (await save()) {
-        showToast({
-          type: 'success',
-          title: s.savedForLater,
-          action: { label: t.common.openSaved, onClick: () => router.push('/saved') },
-        });
-      } else {
-        setSaved(false);
-      }
+      if (!(await save())) setSaved(false);
     }
 
     setBusy(false);

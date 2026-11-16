@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link, { useLinkStatus } from 'next/link';
 import { Ornament } from '@/components/site/ornament';
 import { pageHref, visiblePages } from '@/lib/feed';
@@ -14,13 +15,23 @@ type PaginationProps = {
   query: Record<string, string>;
 };
 
-/** While the page a link leads to is on its way: the link's ink fades (the old page stays until the new one is in). */
+/**
+ * While the page a link leads to is on its way: a brass rule pulses under the link and the page on screen dims
+ * at once (styles: [data-page-turning] .page-body), so the press answers on the spot; the old page stays until
+ * the new one is in.
+ */
 function Turning() {
   const { pending } = useLinkStatus();
+  useEffect(() => {
+    if (!pending) return;
+    const root = document.documentElement;
+    root.setAttribute('data-page-turning', '');
+    return () => root.removeAttribute('data-page-turning');
+  }, [pending]);
   return pending ? <span className="pagination-pending" aria-hidden="true" /> : null;
 }
 
-const linkClass = 'relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-[3px] font-display text-[0.95rem] font-semibold transition-colors';
+const linkClass = 'relative inline-flex h-10 items-center justify-center whitespace-nowrap rounded-[3px] font-display text-[0.95rem] font-semibold transition-colors active:translate-y-px active:opacity-80';
 
 /**
  * Previous page, the page numbers and Next page, as plain links: each page is printed by the server
@@ -35,7 +46,7 @@ export function Pagination({ page, pages, path, query }: PaginationProps) {
   return (
     <nav aria-label={t.pagination.label} className="flex items-center justify-between gap-2 sm:gap-3">
       {page > 1 ? (
-        <Link href={hrefFor(page - 1)} scroll={false} className={cn(linkClass, 'frame-ruled group/read gap-2 px-3 max-[319px]:gap-1.5 max-[319px]:px-2 sm:gap-2.5 sm:px-4')} rel="prev">
+        <Link href={hrefFor(page - 1)} scroll={false} prefetch className={cn(linkClass, 'frame-ruled group/read gap-2 px-3 max-[319px]:gap-1.5 max-[319px]:px-2 sm:gap-2.5 sm:px-4')} rel="prev">
           {/* A printer's fist pointing back (☜). */}
           <span className="-scale-x-100">
             <Ornament name="fist" className="fist-poke block w-[1.1rem] sm:w-[1.35rem] [--ornament-ink:var(--action-icon)]" />
@@ -83,7 +94,7 @@ export function Pagination({ page, pages, path, query }: PaginationProps) {
       </ol>
 
       {page < pages ? (
-        <Link href={hrefFor(page + 1)} scroll={false} className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 max-[319px]:gap-1.5 max-[319px]:px-2 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
+        <Link href={hrefFor(page + 1)} scroll={false} prefetch className={cn(linkClass, 'group/read gap-2 border border-primary bg-primary px-3 max-[319px]:gap-1.5 max-[319px]:px-2 text-primary-foreground shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] hover:bg-primary/90 sm:gap-2.5 sm:px-5')} rel="next">
           <span className="hidden lg:inline">{next}</span>
           <span className="max-[319px]:sr-only lg:hidden">{nextShort}</span>
           {/* A printer's fist pointing on (☞). */}

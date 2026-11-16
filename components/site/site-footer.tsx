@@ -1,4 +1,5 @@
 import { Engraving } from '@/components/site/engraving';
+import { KeysCardButton } from '@/components/site/keyboard-reading';
 import { Masthead } from '@/components/site/logo';
 import { Phrases } from '@/components/ui/phrases';
 import { getI18n } from '@/lib/i18n/server';
@@ -22,6 +23,7 @@ export async function SiteFooter() {
           <p className="font-label text-[0.82rem] text-muted-foreground">
             © {new Date().getFullYear()} <span lang="en">{siteConfig.name}</span> · {t.footer.printed}
           </p>
+          <KeysCardButton label={t.keys.footer} />
           {/* The colophon, set small in italic under the imprint, as printers signed their work. */}
           <p className="font-display text-[0.86rem] italic text-muted-foreground/90">
             {rich(t.footer.builtBy, {

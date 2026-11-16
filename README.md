@@ -25,6 +25,13 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
   computer, from the bottom on a phone) with the photo, summary, Save, Share and the way on to the
   publisher, and three more from the same desk at its foot. Close, Escape or Back return to the same
   spot. A shared link opens the front page with that story's sheet open.
+- **New since your last visit**: the front page says how many stories came out since you last read
+  the paper ("12 new stories since your last visit this morning"). Remembered in the browser, no
+  account needed.
+- **Keyboard reading**: j / k next and previous story, Enter to open it, s to save it, / to search,
+  Esc to let go, ? for a card of the keys (nothing happens while typing in a box).
+- **Also reported by**: the quick-read sheet lists the same news from other papers, grouped when the
+  stories are fetched (headlines compared with `pg_trgm`, within 48 hours).
 - **Lists**: All the latest (`/latest`), each section (`/section/world`), each newspaper
   (`/paper/the-guardian-world`) and search (`/search?q=…`), page by page (16 stories, then 15).
   On phones each story is one row (picture left, headline right), five or six to a screen.
@@ -35,7 +42,7 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
   browser; signing in moves all of it into the account.
 - Hide a story, mute a newspaper, or mute words (Settings > Sections & papers).
 - A reading time ("4 min read") on stories, an "On this day" almanac (three anniversaries from
-  Wikipedia), and **Print clipping** on saved stories.
+  Wikipedia).
 - An optional ambient **Sound** on the street banner (soft rain and a pocket watch, made in the
   browser; off by default).
 
@@ -152,7 +159,7 @@ Anything else can call the endpoint too:
 ### Visitors without an account
 
 Everyone can read, search, open stories, choose sections (kept in a cookie) and clip stories, with
-folders, notes and Print clipping (kept in the browser's storage, up to 200). An account adds the
+folders and notes (kept in the browser's storage, up to 200). An account adds the
 same things on every device and muted words; when a visitor signs in, their
 sections and clippings move into the account. Only Settings and the admin pages need a login.
 

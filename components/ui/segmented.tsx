@@ -20,12 +20,17 @@ type SegmentedProps<T extends string> = {
    * radio mark. From 640px it is the usual row of tabs.
    */
   fill?: boolean;
+  /**
+   * From 640px: the choices share the whole width in equal parts and every picture sits in a box of one height,
+   * so several controls laid side by side (Settings > Reading) come out the same size.
+   */
+  even?: boolean;
   className?: string;
   'aria-label'?: string;
 };
 
 /** A row of ledger tabs, one of which is chosen (e.g. Today / This week). */
-export function Segmented<T extends string>({ value, onChange, options, fill = false, className, ...rest }: SegmentedProps<T>) {
+export function Segmented<T extends string>({ value, onChange, options, fill = false, even = false, className, ...rest }: SegmentedProps<T>) {
   const halves = fill && options.length <= 2;
   const rows = fill && !halves;
   // With previews every choice is a little card: the picture above its label (on a phone's ledger rows: beside it).
@@ -39,6 +44,7 @@ export function Segmented<T extends string>({ value, onChange, options, fill = f
         'inline-flex min-h-10 max-w-full flex-wrap items-stretch gap-1 rounded-[3px] border-[3px] border-double border-rule/35 bg-card/70 p-0.5',
         halves && 'max-sm:grid max-sm:w-full max-sm:grid-cols-2',
         rows && 'max-sm:grid max-sm:w-full max-sm:grid-cols-1 max-sm:gap-0 max-sm:p-0',
+        even && 'sm:flex sm:w-full sm:flex-nowrap',
         className,
       )}
     >
@@ -67,6 +73,7 @@ export function Segmented<T extends string>({ value, onChange, options, fill = f
               cards && 'max-sm:min-w-0 max-sm:text-[0.76rem] max-sm:tracking-[0.04em] max-sm:hyphens-auto max-sm:break-words',
               cards && halves && 'max-sm:gap-1',
               cards && rows && 'max-sm:flex-row max-sm:items-center',
+              even && 'sm:min-w-0 sm:flex-1 sm:basis-0 sm:justify-center',
             )}
           >
             {rows && (
@@ -81,7 +88,7 @@ export function Segmented<T extends string>({ value, onChange, options, fill = f
               </span>
             )}
             {option.preview && (
-              <span aria-hidden="true" className={cn('flex items-end justify-center normal-case tracking-normal', rows && 'max-sm:w-[4.5rem] max-sm:shrink-0')}>
+              <span aria-hidden="true" className={cn('flex items-end justify-center normal-case tracking-normal', rows && 'max-sm:w-[4.5rem] max-sm:shrink-0', even && 'sm:h-11 sm:items-center')}>
                 {option.preview}
               </span>
             )}
