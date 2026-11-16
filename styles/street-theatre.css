@@ -823,10 +823,33 @@
   50% { transform: rotate(4deg); }
 }
 
-/* Paused (the reader's "banner" preference is Still) or scrolled out of view. */
+/*
+ * Paused (the reader's "banner" preference is Still), scrolled out of view, or behind the open quick-read sheet
+ * (.st-behind-sheet, set on the street itself by components/story/quick-read.tsx: a class on <html> followed by
+ * "*" would make the browser restyle the whole page, not just the street).
+ */
 :root[data-banner='still'] .st *,
-.st-offscreen * {
+.st-offscreen *,
+.st-behind-sheet * {
   animation-play-state: paused !important;
+}
+/*
+ * Out of view, and behind the sheet, the street is also hidden (it fades out with the sheet's overlay: the lamps
+ * go dark). Paused, its 160-odd moving layers still cost the compositor work on every frame (measured on a
+ * slowed laptop: 8 slow frames in 2 s while paused, none while hidden); hidden, they are dropped.
+ */
+.st-offscreen .st-scene {
+  visibility: hidden;
+}
+.st-scene {
+  transition: opacity 0.2s ease-out;
+}
+.st-behind-sheet .st-scene {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease-out,
+    visibility 0s linear 0.2s;
 }
 
 /*

@@ -48,6 +48,7 @@ export function SaveButton({
       }}
       disabled={disabled}
       aria-pressed={saved}
+      data-save-button=""
       aria-label={saved ? t.story.savedLabel : t.story.saveLabel}
       title={saved ? t.story.savedTitle : t.story.saveTitle}
       className={cn(actionClass, saved && 'text-(--brass-ink)', className)}

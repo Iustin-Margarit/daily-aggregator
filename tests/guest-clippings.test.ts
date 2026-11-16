@@ -41,7 +41,6 @@ function clipping(id: string): SavedArticle {
     category_name: 'World',
     folder_id: null,
     is_read: false,
-    notes: null,
     saved_at: '2026-11-15T09:00:00Z',
   };
 }
@@ -49,20 +48,20 @@ function clipping(id: string): SavedArticle {
 describe('guest clippings after signing in', () => {
   beforeEach(() => store.clear());
 
-  it('keeps the clippings that could not be moved, with their folders and notes', async () => {
+  it('keeps the clippings that could not be moved, with their folders and read marks', async () => {
     const { addGuestClipping, createGuestFolder, getGuestClippings, keepOnlyGuestClippings, patchGuestClipping } = await load();
     const keep = createGuestFolder('Keep');
     const drop = createGuestFolder('Drop');
     assert.ok(keep.data && drop.data);
     for (const id of ['a', 'b', 'c']) addGuestClipping(clipping(id));
-    patchGuestClipping('a', { folder_id: keep.data.id, notes: 'Read again' });
+    patchGuestClipping('a', { folder_id: keep.data.id, is_read: true });
     patchGuestClipping('b', { folder_id: drop.data.id });
 
     keepOnlyGuestClippings(new Set(['a', 'c']));
 
     const left = getGuestClippings();
     assert.deepEqual(left.articles.map((a) => a.article_id), ['a', 'c']);
-    assert.equal(left.articles[0].notes, 'Read again');
+    assert.equal(left.articles[0].is_read, true);
     assert.deepEqual(left.folders.map((f) => f.name), ['Keep']);
   });
 
@@ -130,7 +129,7 @@ describe('guest clippings store', () => {
 
 /** Enough of a Supabase client for lib/guest-import.ts: folders, and saved stories that may fail. */
 function fakeAccount(options: { foldersDown?: boolean; existingFolders?: { id: string; name: string }[]; rowError?: (articleId: string) => { code: string } | null }) {
-  const savedRows: { article_id: string; folder_id: string | null; notes: string | null }[] = [];
+  const savedRows: { article_id: string; folder_id: string | null; is_read: boolean }[] = [];
   const createdFolders: string[] = [];
   const client = {
     from(table: string) {
@@ -167,24 +166,24 @@ describe('guest import into the account', () => {
     blocked = false;
   });
 
-  it('moves stories with their folders (matched by name) and notes, then forgets them', async () => {
+  it('moves stories with their folders (matched by name) and read marks, then forgets them', async () => {
     const { addGuestClipping, createGuestFolder, getGuestClippings, patchGuestClipping } = await load();
     const { importGuestClippings } = await import('../lib/guest-import');
     const recipes = createGuestFolder('Recipes').data!;
     const travel = createGuestFolder('Travel').data!;
     addGuestClipping(clipping('a'));
     addGuestClipping(clipping('b'));
-    patchGuestClipping('a', { folder_id: recipes.id, notes: 'Try on Sunday' });
+    patchGuestClipping('a', { folder_id: recipes.id, is_read: true });
     patchGuestClipping('b', { folder_id: travel.id });
     const account = fakeAccount({ existingFolders: [{ id: 'account-recipes', name: 'recipes' }] });
 
     assert.deepEqual(await importGuestClippings(account.client, 'user'), { moved: 2, kept: 0 });
     assert.deepEqual(account.createdFolders, ['Travel']);
     assert.deepEqual(
-      account.savedRows.map((row) => [row.article_id, row.folder_id, row.notes]),
+      account.savedRows.map((row) => [row.article_id, row.folder_id, row.is_read]),
       [
-        ['a', 'account-recipes', 'Try on Sunday'],
-        ['b', 'account-Travel', null],
+        ['a', 'account-recipes', true],
+        ['b', 'account-Travel', false],
       ],
     );
     assert.deepEqual(getGuestClippings(), { articles: [], folders: [] });

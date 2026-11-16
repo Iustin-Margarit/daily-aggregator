@@ -36,12 +36,10 @@ export async function updateProfile(_prev: ActionResult | null, formData: FormDa
   if (!user) return fail(m.sessionExpired);
 
   const username = String(formData.get('username') ?? '').trim();
-  const avatarColor = String(formData.get('avatar_color') ?? '');
   const problem = validateUsername(username, t.validation);
   if (problem) return fail(problem);
-  if (!HEX_COLOR.test(avatarColor)) return fail(m.validColour);
 
-  const { error } = await supabase.from('profiles').update({ username, avatar_color: avatarColor }).eq('id', user.id);
+  const { error } = await supabase.from('profiles').update({ username }).eq('id', user.id);
   if (error) return fail(profileSaveError(error, m.profileFailed, t.validation));
 
   revalidatePath('/', 'layout');

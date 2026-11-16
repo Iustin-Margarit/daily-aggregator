@@ -3,6 +3,7 @@ import { after } from 'next/server';
 import { ArticleCard } from '@/components/articles/article-card';
 import { FirstPrinting } from '@/components/front/first-printing';
 import { HeadlineList } from '@/components/front/headline-list';
+import { NewSince } from '@/components/front/new-since';
 import { SectionDigest } from '@/components/front/section-digest';
 import { SectionRibbon } from '@/components/front/section-ribbon';
 import { WelcomeSlip } from '@/components/front/welcome-slip';
@@ -87,6 +88,8 @@ export async function FrontPageContent({ account }: { account?: string }) {
             <SectionHead id="dispatches" engraving="telegraph">
               {t.landing.latest}
             </SectionHead>
+            {/* "12 new stories since your last visit this morning." (from the second visit in this browser). */}
+            <NewSince categoryIds={preferredIds} signedIn={Boolean(userId)} className="mt-1.5 text-center" />
             <HeadlineList articles={dispatches} withSection thumbnails className="mt-3" />
             <Link
               href={LATEST_PATH}

@@ -26,7 +26,7 @@ export function PageTurn({ page, children }: { page: number; children: React.Rea
     <>
       <div ref={top} className="scroll-mt-20" />
       {/* A new key on each page, so the new page swings in once. */}
-      <div key={shown} className={cn(dir === 'next' && 'page-turn-next', dir === 'prev' && 'page-turn-prev')}>
+      <div key={shown} className={cn('page-body', dir === 'next' && 'page-turn-next', dir === 'prev' && 'page-turn-prev')}>
         {children}
       </div>
     </>

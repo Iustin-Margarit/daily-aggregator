@@ -25,6 +25,22 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+/*
+ * A notice is printed outside any sheet or dialog, so a dialog (the quick-read sheet) counts a press on it as a
+ * press "outside" and closes. Radix settles that on the click, after the notice's own button has already
+ * removed the notice from the page, so the press can no longer be traced to it by where it landed: the
+ * notices say so instead, at the moment of the press (toastWasJustPressed).
+ */
+let lastPress = 0;
+const notePress = () => {
+  lastPress = Date.now();
+};
+/** True while a press on a notice is under way or has just finished. */
+export function toastWasJustPressed(target?: EventTarget | null): boolean {
+  if (target instanceof Element && target.closest('[data-toasts]')) return true;
+  return Date.now() - lastPress < 800;
+}
+
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) throw new Error('useToast must be used inside <ToastProvider>');
@@ -140,6 +156,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         data-toasts=""
         aria-live="polite"
+        onPointerDownCapture={notePress}
+        onClickCapture={notePress}
         onFocus={() => setFocused(true)}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);

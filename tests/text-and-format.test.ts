@@ -5,7 +5,7 @@ import { describe, it } from 'node:test';
 import { isLightColor, shade } from '../lib/colors';
 import { FEED_PAGE_SIZE, FIRST_PAGE_SIZE, feedRpcArgs, gridGaps, pageCount, pageFromSearchParams, pageHref, queryWithout, searchFromParams, sectionFromSlug, visiblePages } from '../lib/feed';
 import { buildFrontPage, DIGEST_LINES, type FrontRow } from '../lib/front-page';
-import { isPaperPath, paperPath, paperSlug, searchPath, sectionPath, sectionSlug, storyPath } from '../lib/routes';
+import { isPaperPath, loginPath, paperPath, paperSlug, searchPath, sectionPath, sectionSlug, storyPath } from '../lib/routes';
 import { recallStory, rememberStory } from '../lib/story-cache';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
@@ -24,6 +24,13 @@ describe('text helpers', () => {
     assert.equal(cleanText('<p>Hello <b>world</b></p>\n\n<script>alert(1)</script>'), 'Hello world');
     assert.equal(cleanText('&lt;p&gt;Encoded &lt;em&gt;markup&lt;/em&gt;&lt;/p&gt;'), 'Encoded markup');
     assert.equal(cleanText(null), '');
+  });
+
+  it('cleanText drops unfilled template and tracking placeholders, not real text in braces', () => {
+    assert.equal(cleanText('Presented by Bitget. {beacon} Business & markets'), 'Presented by Bitget. Business & markets');
+    assert.equal(cleanText('A {{ pixel }} B %%open_tracker%% C {utm.source}'), 'A B C');
+    assert.equal(cleanText('&lt;p&gt;{beacon}&lt;/p&gt; News'), 'News');
+    assert.equal(cleanText('Set {x, y} and {see below}'), 'Set {x, y} and {see below}');
   });
 
   it('truncate cuts on a word boundary', () => {
@@ -267,5 +274,19 @@ describe('story grid', () => {
     assert.deepEqual(gridGaps(4), { two: 0, three: 2 });
     assert.deepEqual(gridGaps(8), { two: 0, three: 1 });
     assert.deepEqual(gridGaps(0), { two: 0, three: 0 });
+  });
+});
+
+describe('log in, and back to the page', () => {
+  it('comes back to the page the reader was on', () => {
+    assert.equal(loginPath('/section/world'), '/login?next=%2Fsection%2Fworld');
+    assert.equal(loginPath('/latest?page=2'), '/login?next=%2Flatest%3Fpage%3D2');
+    assert.equal(safeNextPath(decodeURIComponent(loginPath('/settings').split('next=')[1])), '/settings');
+  });
+
+  it('needs no ?next= for the front page, and never sends the reader back to the login page', () => {
+    assert.equal(loginPath('/'), '/login');
+    assert.equal(loginPath(null), '/login');
+    assert.equal(loginPath('/login?error=x'), '/login');
   });
 });

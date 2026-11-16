@@ -10,8 +10,8 @@ import { SEARCH_PATH } from '@/lib/routes';
  */
 export function SearchForm({ value, label, placeholder, button }: { value: string; label: string; placeholder: string; button: string }) {
   return (
-    <Form action={SEARCH_PATH} role="search" className="mx-auto mt-6 flex w-full max-w-2xl flex-wrap items-end gap-3 sm:flex-nowrap">
-      <div className="relative min-w-0 flex-1 basis-full sm:basis-auto">
+    <Form action={SEARCH_PATH} role="search" className="mx-auto mt-6 flex w-full max-w-2xl items-end gap-2 sm:gap-3">
+      <div className="relative min-w-0 flex-1">
         <span className="search-glass pointer-events-none absolute left-1.5 top-1/2 z-10 -translate-y-1/2 rotate-[-30deg]" aria-hidden="true">
           <Ornament name="magnifier" className="block h-[1.45rem]" />
         </span>
@@ -27,7 +27,7 @@ export function SearchForm({ value, label, placeholder, button }: { value: strin
           className="ledger-field text-[1.1rem]"
         />
       </div>
-      <Button type="submit" size="lg" className="h-12 shrink-0 px-6">
+      <Button type="submit" size="lg" className="h-12 shrink-0 px-4 sm:px-6">
         {button}
       </Button>
     </Form>

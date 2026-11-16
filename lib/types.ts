@@ -37,6 +37,15 @@ export type ArticleDetail = FeedArticle & {
   source_website_url: string | null;
 };
 
+/** The same news from another paper ("Also reported by", the get_also_reported RPC). */
+export type AlsoReported = {
+  id: string;
+  title: string;
+  slug: string;
+  published_at: string;
+  source_name: string;
+};
+
 export type RelatedArticle = {
   id: string;
   title: string;
@@ -77,7 +86,6 @@ export type SavedArticle = {
   category_name: string;
   folder_id: string | null;
   is_read: boolean;
-  notes: string | null;
   saved_at: string;
 };
 

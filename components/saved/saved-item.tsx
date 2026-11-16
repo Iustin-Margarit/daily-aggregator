@@ -1,11 +1,9 @@
 'use client';
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
-import { PrintClipping } from '@/components/saved/print-clipping';
 import { StoryLink } from '@/components/story/story-link';
-import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
 import { Button } from '@/components/ui/button';
@@ -29,104 +27,94 @@ type SavedItemProps = {
   article: SavedArticle;
   folders: SavedFolder[];
   onOpen: (article: SavedArticle) => void;
-  onToggleRead: (article: SavedArticle) => void;
   onMove: (article: SavedArticle, folderId: string | null) => void;
   onNewFolder: (article: SavedArticle) => void;
-  onEditNote: (article: SavedArticle) => void;
   onRemove: (article: SavedArticle) => void;
 };
 
-/** The engraved mark at the head of each action, printed in the button's own ink. */
-const mark = 'h-[0.95rem] [--ornament-ink:currentColor]';
-
 /**
- * One saved story: picture, headline, the reader's note and plainly labelled actions, each led by an engraving:
- * spectacles (read), the printer's fist (folder), a pen nib (note), the press (print) and scissors (remove).
+ * One saved story, kept short: no excerpt. On a phone a small picture sits beside the section and the byline, the
+ * headline runs the full width under them, then one ruled line with two matching buttons: the story's folder
+ * ("Unfiled ▾" or its name; pressing it picks another) and Remove, led by the scissors. From 640px the picture
+ * stands in its own column beside all three.
  */
-function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFolder, onEditNote, onRemove }: SavedItemProps) {
+function SavedItemImpl({ article, folders, onOpen, onMove, onNewFolder, onRemove }: SavedItemProps) {
   const folder = folders.find((f) => f.id === article.folder_id);
   // The story as the quick-read sheet wants it, so it opens at once from this copy.
   const story = useMemo<FeedArticle>(() => ({ ...article, id: article.article_id, author: null, is_saved: true }), [article]);
-  const summary = cleanText(article.summary);
   const title = cleanText(article.title);
-  const { t, rich } = useI18n();
+  const { t, fmt, rich } = useI18n();
   const w = t.saved.item;
   const readingTime = formatReadingTime(article.reading_minutes);
-  // Each click mounts a fresh clipping, which opens the print dialog; 0 = none.
-  const [printRun, setPrintRun] = useState(0);
-  const printDone = useCallback(() => setPrintRun(0), []);
 
   return (
-    <article className="grid grid-cols-[6rem_minmax(0,1fr)] gap-x-4 py-5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-x-6">
+    <article className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 py-3.5 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-x-5 sm:py-4">
       <StoryLink
         article={story}
         onClick={() => onOpen(article)}
         tabIndex={-1}
         aria-hidden="true"
-        className="photo-plate self-start sm:row-span-2"
+        className={cn('photo-plate relative col-start-1 row-start-1 self-start sm:row-span-3', article.is_read && 'is-read')}
       >
-        <ArticleImage src={article.image_url} alt="" category={article.category_name} width={400} sizes="(min-width: 640px) 11rem, 6rem" className="aspect-4/3 w-full" />
+        <ArticleImage src={article.image_url} alt="" category={article.category_name} width={300} sizes="(min-width: 640px) 8.5rem, 4.5rem" className="aspect-4/3 w-full" />
+        {/* Read (the story was opened): franked like a used stamp, a real postmark struck on the faded photo (styles: .read-postmark). */}
+        {article.is_read && (
+          <span className="read-postmark" aria-hidden="true">
+            <Ornament name="postmark-ring" className="block w-full" />
+            <span className="read-postmark-word">{w.read}</span>
+          </span>
+        )}
       </StoryLink>
 
-      <div className="min-w-0">
-        <p className="byline flex flex-wrap items-center gap-x-1.5 gap-y-1">
-          <CategoryBadge name={article.category_name} className="mr-1" />
-          <span>{article.source_name}</span>
-          <span aria-hidden="true">·</span>
-          <span>{rich(w.saved, { time: <TimeAgo date={article.saved_at} /> })}</span>
-          {readingTime && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="whitespace-nowrap">{readingTime}</span>
-            </>
-          )}
-          {article.is_read && (
-            <span className="ml-1 inline-flex items-center gap-1 rounded-[1px] border-[3px] border-double border-current/35 px-1.5 font-typewriter text-[0.72rem] uppercase tracking-[0.08em] text-foreground/70">
-              <span aria-hidden="true">✓</span> {w.read}
-            </span>
-          )}
-        </p>
-
-        <h2 className={cn('headline mt-1.5 text-xl sm:text-[1.4rem]', article.is_read && 'text-foreground/60')}>
-          <StoryLink article={story} onClick={() => onOpen(article)} className="decoration-1 underline-offset-4 hover:underline">
-            {title}
-          </StoryLink>
-        </h2>
-
-        {summary && <p className="mt-1.5 line-clamp-2 text-[0.95rem] leading-relaxed text-foreground/80">{summary}</p>}
-
-        {article.notes && (
-          <button
-            type="button"
-            onClick={() => onEditNote(article)}
-            className="mt-3 block w-full rounded-[2px] border-l-[3px] border-double border-(--ink-accent)/50 bg-(--ink-accent)/6 px-3.5 py-2.5 text-left"
-            title={w.editYourNote}
-          >
-            <span className="block font-label text-[0.75rem] font-semibold uppercase tracking-[0.1em] text-(--ink-accent)">{w.yourNote}</span>
-            <span className="mt-0.5 block whitespace-pre-line font-serif text-[0.95rem] italic leading-snug">{article.notes}</span>
-          </button>
+      <p className="byline col-start-2 row-start-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 self-center text-[0.75rem] leading-snug sm:self-start sm:text-[0.8rem]">
+        <CategoryBadge name={article.category_name} className="mr-0.5 px-1.5 py-0 text-[0.62rem] sm:text-[0.66rem]" />
+        <span>{article.source_name}</span>
+        <span aria-hidden="true">·</span>
+        <span>{rich(w.saved, { time: <TimeAgo date={article.saved_at} /> })}</span>
+        {readingTime && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="whitespace-nowrap">{readingTime}</span>
+          </>
         )}
+        {/* Said in words for screen readers; the eye sees the postmark on the photo. */}
+        {article.is_read && <span className="sr-only">{w.read}</span>}
+      </p>
 
-        {folder && (
-          <p className="mt-2 text-sm italic text-muted-foreground">
-            {rich(w.inFolder, { name: <span className="font-semibold not-italic text-foreground">{folder.name}</span> })}
-          </p>
+      <h2
+        className={cn(
+          'headline col-span-2 row-start-2 mt-2 text-[1.15rem] leading-snug sm:col-span-1 sm:col-start-2 sm:mt-1 sm:text-[1.3rem]',
+          article.is_read && 'text-foreground/60',
         )}
-      </div>
+      >
+        <StoryLink article={story} onClick={() => onOpen(article)} className="decoration-1 underline-offset-4 hover:underline">
+          {title}
+        </StoryLink>
+      </h2>
 
-      {/* Full width under the picture on phones, beside it on larger screens. */}
-      <div className="col-span-2 mt-3 flex flex-wrap gap-2 sm:col-span-1 sm:col-start-2">
-        <Button variant="stamp" size="sm" onClick={() => onToggleRead(article)}>
-          <Ornament name="spectacles" className={mark} />
-          {article.is_read ? w.markUnread : w.markRead}
-        </Button>
+      {/*
+        * One ruled line, the same on every width: two hairline buttons of one height, side by side. The folder button
+        * names the story's folder (or Unfiled) and opens the list of folders; Remove keeps its own size at the far end.
+        * Its menu keeps clear of the phone's bottom tab bar and the header, flipping up when there is no room below.
+        */}
+      <div className="col-span-2 row-start-3 mt-2.5 flex items-center gap-2.5 border-t border-rule/30 pt-2.5 sm:col-span-1 sm:col-start-2 sm:mt-3 sm:gap-4 sm:pt-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="stamp" size="sm">
-              <Ornament name="fist" className={mark} /> {folder ? w.changeFolder : w.putInFolder}
+            <Button
+              variant="outline"
+              className="folder-button min-w-0 flex-1 justify-start gap-1 px-2 text-[0.88rem] min-[360px]:gap-2 min-[360px]:px-3 min-[360px]:text-[0.95rem] sm:max-w-72"
+              aria-label={fmt(w.folderLabel, { name: folder ? folder.name : w.unfiled })}
+            >
+              <Ornament name="label" className="folder-button-mark h-[1.05rem] [--ornament-ink:var(--brass-ink)]" />
+              <span className={cn('min-w-0 flex-1 truncate text-left', !folder && 'font-normal italic text-muted-foreground')}>
+                {folder ? folder.name : w.unfiled}
+              </span>
+              <span aria-hidden="true" className="shrink-0 text-[0.8rem] leading-none text-(--brass-ink)">
+                ▾
+              </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-60">
+          <DropdownMenuContent align="start" collisionPadding={{ top: 72, bottom: 72, left: 8, right: 8 }} className="w-60">
             <DropdownMenuLabel>{w.putIn}</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={article.folder_id ?? 'none'} onValueChange={(value) => onMove(article, value === 'none' ? null : value)}>
               <DropdownMenuRadioItem value="none">{w.noFolder}</DropdownMenuRadioItem>
@@ -140,17 +128,15 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
             <DropdownMenuItem onSelect={() => onNewFolder(article)}>{w.newFolder}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="stamp" size="sm" onClick={() => onEditNote(article)}>
-          <Ornament name="nib" className={mark} /> {article.notes ? w.editNote : w.addNote}
-        </Button>
-        <Button variant="stamp" size="sm" onClick={() => setPrintRun((run) => run + 1)} title={w.printTitle}>
-          <Engraving name="press" className="h-[1.15rem] [--engraving-ink:currentColor]" /> {w.print}
-        </Button>
-        <Button variant="stamp" size="sm" onClick={() => onRemove(article)} className="text-destructive hover:text-destructive">
-          <Ornament name="scissors" className={mark} /> {w.remove}
+        <Button
+          variant="outline"
+          onClick={() => onRemove(article)}
+          data-save-button=""
+          className="shrink-0 gap-1.5 px-2 text-[0.88rem] text-foreground/85 min-[360px]:text-[0.95rem] hover:text-destructive min-[360px]:gap-2 min-[360px]:px-3 sm:ml-auto sm:px-4"
+        >
+          <Ornament name="scissors" className="h-[0.65rem] [--ornament-ink:currentColor] min-[360px]:h-[0.8rem] sm:h-[0.9rem]" /> {w.remove}
         </Button>
       </div>
-      {printRun > 0 && <PrintClipping key={printRun} article={article} onDone={printDone} />}
     </article>
   );
 }

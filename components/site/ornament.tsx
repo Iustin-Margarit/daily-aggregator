@@ -40,6 +40,8 @@ const ORNAMENTS = {
   gear: [160, 115],
   // The pocket-watch case of the masthead clock (1911 catalogue): the edition By the clock.
   'watch-case': [360, 518],
+  // A Victorian printer's label, a spiked cartouche with its "No.": a saved story's folder slip.
+  label: [320, 160],
 } as const;
 
 export type OrnamentName = keyof typeof ORNAMENTS;

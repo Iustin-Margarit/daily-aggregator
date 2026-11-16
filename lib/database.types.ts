@@ -24,6 +24,7 @@ export type Database = {
           reading_minutes: number | null
           slug: string
           source_id: string
+          story_group: string | null
           summary: string | null
           title: string
           updated_at: string
@@ -38,6 +39,7 @@ export type Database = {
           reading_minutes?: number | null
           slug: string
           source_id: string
+          story_group?: string | null
           summary?: string | null
           title: string
           updated_at?: string
@@ -52,6 +54,7 @@ export type Database = {
           reading_minutes?: number | null
           slug?: string
           source_id?: string
+          story_group?: string | null
           summary?: string | null
           title?: string
           updated_at?: string
@@ -247,7 +250,6 @@ export type Database = {
           article_id: string
           folder_id: string | null
           is_read: boolean
-          notes: string | null
           saved_at: string
           updated_at: string
           user_id: string
@@ -256,7 +258,6 @@ export type Database = {
           article_id: string
           folder_id?: string | null
           is_read?: boolean
-          notes?: string | null
           saved_at?: string
           updated_at?: string
           user_id: string
@@ -265,7 +266,6 @@ export type Database = {
           article_id?: string
           folder_id?: string | null
           is_read?: boolean
-          notes?: string | null
           saved_at?: string
           updated_at?: string
           user_id?: string
@@ -448,6 +448,21 @@ export type Database = {
       }
       database_size_bytes: { Args: never; Returns: number }
       delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
+      get_also_reported: {
+        Args: {
+          p_article_id: string
+          p_limit?: number
+          p_muted_source_ids?: string[]
+          p_muted_words?: string[]
+        }
+        Returns: {
+          id: string
+          published_at: string
+          slug: string
+          source_name: string
+          title: string
+        }[]
+      }
       get_article: {
         Args: { p_slug_or_id: string }
         Returns: {
@@ -554,7 +569,6 @@ export type Database = {
           folder_id: string
           image_url: string
           is_read: boolean
-          notes: string
           published_at: string
           reading_minutes: number
           saved_at: string
@@ -577,6 +591,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_reserved_username: { Args: { p_username: string }; Returns: boolean }
+      join_story_group: { Args: { p_article_id: string }; Returns: undefined }
       promote_to_admin: { Args: { p_email: string }; Returns: string }
       slugify: { Args: { p_text: string }; Returns: string }
       start_ingestion_run: {

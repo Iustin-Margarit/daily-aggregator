@@ -61,6 +61,8 @@ export const i18n = {
     long: (value: Date) => date(value, { day: 'numeric', month: 'long', year: 'numeric' }),
     /** "14 November" (in UTC, like Wikipedia's anniversaries). */
     dayMonth: (value: Date) => date(value, { day: 'numeric', month: 'long', timeZone: 'UTC' }),
+    /** "3 November", in the reader's own time zone. */
+    dayMonthLocal: (value: Date) => date(value, { day: 'numeric', month: 'long' }),
   },
 };
 

@@ -1,7 +1,7 @@
 /*
  * A guest's clippings, kept in this browser (localStorage) until they sign in:
  * the saved stories (a copy of each story, so the Saved page works without the
- * database), their folders, notes and read marks. Every tab sees the same list
+ * database), their folders and read marks. Every tab sees the same list
  * (the "storage" event). When the reader signs in, components/saved/
  * guest-import.tsx moves everything into the account and clears this store.
  */
@@ -118,7 +118,6 @@ export function toClipping(article: FeedArticle): SavedArticle {
     category_name: article.category_name,
     folder_id: null,
     is_read: false,
-    notes: null,
     saved_at: new Date().toISOString(),
   };
 }
@@ -134,7 +133,7 @@ export function removeGuestClipping(articleId: string): GuestResult {
   return update((c) => ({ ...c, articles: c.articles.filter((a) => a.article_id !== articleId) })) ? ok : storageError;
 }
 
-export function patchGuestClipping(articleId: string, patch: Partial<Pick<SavedArticle, 'is_read' | 'notes' | 'folder_id'>>): GuestResult {
+export function patchGuestClipping(articleId: string, patch: Partial<Pick<SavedArticle, 'is_read' | 'folder_id'>>): GuestResult {
   return update((c) => ({ ...c, articles: c.articles.map((a) => (a.article_id === articleId ? { ...a, ...patch } : a)) })) ? ok : storageError;
 }
 

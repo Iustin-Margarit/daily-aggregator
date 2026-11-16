@@ -41,7 +41,7 @@ export default async function OnboardingPage() {
     // Phones: a short header, so the first row of stamps shows without scrolling.
     <div className="container pb-8 pt-4 sm:py-10">
       <PageHeader
-        kicker={isFirstRun ? w.kickerFirst : isGuest ? w.kickerGuest : w.kicker}
+        kicker={isFirstRun ? w.kickerFirst : isGuest ? undefined : w.kicker}
         title={isFirstRun ? w.titleFirst : w.title}
         description={isFirstRun ? w.descriptionFirst : isGuest ? w.descriptionGuest : w.description}
         compact

@@ -7,7 +7,7 @@ export type GuestImportResult = { moved: number; kept: number } | null;
 
 /**
  * Moves the clippings a visitor kept in this browser into their account:
- * folders (matched by name), stories, notes and read marks. Stories already
+ * folders (matched by name), stories and read marks. Stories already
  * saved in the account keep the account's copy; stories that have since left
  * the paper are dropped. Clippings that could not be moved for a passing
  * reason (no connection, a full account) stay in this browser for the next try.
@@ -35,7 +35,6 @@ export async function importGuestClippings(supabase: SupabaseClient<Database>, u
     article_id: a.article_id,
     folder_id: a.folder_id ? (folderIds.get(a.folder_id) ?? null) : null,
     is_read: a.is_read,
-    notes: a.notes,
     saved_at: a.saved_at,
   }));
   let moved = 0;

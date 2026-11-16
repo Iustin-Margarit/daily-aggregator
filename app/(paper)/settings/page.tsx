@@ -12,15 +12,14 @@ import {
   type HiddenStory,
 } from '@/components/profile/settings-sections';
 import { ledgerIndex } from '@/components/profile/ledger-index';
-import { Engraving } from '@/components/site/engraving';
-import { ScrollDivider } from '@/components/site/scroll-divider';
-import { ColoredAvatar } from '@/components/ui/colored-avatar';
+import { PageHeader } from '@/components/site/page-header';
+import { PeekNav } from '@/components/site/peek-nav';
 import { DEFAULT_ACCENT } from '@/lib/colors';
 import { GUEST_ACCENT_COOKIE, GUEST_SECTIONS_COOKIE, guestMutesFrom, parseGuestAccent, parseGuestSections } from '@/lib/guest';
 import { getI18n } from '@/lib/i18n/server';
 import { createClient, getCurrentProfile, getCurrentUser, getSessionUser } from '@/lib/supabase/server';
 import type { Category, FontSize, SourceOption } from '@/lib/types';
-import { SETTINGS_PATH } from '@/lib/routes';
+import { loginPath, SETTINGS_PATH } from '@/lib/routes';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -30,11 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
 const FONT_SIZES = new Set(['small', 'medium', 'large']);
 
 /**
- * Settings as the Reader's Ledger, kept in the printer's office: a nameplate
- * with an old woodcut of a print shop and the reader's own seal, then the
- * ledger's index down the margin column and its entries beside it.
- * Visitors without an account get the same ledger with the entries kept in
- * their browser only: the printing, the reading room, sections and papers.
+ * Settings as the Reader's Ledger: a short head, the ledger's index (a ribbon on phones, the margin on wide
+ * screens) and its entries, each a few plain choices that apply at once. Visitors get the entries kept in their
+ * browser only: appearance, reading, sections and papers.
  */
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ delete?: string }> }) {
   const [session, query, { t, rich }, supabase, jar] = await Promise.all([getSessionUser(), searchParams, getI18n(), createClient(), cookies()]);
@@ -93,73 +90,29 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const accent = profile?.banner_color ?? parseGuestAccent(jar.get(GUEST_ACCENT_COOKIE)?.value) ?? DEFAULT_ACCENT;
 
   return (
-    <div className="container pb-8 pt-10 sm:pt-14">
-      {/* The nameplate of the ledger. */}
-      <header
-        className={
-          guest
-            ? 'card-ornate grid items-center gap-6 px-6 py-7 [--corner:30px] sm:px-10 sm:py-9 md:grid-cols-[auto_minmax(0,1fr)] md:gap-10'
-            : 'card-ornate grid items-center gap-6 px-6 py-7 [--corner:30px] sm:px-10 sm:py-9 md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-10'
-        }
-      >
-        <Engraving
-          name="printing-office"
-          soft
-          className="mx-auto h-36 sm:h-44"
-          label={w.woodcut}
-        />
-        <div className="text-center md:text-left">
-          <p className="kicker">{w.kicker}</p>
-          {/* Scales down on a narrow phone with large type, so "Einstellungen" stays on the page. */}
-          <h1 className="headline mt-2 text-[min(2.6rem,12vw)] sm:text-[3.4rem]">{w.title}</h1>
-          <p className="mt-2 max-w-xl text-pretty text-[1.05rem] italic text-muted-foreground md:max-w-none">{guest ? w.guestIntro : w.intro}</p>
-        </div>
-        {profile && (
-          <div className="flex flex-col items-center gap-1.5 text-center md:border-l md:border-rule/35 md:pl-10">
-            <ColoredAvatar username={profile.username} color={profile.avatar_color} size="xl" className="h-16 w-16 text-[2rem] md:h-24 md:w-24 md:text-[2.9rem]" />
-            <p className="label mt-1 text-muted-foreground">{w.keptFor}</p>
-            <p className="max-w-[12rem] truncate font-display text-[1.15rem] font-semibold">{profile.username}</p>
-          </div>
-        )}
-      </header>
-
-      {/* Visitors: where their choices live, and what an account adds. */}
-      {guest && (
-        <p className="mt-5 text-pretty text-center text-[0.98rem] italic text-muted-foreground">
-          {rich(w.guestNote, {
-            login: (
-              <Link
-                href={`/login?next=${SETTINGS_PATH}`}
-                className="font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2"
-              >
-                {w.guestLogin}
-              </Link>
-            ),
-          })}
-        </p>
-      )}
-
-      <ScrollDivider className={guest ? 'mt-5' : 'mt-8'} />
+    <div className="container pb-8 pt-6 sm:pt-9">
+      {/* A short head, like the paper's other pages. */}
+      <PageHeader compact kicker={w.kicker} title={w.title} />
 
       <div className="mt-8 grid gap-7 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-0">
         {/* The ledger's index: a ribbon on phones, a contents list down the margin on wide screens. */}
         <aside className="min-w-0 lg:border-r lg:border-rule/40 lg:pr-8">
           <div className="lg:sticky lg:top-24">
             <p className="label mb-2 hidden text-(--brass-ink) lg:block">{w.contents}</p>
-            <nav aria-label={w.contentsLabel} className="folder-index">
+            <PeekNav kind="settings" aria-label={w.contentsLabel} className="folder-index">
               {ledgerIndex(guest).map(({ id, numeral }) => (
                 <a key={id} href={`#${id}`} className="dept-tab">
                   <span className="folder-name">{w.entries[id]}</span>
                   <span className="hidden font-display tracking-normal text-(--brass-ink) normal-case lg:inline">{numeral}</span>
                 </a>
               ))}
-            </nav>
+            </PeekNav>
           </div>
         </aside>
 
         <div className="min-w-0 space-y-8 lg:pl-10">
           <Ledger guest={guest}>
-            {user && profile && <ProfileSection username={profile.username} avatarColor={profile.avatar_color} email={user.email ?? ''} />}
+            {user && profile && <ProfileSection username={profile.username} email={user.email ?? ''} />}
             <AppearanceSection bannerColor={accent} fontSize={fontSize} guest={guest} />
             <ReadingRoomSection />
             <SectionsAndSourcesSection
@@ -176,6 +129,22 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </Ledger>
         </div>
       </div>
+
+      {/* Visitors: one line under all the settings on where they are kept, and the way to keep them everywhere (as on Saved). */}
+      {guest && (
+        <p className="mt-10 border-t border-dashed border-rule/45 pt-5 text-pretty text-center text-[0.95rem] italic text-muted-foreground">
+          {rich(w.guestNote, {
+            login: (
+              <Link
+                href={loginPath(SETTINGS_PATH)}
+                className="font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2"
+              >
+                {w.guestLogin}
+              </Link>
+            ),
+          })}
+        </p>
+      )}
     </div>
   );
 }

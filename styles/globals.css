@@ -1541,8 +1541,9 @@ article:focus-within .photo-plate::after,
    * capitals and divided by hairlines. It scrolls sideways whenever the
    * departments do not all fit (on a phone, or a laptop with a large type size),
    * and fades only on a side where more are waiting (data-more-left/right, set by
-   * feed-toolbar.tsx), where a printer's fist (.dept-more) points the way. When
-   * everything fits, the departments share the whole width.
+   * components/front/section-ribbon.tsx); on a phone it also glides along and back
+   * once when first seen (lib/use-scroll-peek.ts). When everything fits, the
+   * departments share the whole width.
    */
   .dept-bar {
     display: flex;
@@ -1561,42 +1562,6 @@ article:focus-within .photo-plate::after,
     }
     &::-webkit-scrollbar {
       display: none;
-    }
-  }
-  /* The fist at a faded end: brass, over the fade, a touch target as tall as the ribbon. */
-  .dept-more {
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    cursor: pointer;
-    /* Paper behind it, so the fist never sits on top of a half-faded word. */
-    background: linear-gradient(90deg, transparent, hsl(var(--background)) 40%);
-    &.left-0 {
-      justify-content: flex-start;
-      padding-left: 0.2rem;
-      background: linear-gradient(270deg, transparent, hsl(var(--background)) 40%);
-    }
-    &.right-0 {
-      justify-content: flex-end;
-      padding-right: 0.2rem;
-    }
-  }
-  /* Two small nudges when the page opens: something more this way. */
-  .dept-more-nudge > * {
-    animation: dept-nudge 0.9s ease-in-out 0.6s 2;
-  }
-  @keyframes dept-nudge {
-    50% {
-      transform: translateX(5px);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .dept-more-nudge > * {
-      animation: none;
     }
   }
   /* One department, or one tab of a small ribbon (Latest | For you): small capitals, a hairline before it. */
@@ -1802,8 +1767,8 @@ article:focus-within .photo-plate::after,
   .folder-index {
     display: flex;
     overflow-x: auto;
-    scrollbar-width: none;
     border-block: 3px double hsl(var(--rule) / 0.6);
+    scrollbar-width: none;
     mask-image: linear-gradient(90deg, #000 calc(100% - 2rem), transparent);
     &::-webkit-scrollbar {
       display: none;
@@ -2036,6 +2001,53 @@ article:focus-within .photo-plate::after,
 }
 
 /*
+ * The quick-read sheet (components/story/quick-read.tsx). The page underneath is not touched while it is open
+ * (its overlay takes the presses and swallows scrolling: no class on <html>, no overflow change, so nothing of
+ * the page is restyled or laid out again). The sheet comes in with a short slide and fade, transform and opacity
+ * only (the compositor's work), and closes at once.
+ */
+.sheet-overlay {
+  touch-action: none;
+  animation: sheet-fade 0.16s ease-out;
+}
+.quick-read[data-state='open'] {
+  animation: sheet-up 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@media (min-width: 1024px) {
+  .quick-read[data-state='open'] {
+    animation-name: sheet-left;
+  }
+}
+/* The two lists at the sheet's foot, when they arrive. */
+.sheet-extras {
+  animation: sheet-fade 0.2s ease-out;
+}
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+}
+@keyframes sheet-left {
+  from {
+    opacity: 0;
+    transform: translateX(2.5rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet-overlay,
+  .quick-read[data-state='open'],
+  .sheet-extras {
+    animation: none;
+  }
+}
+
+/*
  * Turning the page (Previous / Next page under the stories): the new page
  * swings in from the side it was turned from, with the shadow of the turning
  * leaf sweeping across. About half a second, so reading is never slowed; none
@@ -2045,7 +2057,8 @@ article:focus-within .photo-plate::after,
 .page-turn-prev {
   position: relative;
   overflow-x: clip;
-  animation: page-in-next 0.45s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  /* Below 1024px only a slide and a fade (a 3D turn of a page this tall is too heavy for a phone). */
+  animation: page-in-next 0.3s cubic-bezier(0.22, 0.8, 0.3, 1) both;
   transform-origin: 0 0;
 }
 .page-turn-prev {
@@ -2054,15 +2067,53 @@ article:focus-within .photo-plate::after,
 }
 @keyframes page-in-next {
   from {
-    opacity: 0.15;
-    transform: perspective(1800px) rotateY(-12deg) translateX(3%);
+    opacity: 0.2;
+    transform: translateX(3%);
   }
 }
 @keyframes page-in-prev {
   from {
+    opacity: 0.2;
+    transform: translateX(-3%);
+  }
+}
+@media (min-width: 1024px) {
+  .page-turn-next,
+  .page-turn-prev {
+    animation-duration: 0.45s;
+  }
+  .page-turn-next {
+    animation-name: page-in-next-3d;
+  }
+  .page-turn-prev {
+    animation-name: page-in-prev-3d;
+  }
+}
+@keyframes page-in-next-3d {
+  from {
+    opacity: 0.15;
+    transform: perspective(1800px) rotateY(-12deg) translateX(3%);
+  }
+}
+@keyframes page-in-prev-3d {
+  from {
     opacity: 0.15;
     transform: perspective(1800px) rotateY(12deg) translateX(-3%);
   }
+}
+/* The shadow of the turning leaf: only where the turn is in 3D. */
+@media (max-width: 1023.98px) {
+  .page-turn-next::after,
+  .page-turn-prev::after {
+    display: none;
+  }
+}
+/* A page link pressed: the page on screen dims at once, until the next one is in (components/feed/pagination.tsx). */
+.page-body {
+  transition: opacity 0.12s ease-out;
+}
+:root[data-page-turning] .page-body {
+  opacity: 0.55;
 }
 .page-turn-next::after,
 .page-turn-prev::after {
@@ -2131,140 +2182,103 @@ article:focus-within .photo-plate::after,
 
 
 /*
- * "Print clipping" on the Saved page (components/saved/print-clipping.tsx): while
- * the print dialog is open, the page prints only the clipping, in dark ink on
- * white paper whatever the edition, cut out along a dashed line with a pair of
- * scissors at its corner. Hidden on screen.
+ * Saved stories (components/saved/saved-item.tsx). A story the reader has read is franked like a used stamp:
+ * the photo fades to grey and a real postmark ring (docs/ASSETS.md) is struck on it in red with the word READ. Under it, two
+ * hairline buttons: its folder (a Victorian printer's label its mark) and Remove.
  */
-.print-clipping {
-  display: none;
+.photo-plate.is-read img {
+  filter: grayscale(1) contrast(0.95);
+  opacity: 0.55;
 }
-@media print {
-  html.printing-clipping,
-  html.printing-clipping body {
-    background: #fff !important;
-    color: #1d1a16 !important;
-  }
-  html.printing-clipping body::before,
-  html.printing-clipping body::after {
-    display: none !important;
-  }
-  html.printing-clipping body > :not(.print-clipping) {
-    display: none !important;
-  }
-  html.printing-clipping .print-clipping {
-    display: block;
-    padding: 1.2cm 0 0;
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
-  @page {
-    margin: 1.5cm;
-  }
-}
-.print-clipping-cut {
-  position: relative;
-  max-width: 14cm;
-  margin: 0 auto;
-  padding: 0.9cm 1cm 0.7cm;
-  border: 1.5px dashed #6b6257;
-  background: #fff;
-  color: #1d1a16;
-  font-family: var(--font-source-serif), Georgia, serif;
-  break-inside: avoid;
-}
-/* The scissors, cutting along the line at the top left. */
-.print-clipping-cut::before {
-  content: '';
+.read-postmark {
+  --read-ink: hsl(2 70% 42%);
+  --ornament-ink: var(--read-ink);
   position: absolute;
-  top: -0.42cm;
-  left: 0.8cm;
-  width: 1.5cm;
-  height: 0.5cm;
-  background: #1d1a16;
-  mask: url(/ornaments/scissors.webp) center / contain no-repeat;
-  box-shadow: 0 0 0 0.12cm #fff;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: min(62%, 6.5rem);
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  /* A thin light edge, so the red reads on a dark photograph as well as a pale one. */
+  filter: drop-shadow(0 0 1px rgb(255 250 240 / 0.85)) drop-shadow(0 0 0.5px rgb(255 250 240 / 0.6));
+  animation: read-strike 0.32s cubic-bezier(0.2, 1.5, 0.4, 1);
 }
-.print-clipping-head {
+@keyframes read-strike {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-12deg) scale(1.4);
+  }
+}
+.dark .read-postmark {
+  --read-ink: hsl(4 78% 62%);
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.8));
+}
+.dark .read-postmark-word {
+  background: rgb(18 22 32 / 0.75);
+}
+.read-postmark-word {
+  position: absolute;
+  /* A pale disc of paper inside the ring, so the word reads on a small, busy photograph. */
+  inset: 17%;
+  border-radius: 50%;
+  background: rgb(255 250 240 / 0.78);
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 0.18cm;
-  border-bottom: 3px double #1d1a16;
-  font-family: var(--font-jost), sans-serif;
-  font-size: 8.5pt;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-typewriter);
+  font-size: clamp(0.66rem, 1.4vw + 0.32rem, 0.95rem);
+  letter-spacing: 0.08em;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--read-ink);
 }
-.print-clipping-paper {
-  font-family: var(--font-unifraktur), serif;
-  font-size: 15pt;
-  letter-spacing: 0;
-  text-transform: none;
+/* The folder button under a saved story: its small label engraving gives way to the folder's name when narrow. */
+.folder-button {
+  container-type: inline-size;
 }
-.print-clipping-kicker {
-  margin-top: 0.45cm;
-  font-family: var(--font-jost), sans-serif;
-  font-size: 8pt;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #7a2a1e;
+.folder-button-mark {
+  @container (max-width: 8rem) {
+    display: none;
+  }
 }
-.print-clipping-title {
-  margin-top: 0.12cm;
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-size: 22pt;
-  font-weight: 650;
-  line-height: 1.12;
+@media (prefers-reduced-motion: reduce) {
+  .read-postmark {
+    animation: none;
+  }
 }
-.print-clipping-byline {
-  margin-top: 0.22cm;
-  font-family: var(--font-jost), sans-serif;
-  font-size: 9pt;
-  color: #4a443d;
+
+/*
+ * Reading with the keyboard (components/site/keyboard-reading.tsx): the story j / k are on wears a
+ * double brass rule, like copy marked up on the stone; its headline holds the focus.
+ */
+article[data-reading] {
+  outline: 3px double var(--brass-ink);
+  outline-offset: 7px;
+  border-radius: 1px;
 }
-.print-clipping-text {
-  margin-top: 0.35cm;
-  font-size: 11pt;
-  line-height: 1.5;
-  text-align: justify;
-  hyphens: auto;
+@media (max-width: 639px) {
+  article[data-reading] {
+    outline-offset: 4px;
+  }
 }
-.print-clipping-note {
-  margin-top: 0.45cm;
-  padding: 0.25cm 0.35cm;
-  border-left: 3px double #7a2a1e;
-  background: #f6f1e7;
-}
-.print-clipping-note-label {
-  font-family: var(--font-jost), sans-serif;
-  font-size: 7.5pt;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #7a2a1e;
-}
-.print-clipping-note-text {
-  margin-top: 0.08cm;
+
+/* The compositor's card: each key a round typewriter key, a dark cap in a brass ring. */
+.type-key {
+  display: inline-flex;
+  min-width: 2.35rem;
+  height: 2.35rem;
+  padding: 0 0.55rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid var(--ink-gold);
+  background: hsl(var(--foreground));
+  box-shadow: 0 2px 0 hsl(var(--foreground) / 0.45), inset 0 0 0 2px hsl(var(--background) / 0.25);
+  color: hsl(var(--background));
   font-family: var(--font-typewriter);
-  font-size: 10.5pt;
-  line-height: 1.45;
-  white-space: pre-line;
-}
-.print-clipping-foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.15cm 0.6cm;
-  margin-top: 0.45cm;
-  padding-top: 0.18cm;
-  border-top: 1px solid #b9b0a3;
-  font-family: var(--font-jost), sans-serif;
-  font-size: 7.5pt;
-  color: #5b554d;
-}
-.print-clipping-url {
-  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+  line-height: 1;
+  white-space: nowrap;
 }

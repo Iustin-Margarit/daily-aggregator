@@ -90,6 +90,38 @@ describe('get_related_articles for a visitor', () => {
   });
 });
 
+describe('get_also_reported for a visitor', () => {
+  it('gives the same news from other papers, one story each, and honours mutes', async () => {
+    // A recent story that other papers also reported (the dev project has dozens).
+    const { data: feed } = await anon.rpc('get_feed', { p_limit: 60 });
+    let story: { id: string; source_name: string } | undefined;
+    let others: { id: string; source_name: string }[] = [];
+    for (const row of feed ?? []) {
+      const { data, error } = await anon.rpc('get_also_reported', { p_article_id: row.id });
+      assert.equal(error, null, error?.message);
+      if (data?.length) {
+        story = row;
+        others = data;
+        break;
+      }
+    }
+    assert.ok(story, 'no story among the newest 60 is reported by another paper');
+    assert.ok(others.every((row) => row.id !== story.id && row.source_name !== story.source_name), 'only other papers');
+    assert.equal(new Set(others.map((row) => row.source_name)).size, others.length, 'one story per paper');
+    const paper = others[0].source_name;
+    const { data: sources } = await anon.from('sources').select('id, name').eq('name', paper);
+    const { data: muted, error } = await anon.rpc('get_also_reported', { p_article_id: story.id, p_muted_source_ids: (sources ?? []).map((s) => s.id) });
+    assert.equal(error, null, error?.message);
+    assert.ok((muted ?? []).every((row) => row.source_name !== paper), 'a muted paper is left out');
+  });
+
+  it('is empty for a story nobody else reported, or an unknown one', async () => {
+    const { data, error } = await anon.rpc('get_also_reported', { p_article_id: '00000000-0000-0000-0000-000000000000' });
+    assert.equal(error, null, error?.message);
+    assert.deepEqual(data, []);
+  });
+});
+
 describe('get_front_page for a visitor', () => {
   type FrontRow = Database['public']['Functions']['get_front_page']['Returns'][number];
   let rows: FrontRow[] = [];
@@ -160,6 +192,7 @@ describe('what a visitor cannot see or do', () => {
   it('cannot call the admin and ingestion functions', async () => {
     assert.ok((await anon.rpc('admin_list_sources')).error);
     assert.ok((await anon.rpc('database_size_bytes')).error, 'the database size is for the server only');
+    assert.ok((await anon.rpc('join_story_group', { p_article_id: '00000000-0000-0000-0000-000000000000' })).error, 'grouping stories is for ingestion only');
     assert.ok((await anon.rpc('ingest_articles', { p_source_id: '00000000-0000-0000-0000-000000000000', p_articles: [] })).error);
   });
 });

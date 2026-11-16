@@ -22,7 +22,6 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
-import { accentVariables } from '@/lib/colors';
 import { errorText } from '@/lib/error-text';
 import { GUEST_MAX_MUTED_WORDS, guestMutedWordsFit } from '@/lib/guest';
 import { applyAccent, applyFontSize, readGuestMutes, saveGuestAccent, saveGuestFontSize, saveGuestMutes } from '@/lib/guest-prefs';
@@ -36,9 +35,9 @@ import { MAX_MUTED_KEYWORDS, normalizeMutedKeyword } from '@/lib/validation';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cleanText } from '@/lib/text';
-import { markSheetOverPage } from '@/lib/story-cache';
 import { cn } from '@/lib/utils';
-import { SECTIONS_PATH, SETTINGS_PATH, storyPath } from '@/lib/routes';
+import { SECTIONS_PATH, SETTINGS_PATH } from '@/lib/routes';
+import { SheetLink } from '@/components/story/sheet-link';
 
 /*
  * The Settings page as the Reader's Ledger: each part is an entry on a sheet
@@ -63,13 +62,14 @@ function LedgerEntry({
   children,
 }: {
   id: LedgerEntryId;
-  description: React.ReactNode;
+  /** Only where a choice needs a warning (deleting the account); the rest speak for themselves. */
+  description?: React.ReactNode;
   engraving?: EngravingName;
   danger?: boolean;
   children: React.ReactNode;
 }) {
   const numeral = useContext(LedgerContext).find((entry) => entry.id === id)?.numeral ?? '';
-  const { t, fmt } = useI18n();
+  const { t } = useI18n();
   const title = t.settings.entries[id];
   return (
     <section id={id} aria-labelledby={`${id}-title`} className={cn('ledger-sheet scroll-mt-24', danger && 'ledger-sheet-danger')}>
@@ -78,22 +78,16 @@ function LedgerEntry({
       </span>
       <header className="flex items-end justify-between gap-4 border-b-[3px] border-double border-rule/40 pb-4">
         <div className="min-w-0">
-          <p className="label text-(--brass-ink)">{fmt(t.settings.folio, { n: numeral })}</p>
-          <h2 id={`${id}-title`} className={cn('headline mt-1 text-[1.65rem]', danger && 'text-destructive')}>
+          <h2 id={`${id}-title`} className={cn('headline text-[1.65rem]', danger && 'text-destructive')}>
             {title}
           </h2>
-          <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">{description}</p>
+          {description && <p className="mt-1 text-pretty text-[0.95rem] italic text-muted-foreground">{description}</p>}
         </div>
         {engraving && <Engraving name={engraving} className="hidden h-16 max-w-[6.5rem] sm:inline-block" />}
       </header>
       <div className="pt-6">{children}</div>
     </section>
   );
-}
-
-/** The foot of an entry or a form: a dashed rule and its buttons on the right. */
-function LedgerFoot({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-dashed border-rule/45 pt-5', className)}>{children}</div>;
 }
 
 /** A small heading inside an entry, in brass small capitals. */
@@ -108,15 +102,6 @@ function SubHead({ children, htmlFor }: { children: React.ReactNode; htmlFor?: s
   );
 }
 
-/** One line under a SubHead saying what the choice does. */
-function Hint({ children, id }: { children: React.ReactNode; id?: string }) {
-  return (
-    <p id={id} className="-mt-1 mb-3 text-pretty text-[0.9rem] italic leading-snug text-muted-foreground">
-      {children}
-    </p>
-  );
-}
-
 function SubmitButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
@@ -127,58 +112,51 @@ function SubmitButton({ children, disabled }: { children: React.ReactNode; disab
   );
 }
 
-/**
- * Shows a toast for each new action result. No router.refresh(): the actions
- * that change what the page shows call revalidatePath, so their response
- * already carries the fresh page (refreshing again rendered it twice).
- */
-function useActionFeedback(state: ActionResult | null, onSuccess?: () => void) {
-  const { showToast } = useToast();
-  const lastAt = useRef(0);
-  const { t } = useI18n();
-  useEffect(() => {
-    if (!state || state.at === lastAt.current) return;
-    lastAt.current = state.at;
-    showToast({ type: state.ok ? 'success' : 'error', title: state.message ?? (state.ok ? t.common.saved : t.common.somethingWrong) });
-    if (state.ok) onSuccess?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per result
-  }, [state]);
-}
-
 // ---------------------------------------------------------------- I. byline
 
-export function ProfileSection({ username, avatarColor, email }: { username: string; avatarColor: string; email: string }) {
+/**
+ * The account: the reader's seal (their initial, in their accent ink: Appearance) and their name, which is
+ * the only thing to change here. The result shows beside the button, not as a notice.
+ */
+export function ProfileSection({ username, email }: { username: string; email: string }) {
   const [state, action] = useActionState(updateProfile, null);
   const [name, setName] = useState(username);
-  const [color, setColor] = useState(avatarColor);
-  useActionFeedback(state);
+  // What the last save said, until the name is edited again.
+  const [shownAt, setShownAt] = useState(0);
   const w = useI18n().t.settings.byline;
+  const result = state && state.at !== shownAt ? state : null;
 
   return (
-    <LedgerEntry id="byline" description={w.description}>
-      <form action={action}>
-        <div className="grid gap-7 md:grid-cols-[11rem_minmax(0,1fr)]">
-          {/* The reader's seal: their initial pressed in wax, as it appears in the header. */}
-          <div className="flex flex-col items-center gap-2 text-center md:border-r md:border-rule/30 md:pr-7">
-            <ColoredAvatar username={name} color={color} size="xl" />
-            <p className="mt-1 max-w-full truncate font-display text-[1.15rem] font-semibold">{name || w.yourName}</p>
-            <p className="max-w-full truncate text-[0.85rem] italic text-muted-foreground">{email}</p>
-          </div>
-          <div className="min-w-0 space-y-6">
-            <div className="max-w-sm">
-              <SubHead htmlFor="username">{w.username}</SubHead>
-              <Input id="username" name="username" value={name} onChange={(e) => setName(e.target.value)} minLength={3} maxLength={30} required />
-            </div>
-            <div>
-              <SubHead>{w.wax}</SubHead>
-              <ColorSwatches value={color} onChange={setColor} label={w.wax} />
-              <input type="hidden" name="avatar_color" value={color} />
-            </div>
-          </div>
+    <LedgerEntry id="byline">
+      <form action={action} className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-7">
+        <div className="flex items-center gap-4 sm:flex-col sm:gap-2 sm:text-center">
+          <ColoredAvatar username={name} size="xl" className="h-16 w-16 text-[2rem] sm:h-20 sm:w-20 sm:text-[2.5rem]" />
+          <p className="min-w-0 max-w-[14rem] truncate text-[0.88rem] italic text-muted-foreground">{email}</p>
         </div>
-        <LedgerFoot>
-          <SubmitButton disabled={name === username && color === avatarColor}>{w.save}</SubmitButton>
-        </LedgerFoot>
+        <div className="min-w-0 flex-1">
+          <SubHead htmlFor="username">{w.username}</SubHead>
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              id="username"
+              name="username"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (state) setShownAt(state.at);
+              }}
+              minLength={3}
+              maxLength={30}
+              required
+              className="max-w-sm flex-1 basis-48"
+            />
+            <SubmitButton disabled={name.trim() === username}>{w.save}</SubmitButton>
+          </div>
+          {result && (
+            <p role={result.ok ? 'status' : 'alert'} className={cn('mt-2 text-[0.92rem]', result.ok ? 'text-muted-foreground' : 'text-destructive')}>
+              {result.ok ? `✓ ${result.message ?? w.saved}` : result.message}
+            </p>
+          )}
+        </div>
       </form>
     </LedgerEntry>
   );
@@ -191,13 +169,6 @@ const EDITIONS: { value: ThemeChoice; ornament: OrnamentName }[] = [
   { value: 'dark', ornament: 'moon' },
   { value: 'auto', ornament: 'watch-case' },
 ];
-
-/** A choice printed as a card in a double rule (the edition): brass-washed when chosen. */
-const choiceCard = (active: boolean) =>
-  cn(
-    'flex min-w-0 flex-col items-center gap-1.5 rounded-[2px] border-[3px] border-double px-2 py-3.5 text-center hyphens-auto break-words transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-    active ? 'border-(--ink-gold) bg-(--ink-gold)/14' : 'border-rule/35 bg-card/50 hover:border-rule/60',
-  );
 
 /**
  * The edition, type size and ink. Every choice applies the moment
@@ -262,43 +233,34 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
   );
 
   return (
-    <LedgerEntry id="printing" description={w.description}>
+    <LedgerEntry id="printing">
       <div>
         <div className="grid grid-cols-1 gap-8 xl:grid-cols-2 xl:gap-0">
           <div className="space-y-7 xl:border-r xl:border-rule/30 xl:pr-8">
             <div>
               <SubHead>{w.edition}</SubHead>
-              {/* Phones: one full-width card a line, the engraving on the left and the name and note beside it.
-                  From 640px: three cards side by side. */}
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2.5" role="radiogroup" aria-label={w.edition}>
-                {EDITIONS.map(({ value, ornament }) => {
-                  const active = mounted && theme === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => setTheme(value)}
-                      className={cn(choiceCard(active), 'max-sm:flex-row max-sm:gap-3.5 max-sm:px-3.5 max-sm:py-2.5 max-sm:text-left')}
-                    >
-                      <span className="flex w-10 shrink-0 justify-center sm:w-auto">
-                        <Ornament name={ornament} className="h-8 max-w-10 sm:h-9 sm:max-w-none" />
-                      </span>
-                      <span className="flex min-w-0 flex-col gap-0.5 sm:items-center sm:gap-1.5">
-                        <span className="font-display text-[1.02rem] font-semibold leading-tight text-balance">{w.themes[value].label}</span>
-                        <span className="text-[0.8rem] italic leading-snug text-muted-foreground sm:text-[0.78rem]">{w.themes[value].note}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              {/* The same kind of control as Type size and Reading: the emblem above the name, in equal parts. */}
+              <Segmented<ThemeChoice>
+                fill
+                even
+                aria-label={w.edition}
+                // The saved edition is known only in the browser: nothing is marked until then.
+                value={(mounted ? theme : '') as ThemeChoice}
+                onChange={setTheme}
+                options={EDITIONS.map(({ value, ornament }) => ({
+                  value,
+                  label: w.themes[value].label,
+                  preview: <Ornament name={ornament} className="h-7 max-w-9" />,
+                }))}
+              />
+              {mounted && theme === 'auto' && <p className="mt-2 text-[0.85rem] italic text-muted-foreground">{w.themes.auto.note}</p>}
             </div>
 
             <div>
               <SubHead>{w.typeSize}</SubHead>
               <Segmented<FontSize>
                 fill
+                even
                 aria-label={w.typeSize}
                 value={size}
                 onChange={(next) => void chooseSize(next)}
@@ -312,16 +274,9 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
           </div>
 
           <div className="xl:pl-8">
+            {/* The page (section labels, the reader's seal) takes the ink at once: no proof needed. */}
             <SubHead>{w.accent}</SubHead>
-            <Hint>{w.accentNote}</Hint>
-            <div className="space-y-4">
-              {/* A proof of the ink on a slip of the paper. */}
-              <div className="card-paper px-4 py-3" style={accentVariables(banner)} data-accent="" aria-hidden="true">
-                <p className="kicker">{w.proofKicker}</p>
-                <p className="headline mt-1 text-lg">{w.proofHeadline}</p>
-              </div>
-              <ColorSwatches value={banner} onChange={chooseInk} label={w.accent} />
-            </div>
+            <ColorSwatches value={banner} onChange={chooseInk} label={w.accent} />
           </div>
         </div>
       </div>
@@ -400,17 +355,14 @@ const PREF_SLIPS: { [K in ReaderPref]: { name: K; values: ReaderPrefValue<K>[] }
 /** One reading preference on a slip: what it does, and its choices. Applies at once on this device. */
 function PrefSlipRow<K extends ReaderPref>({ name, values }: { name: K; values: ReaderPrefValue<K>[] }) {
   const value = useReaderPref(name);
-  const slip = useI18n().t.settings.reading[name] as { title: string; note: string; options: Record<string, string> };
+  const slip = useI18n().t.settings.reading[name] as { title: string; options: Record<string, string> };
   return (
     <div className="flex flex-col gap-3 border-b border-rule/25 pb-5 last:border-b-0 last:pb-0 md:[&:nth-last-child(2)]:border-b-0 md:[&:nth-last-child(2)]:pb-0">
-      <div>
-        <p className="font-display text-[1.1rem] font-semibold">{slip.title}</p>
-        <p className="mt-0.5 text-pretty text-[0.9rem] italic leading-snug text-muted-foreground">{slip.note}</p>
-      </div>
+      <p className="font-display text-[1.1rem] font-semibold">{slip.title}</p>
       <Segmented<ReaderPrefValue<K>>
         fill
+        even
         aria-label={slip.title}
-        className="max-w-full self-start"
         value={value}
         onChange={(next) => setReaderPref(name, next)}
         options={values.map((option) => ({ value: option, label: slip.options[option], preview: PREVIEWS[name](option) }))}
@@ -420,9 +372,8 @@ function PrefSlipRow<K extends ReaderPref>({ name, values }: { name: K; values: 
 }
 
 export function ReadingRoomSection() {
-  const { t } = useI18n();
   return (
-    <LedgerEntry id="reading-room" engraving="typewriter" description={t.settings.reading.description}>
+    <LedgerEntry id="reading-room">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-x-10 md:gap-y-6">
         {PREF_SLIPS.map((slip) => (
           <PrefSlipRow key={slip.name} name={slip.name} values={slip.values as ReaderPrefValue<typeof slip.name>[]} />
@@ -484,7 +435,6 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
     setKeywords(next);
     setDraft('');
     setProblem(null);
-    showToast({ type: 'success', title: fmt(w.wordMuted, { word: result.keyword }), message: w.wordMutedNote });
   };
 
   const remove = async (keyword: string) => {
@@ -504,7 +454,6 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
   return (
     <div>
       <SubHead htmlFor="muted-word">{w.mutedWords}</SubHead>
-      <Hint id="muted-word-hint">{w.mutedWordsNote}</Hint>
       <form onSubmit={add} className="flex flex-wrap items-start gap-2.5">
         <div className="min-w-0 flex-1 basis-56">
           <Input
@@ -518,7 +467,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
             placeholder={w.wordPlaceholder}
             autoComplete="off"
             aria-invalid={problem ? true : undefined}
-            aria-describedby={problem ? 'muted-word-hint muted-word-problem' : 'muted-word-hint'}
+            aria-describedby={problem ? 'muted-word-problem' : undefined}
           />
           {problem && (
             <p id="muted-word-problem" role="alert" className="mt-1.5 text-[0.88rem] text-destructive">
@@ -611,7 +560,6 @@ function MutedPapers({
     }
     setList(next);
     setChoice('');
-    showToast({ type: 'success', title: fmt(w.mutedPaper, { name: paper.name }), message: w.mutedPaperNote });
   };
 
   const unmute = async (paper: MutedPaper) => {
@@ -619,25 +567,21 @@ function MutedPapers({
     setList(next);
     if (!userId) {
       saveGuest(next);
-      showToast({ type: 'success', title: fmt(w.unmuted, { name: paper.name }) });
       return;
     }
     const { error } = await unmuteSource(userId, paper.id);
     if (error) {
       setList((current) => [...current, paper].sort((a, b) => a.name.localeCompare(b.name)));
       showToast({ type: 'error', title: w.unmuteFailed, message: errorText(error, t) });
-    } else {
-      showToast({ type: 'success', title: fmt(w.unmuted, { name: paper.name }) });
     }
   };
 
   return (
     <div>
       <SubHead htmlFor="mute-paper">{w.mutedPapers}</SubHead>
-      <Hint id="mute-paper-hint">{w.mutedPapersNote}</Hint>
       <form onSubmit={mute} className="flex flex-wrap items-start gap-2.5">
         <div className="min-w-0 flex-1 basis-52">
-          <NativeSelect id="mute-paper" value={choice} onChange={(event) => setChoice(event.target.value)} aria-describedby="mute-paper-hint">
+          <NativeSelect id="mute-paper" value={choice} onChange={(event) => setChoice(event.target.value)}>
             <option value="">{w.pickPaper}</option>
             {groups.map(({ category, papers }) => (
               <optgroup key={category.id} label={sectionText(t, getCategoryStyle(category.name).key, category.name).name}>
@@ -693,21 +637,18 @@ function HiddenStories({ userId, initial }: { userId: string; initial: HiddenSto
     if (error) {
       setList((current) => [story, ...current]);
       showToast({ type: 'error', title: w.showAgainFailed, message: errorText(error, t) });
-    } else {
-      showToast({ type: 'success', title: w.shownAgain });
     }
   };
 
   return (
     <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
       <SubHead>{w.hiddenStories}</SubHead>
-      <Hint>{w.hiddenStoriesNote}</Hint>
       <ul className="divide-y divide-dashed divide-rule/40 border-y border-rule/40" aria-label={w.hiddenStories}>
         {list.map((story) => (
           <li key={story.id} className="flex items-center justify-between gap-3 py-2">
-            <Link href={storyPath(story.slug)} onClick={() => markSheetOverPage(true)} className="min-w-0 font-display text-[1rem] font-semibold leading-snug underline-offset-4 hover:underline">
+            <SheetLink slug={story.slug} className="min-w-0 font-display text-[1rem] font-semibold leading-snug underline-offset-4 hover:underline">
               {cleanText(story.title)}
-            </Link>
+            </SheetLink>
             <Button variant="stamp" size="sm" onClick={() => showAgain(story)} aria-label={fmt(w.showAgainLabel, { title: cleanText(story.title) })}>
               {w.showAgain}
             </Button>
@@ -741,7 +682,7 @@ export function SectionsAndSourcesSection({
   const w = useI18n().t.settings.sections;
 
   return (
-    <LedgerEntry id="sections" description={w.description}>
+    <LedgerEntry id="sections">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-0">
         <div className="md:border-r md:border-rule/30 md:pr-8">
           <SubHead>{w.yours}</SubHead>
