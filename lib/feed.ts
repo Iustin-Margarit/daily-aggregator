@@ -1,59 +1,47 @@
 import type { GuestMutes } from '@/lib/guest';
-import type { Category, DateRange, FeedFilters, FeedSort } from '@/lib/types';
-import { UUID } from '@/lib/uuid';
+import { sectionSlug } from '@/lib/routes';
+import type { Category, FeedFilters } from '@/lib/types';
 
 /**
- * Stories per page, so every page ends on full rows of three columns:
- * the front page (page 1 of the plain Latest view) has the lead story,
- * three under "In other news" and four rows of three; every other page has
- * five rows of three.
+ * Stories per page of a list (the latest, one section), so every page ends on
+ * full rows of three columns: page 1 has the lead story, three under "In other
+ * news" and four rows of three; every other page has five rows of three.
+ * The front page is not a list: it is a digest (lib/front-page.ts).
  */
-export const FRONT_PAGE_SIZE = 16;
+export const FIRST_PAGE_SIZE = 16;
 export const FEED_PAGE_SIZE = 15;
 
-/** True when page 1 is laid out as a front page (lead story and sidebar): Latest, without a search. */
-export function hasFrontPage(filters: Pick<FeedFilters, 'sort' | 'search'>): boolean {
-  return filters.sort === 'latest' && !filters.search;
+/** True when page 1 is laid out with a lead story and a sidebar: every list but a search. */
+export function hasLeadPage(filters: Pick<FeedFilters, 'search'>): boolean {
+  return !filters.search;
 }
 
 /** Limit and offset of one page (1-based). */
-export function pageWindow(page: number, front: boolean): { limit: number; offset: number } {
+export function pageWindow(page: number, lead: boolean): { limit: number; offset: number } {
   const p = Math.max(1, page);
-  if (!front) return { limit: FEED_PAGE_SIZE, offset: (p - 1) * FEED_PAGE_SIZE };
-  if (p === 1) return { limit: FRONT_PAGE_SIZE, offset: 0 };
-  return { limit: FEED_PAGE_SIZE, offset: FRONT_PAGE_SIZE + (p - 2) * FEED_PAGE_SIZE };
-}
-
-const RANGES: DateRange[] = ['any', 'today', 'week'];
-const SORTS: FeedSort[] = ['latest', 'for_you'];
-
-/** Oldest published_at for a date range, or undefined for the default 30-day window. */
-export function sinceFor(range: DateRange, asOf: string): string | undefined {
-  const base = Date.parse(asOf);
-  if (range === 'today') return new Date(base - 24 * 3600_000).toISOString();
-  if (range === 'week') return new Date(base - 7 * 24 * 3600_000).toISOString();
-  return undefined;
+  if (!lead) return { limit: FEED_PAGE_SIZE, offset: (p - 1) * FEED_PAGE_SIZE };
+  if (p === 1) return { limit: FIRST_PAGE_SIZE, offset: 0 };
+  return { limit: FEED_PAGE_SIZE, offset: FIRST_PAGE_SIZE + (p - 2) * FEED_PAGE_SIZE };
 }
 
 /**
- * Arguments for the get_feed RPC for one page (1-based). Empty filters are omitted (= no filter).
+ * Arguments for the get_feed RPC for one page (1-based). No sections = every section.
  * `mutes`: a visitor's muted newspapers and words (signed-in readers' lists are in the database).
  */
 export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string, mutes?: GuestMutes) {
+  const { limit, offset } = pageWindow(page, hasLeadPage(filters));
   return {
     p_category_ids: filters.categoryIds.length ? filters.categoryIds : undefined,
-    p_source_ids: filters.sourceIds.length ? filters.sourceIds : undefined,
+    p_source_ids: filters.sourceIds?.length ? filters.sourceIds : undefined,
     p_search: filters.search || undefined,
-    p_since: sinceFor(filters.range, asOf),
-    p_sort: filters.sort,
-    p_limit: pageWindow(page, hasFrontPage(filters)).limit,
-    p_offset: pageWindow(page, hasFrontPage(filters)).offset,
+    p_limit: limit,
+    p_offset: offset,
     p_as_of: asOf,
     ...mutedArgs(mutes),
   };
 }
 
-/** get_feed's arguments for a visitor's muted newspapers and words (omitted when there are none). */
+/** The feed functions' arguments for a visitor's muted newspapers and words (omitted when there are none). */
 export function mutedArgs(mutes?: GuestMutes) {
   return {
     p_muted_source_ids: mutes?.sourceIds.length ? mutes.sourceIds : undefined,
@@ -61,85 +49,60 @@ export function mutedArgs(mutes?: GuestMutes) {
   };
 }
 
-type SearchParams = Record<string, string | string[] | undefined>;
+export type SearchParams = Record<string, string | string[] | undefined>;
 
-function first(value: string | string[] | undefined): string | undefined {
+export function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
 /** Page number from ?page=N (1 when missing or invalid). */
 export function pageFromSearchParams(params: SearchParams): number {
-  const page = Number.parseInt(first(params.page) ?? '', 10);
+  const page = Number.parseInt(firstParam(params.page) ?? '', 10);
   return Number.isFinite(page) && page > 1 ? Math.min(page, 1000) : 1;
 }
 
+/** The words of a search (?q=), trimmed and at most 100 characters. */
+export function searchFromParams(params: SearchParams): string {
+  return (firstParam(params.q) ?? '').trim().slice(0, 100);
+}
+
 /** Number of pages for a total story count (at least 1). */
-export function pageCount(total: number, front: boolean): number {
-  if (!front) return Math.max(1, Math.ceil(total / FEED_PAGE_SIZE));
-  return total <= FRONT_PAGE_SIZE ? 1 : 1 + Math.ceil((total - FRONT_PAGE_SIZE) / FEED_PAGE_SIZE);
+export function pageCount(total: number, lead: boolean): number {
+  if (!lead) return Math.max(1, Math.ceil(total / FEED_PAGE_SIZE));
+  return total <= FIRST_PAGE_SIZE ? 1 : 1 + Math.ceil((total - FIRST_PAGE_SIZE) / FEED_PAGE_SIZE);
+}
+
+/** The section named in an address ("world"), or undefined. */
+export function sectionFromSlug(categories: Category[], slug: string): Category | undefined {
+  let name: string;
+  try {
+    name = decodeURIComponent(slug).toLowerCase();
+  } catch {
+    return undefined;
+  }
+  return categories.find((c) => sectionSlug(c.name) === name);
 }
 
 /**
- * Filters from the URL. Topics use readable names (?topics=technology,science);
- * no `topics` param means "my topics".
+ * One page of a list: the list's own address and query (`/latest?topics=all`,
+ * `/search?q=storm`) with ?page=N added from page 2 on.
  */
-export function filtersFromSearchParams(
-  params: SearchParams,
-  categories: Category[],
-  preferredCategoryIds: string[],
-): FeedFilters {
-  const topics = first(params.topics);
-  let categoryIds = preferredCategoryIds;
-  if (topics === 'all') {
-    categoryIds = [];
-  } else if (topics) {
-    const names = topics.toLowerCase().split(',');
-    categoryIds = categories.filter((c) => names.includes(c.name.toLowerCase())).map((c) => c.id);
-  }
-
-  const range = first(params.range) as DateRange | undefined;
-  const sort = first(params.sort) as FeedSort | undefined;
-  const sources = first(params.sources);
-
-  return {
-    categoryIds,
-    // Only well-formed ids (a malformed link would make the database query fail), and not too many.
-    sourceIds: sources ? sources.split(',').filter((id) => UUID.test(id)).slice(0, 100) : [],
-    search: (first(params.q) ?? '').trim().slice(0, 100),
-    range: range && RANGES.includes(range) ? range : 'any',
-    sort: sort && SORTS.includes(sort) ? sort : 'latest',
-  };
+export function pageHref(path: string, query: Record<string, string>, page: number): string {
+  const params = new URLSearchParams(query);
+  if (page > 1) params.set('page', String(page));
+  const text = params.toString();
+  return text ? `${path}?${text}` : path;
 }
 
-export function filtersToQueryString(
-  filters: FeedFilters,
-  categories: Category[],
-  preferredCategoryIds: string[],
-  page = 1,
-): string {
-  const params = new URLSearchParams();
-  const sameAsPreferred =
-    filters.categoryIds.length === preferredCategoryIds.length &&
-    filters.categoryIds.every((id) => preferredCategoryIds.includes(id));
-
-  if (!sameAsPreferred) {
-    params.set(
-      'topics',
-      filters.categoryIds.length === 0
-        ? 'all'
-        : categories
-            .filter((c) => filters.categoryIds.includes(c.id))
-            .map((c) => c.name.toLowerCase())
-            .join(','),
-    );
+/** The query again (first value of each key), without the given keys: "?a=1&b=2", or "" when nothing is left. */
+export function queryWithout(params: SearchParams, drop: string[]): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    const value1 = firstParam(value);
+    if (value1 !== undefined && !drop.includes(key)) query.set(key, value1);
   }
-  if (filters.sourceIds.length) params.set('sources', filters.sourceIds.join(','));
-  if (filters.search) params.set('q', filters.search);
-  if (filters.range !== 'any') params.set('range', filters.range);
-  if (filters.sort !== 'latest') params.set('sort', filters.sort);
-  if (page > 1) params.set('page', String(page));
-  const query = params.toString();
-  return query ? `?${query.replace(/%2C/gi, ',')}` : '';
+  const text = query.toString().replace(/%2C/gi, ',');
+  return text ? `?${text}` : '';
 }
 
 /** Page numbers around the current one: 1 … 4 5 [6] 7 8 … 31 */
@@ -154,12 +117,7 @@ export function visiblePages(page: number, pages: number): (number | 'gap')[] {
   return out;
 }
 
-/**
- * Empty slots in the last row of the story grid, with two and with three
- * columns. The almanac runs across the grid after the first six stories, so
- * only the stories after it count (all of them on a short page).
- */
+/** Empty slots in the last row of the story grid, with two and with three columns. */
 export function gridGaps(storiesInGrid: number): { two: number; three: number } {
-  const tail = storiesInGrid > 6 ? storiesInGrid - 6 : storiesInGrid;
-  return { two: tail % 2, three: (3 - (tail % 3)) % 3 };
+  return { two: storiesInGrid % 2, three: (3 - (storiesInGrid % 3)) % 3 };
 }

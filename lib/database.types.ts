@@ -446,6 +446,7 @@ export type Database = {
         Args: { p_retention_days?: number }
         Returns: number
       }
+      database_size_bytes: { Args: never; Returns: number }
       delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
       get_article: {
         Args: { p_slug_or_id: string }
@@ -495,6 +496,34 @@ export type Database = {
           summary: string
           title: string
           total_count: number
+          url: string
+        }[]
+      }
+      get_front_page: {
+        Args: {
+          p_as_of?: string
+          p_category_ids?: string[]
+          p_latest?: number
+          p_muted_source_ids?: string[]
+          p_muted_words?: string[]
+          p_per_section?: number
+        }
+        Returns: {
+          author: string
+          category_id: string
+          category_name: string
+          id: string
+          image_url: string
+          is_saved: boolean
+          latest_rank: number
+          published_at: string
+          reading_minutes: number
+          section_rank: number
+          slug: string
+          source_id: string
+          source_name: string
+          summary: string
+          title: string
           url: string
         }[]
       }

@@ -16,6 +16,7 @@ import { getCategoryStyle } from '@/lib/category-styles';
 import { sectionText } from '@/lib/i18n';
 import { useI18n } from '@/lib/i18n/client';
 import type { Category } from '@/lib/types';
+import { FRONT_PATH } from '@/lib/routes';
 
 type TopicsFormProps = {
   categories: Category[];
@@ -234,7 +235,7 @@ export function TopicsForm({ categories, selectedIds, isFirstRun, username, sour
           <SubmitButtons count={selected.length} />
         ) : (
           <Button variant="outline" asChild className="w-full sm:w-auto lg:w-full">
-            <Link href="/feed">{w.toFrontPage}</Link>
+            <Link href={FRONT_PATH}>{w.toFrontPage}</Link>
           </Button>
         )}
       </div>

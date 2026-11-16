@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/toast';
 import { errorText } from '@/lib/error-text';
 import { useI18n } from '@/lib/i18n/client';
 import type { SavedArticle, SavedFolder } from '@/lib/types';
+import { FRONT_PATH, LOGIN_PATH } from '@/lib/routes';
 
 /** What the page shows: a folder ('all' = everything), whether read stories are hidden, a search. */
 export type SavedView = { folder: string; hideRead: boolean; q: string };
@@ -226,10 +227,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/login?next=/saved">{t.common.logIn}</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/signup">{t.common.createAccount}</Link>
+              <Link href={`${LOGIN_PATH}?next=/saved`}>{t.common.logIn}</Link>
             </Button>
           </div>
         </aside>
@@ -244,7 +242,7 @@ export function SavedManager({ backend, initialArticles, initialFolders, initial
             description={rich(w.emptyNote, { save: <strong>{t.story.save}</strong> })}
             action={
               <Button asChild size="lg">
-                <Link href="/feed">{w.goFront}</Link>
+                <Link href={FRONT_PATH}>{w.goFront}</Link>
               </Button>
             }
           />

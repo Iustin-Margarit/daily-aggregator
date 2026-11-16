@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
-import { EditionSelector } from '@/components/site/edition-selector';
 import { Engraving } from '@/components/site/engraving';
 import { Masthead } from '@/components/site/logo';
 import { Ornament, type OrnamentName } from '@/components/site/ornament';
@@ -27,6 +26,7 @@ import { editionLabel } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { cn } from '@/lib/utils';
+import { FRONT_PATH, LOGIN_PATH, SECTIONS_PATH, SETTINGS_PATH, isPaperPath } from '@/lib/routes';
 
 export type HeaderUser = {
   email: string | null;
@@ -39,9 +39,9 @@ export type HeaderUser = {
 type NavIcon = 'front' | 'saved' | 'sections' | 'newsroom' | 'settings';
 
 const READER_NAV: { href: string; icon: NavIcon }[] = [
-  { href: '/feed', icon: 'front' },
+  { href: FRONT_PATH, icon: 'front' },
   { href: '/saved', icon: 'saved' },
-  { href: '/onboarding', icon: 'sections' },
+  { href: SECTIONS_PATH, icon: 'sections' },
 ];
 
 /**
@@ -77,12 +77,14 @@ function useSignOut() {
   return async () => {
     await createClient().auth.signOut();
     // Visitors read the paper too: back to the front page, not to a login form.
-    router.replace('/feed');
+    router.replace(FRONT_PATH);
     router.refresh();
   };
 }
 
 function isActive(href: string, pathname: string) {
+  // A section or a search is still the paper: the Front Page tab stays lit.
+  if (href === FRONT_PATH) return isPaperPath(pathname);
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -92,11 +94,11 @@ function navItems(user: HeaderUser | null) {
 
 /** The bottom bar: the same places, plus Settings for visitors (signed-in readers have it in the account menu). */
 function bottomItems(user: HeaderUser | null): { href: string; icon: NavIcon }[] {
-  return user ? navItems(user) : [...READER_NAV, { href: '/profile', icon: 'settings' }];
+  return user ? navItems(user) : [...READER_NAV, { href: SETTINGS_PATH, icon: 'settings' }];
 }
 
 /**
- * True while the big masthead of a front page is on screen, so the small title
+ * True while the front page's big masthead is on screen, so the small title
  * in the bar does not repeat it. Pages without one always get the small title.
  */
 function useBigMastheadVisible(pathname: string) {
@@ -117,19 +119,19 @@ function useBigMastheadVisible(pathname: string) {
       if (target) observer.observe(target);
     };
     watch();
-    const following = pathname === '/' || pathname === '/feed' ? new MutationObserver(watch) : null;
+    const following = pathname === FRONT_PATH ? new MutationObserver(watch) : null;
     following?.observe(document.body, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
       following?.disconnect();
     };
   }, [pathname]);
-  // Before the first observation, assume the front pages show their big masthead.
-  return seen?.path === pathname ? seen.visible : pathname === '/' || pathname === '/feed';
+  // Before the first observation, assume the front page shows its big masthead (only it has one).
+  return seen?.path === pathname ? seen.visible : pathname === FRONT_PATH;
 }
 
 /**
- * Phones, at the top of a front page: the edition line (Vol. · No. and the
+ * Phones, at the top of the front page: the edition line (Vol. · No. and the
  * reader's date) sits in the bar beside the account instead of an empty
  * space; the big masthead below then starts straight with the title.
  */
@@ -166,7 +168,6 @@ const EDITIONS: { value: ThemeChoice; mark: OrnamentName }[] = [
  * The account menu, printed like the rest of the paper: the reader's seal and
  * byline at its head, then Settings (an engraved cogwheel), the
  * edition (the woodcut sun, the man in the moon, the globe) and Log out (a key).
- * The language is the stamp beside it in the bar (EditionSelector).
  */
 function AccountMenu({ user }: { user: HeaderUser }) {
   const signOut = useSignOut();
@@ -197,7 +198,7 @@ function AccountMenu({ user }: { user: HeaderUser }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/profile">
+          <Link href={SETTINGS_PATH}>
             <span className="mr-3 flex w-6 shrink-0 justify-center [--ornament-ink:var(--brass-ink)]" aria-hidden="true">
               <Ornament name="gear" className="h-[0.95rem]" />
             </span>
@@ -242,7 +243,7 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      // On every width. Phones: a framed 44px button like the language stamp and Log in beside it; the
+      // On every width. Phones: a framed 44px button like Log in beside it; the
       // bar's title shrinks to leave them room (SiteHeader).
       className="h-11 w-11 shrink-0 frame-double rounded-[3px] px-0 [--ornament-ink:var(--brass-ink)] sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
     >
@@ -258,7 +259,7 @@ function EditionToggle() {
  */
 function SettingsButton({ pathname }: { pathname: string }) {
   const { t } = useI18n();
-  const active = isActive('/profile', pathname);
+  const active = isActive(SETTINGS_PATH, pathname);
   return (
     <Button
       asChild
@@ -266,7 +267,7 @@ function SettingsButton({ pathname }: { pathname: string }) {
       size="sm"
       className={cn('hidden h-10 w-10 px-0 lg:inline-flex', active && 'bg-(--ink-gold)/15')}
     >
-      <Link href="/profile" aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined}>
+      <Link href={SETTINGS_PATH} aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined}>
         <Ornament name="gear" className="h-[1.2rem] [--ornament-ink:var(--brass-ink)]" />
       </Link>
     </Button>
@@ -306,7 +307,6 @@ function NavTabs({ user, pathname }: { user: HeaderUser | null; pathname: string
 /** The same bar on every page: title on the left, the reader's places in the middle, the account on the right. */
 export function SiteHeader({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
-  const home = user ? '/feed' : '/';
   const bigMasthead = useBigMastheadVisible(pathname);
   const { t } = useI18n();
 
@@ -315,7 +315,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
       {/* Phones: a 3.5rem bar; the buttons on the right keep their size and the title takes the rest. */}
       <div className="chrome-scale container grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 min-[400px]:gap-3 sm:h-16 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)]">
         {/* A size container: the title is about 8.9 times as wide as its font size, so a font size of at most
-            10.8% of the cell's width (cqi) always fits on one line beside the buttons, in every edition. From
+            10.8% of the cell's width (cqi) always fits on one line beside the buttons. From
             1024px the two sides share the room equally (the tabs centred) until the buttons need more; then the
             title gives way, never the buttons. */}
         <div className="@container min-w-0">
@@ -325,7 +325,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
             </div>
           )}
           <Masthead
-            href={home}
+            href={FRONT_PATH}
             className={cn(
               'whitespace-nowrap text-[min(1.3rem,10.8cqi)] transition-opacity duration-300 min-[480px]:text-[min(1.45rem,10.8cqi)] sm:text-[min(1.8rem,10.8cqi)]',
               bigMasthead && 'pointer-events-none opacity-0 max-sm:hidden',
@@ -334,8 +334,6 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
         </div>
         <NavTabs user={user} pathname={pathname} />
         <div className="flex items-center justify-end gap-1 min-[400px]:gap-1.5 sm:gap-2 lg:gap-1.5 xl:gap-2">
-          {/* The language of the paper: always here, on every page, for everyone. */}
-          <EditionSelector />
           {user ? (
             <AccountMenu user={user} />
           ) : (
@@ -343,10 +341,10 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
               <EditionToggle />
               {/* Below 1024px Settings is a tab in the bottom bar (BottomNav). */}
               <SettingsButton pathname={pathname} />
-              {/* Phones: a framed button with an engraved key (the same width in every edition, so the title
+              {/* Phones: a framed button with an engraved key (a fixed width, so the title
                   keeps its size); its name is read out and shown as a tooltip. From 640px: the words. */}
               <Link
-                href="/login"
+                href={LOGIN_PATH}
                 aria-label={t.nav.logIn}
                 title={t.nav.logIn}
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
@@ -354,12 +352,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
                 <Ornament name="key" className="h-[0.9rem] -rotate-[30deg]" />
               </Link>
               <Button asChild variant="ghost" size="sm" className="hidden h-10 shrink-0 whitespace-nowrap px-4 text-[0.95rem] sm:inline-flex">
-                <Link href="/login">{t.nav.logIn}</Link>
-              </Button>
-              {/* From 1440px: below that, a sixth button would push the tabs off the centre of the bar in the
-                  longer editions (French, Romanian), and the Log in page offers sign-up. */}
-              <Button asChild size="sm" className="hidden h-10 px-5 text-[0.95rem] min-[1440px]:inline-flex">
-                <Link href="/signup">{t.nav.signUp}</Link>
+                <Link href={LOGIN_PATH}>{t.nav.logIn}</Link>
               </Button>
             </>
           )}

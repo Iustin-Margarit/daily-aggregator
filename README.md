@@ -6,11 +6,11 @@ care about.
 
 **Read it live: [daily-aggregator.vercel.app](https://daily-aggregator.vercel.app)**, no account needed.
 
-![The front page in the morning edition: the blackletter masthead with a clock and tonight's moon, the moving street banner, the lead story, "In other news" and the On this day almanac](docs/screenshots/feed.jpg)
+![The front page in the morning edition: the blackletter masthead with a pocket watch and tonight's moon, the section ribbon, the lead story beside the latest dispatches, and the paper-theatre street](docs/screenshots/feed.jpg)
 
-More screenshots: [night edition](docs/screenshots/feed-dark.jpg) · [story page](docs/screenshots/article.jpg) ·
-[saved stories](docs/screenshots/saved.jpg) · [phone](docs/screenshots/mobile.jpg) ·
-[newsroom dashboard](docs/screenshots/admin.jpg)
+More screenshots: [quick read](docs/screenshots/quick-read.jpg) · [night edition](docs/screenshots/feed-dark.jpg) ·
+[saved stories](docs/screenshots/saved.jpg) ·
+[phone](docs/screenshots/mobile.jpg) · [newsroom dashboard](docs/screenshots/admin.jpg)
 
 Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and **Supabase**
 (Postgres, Auth).
@@ -18,26 +18,24 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 ## Features
 
 **Reading**
-- Personalized feed of 8 topics (World, Politics, Business, Technology, Science, Health, Sports,
-  Entertainment) from 33 RSS sources, refreshed every hour.
-- **Latest** or **For you** ranking. "For you" boosts the topics you picked and the
-  topics and sources of articles you save.
-- Search (every word must match), time range, topic and source filters. Filters live in the URL, so
-  they survive reloads and can be bookmarked.
-- A front page with a lead story, an "In Other News" column with an "On this day" almanac box
-  (three anniversaries from Wikipedia, cached for the day) and ruled columns of headlines, split
-  into numbered pages of 16 stories, then 15 (`?page=N`, back/forward buttons work). Images for ~95% of
-  stories (from the feed, or the article's preview image).
-- Images are requested from each publisher's CDN at the size they are shown, so scrolling stays
-  smooth even when a feed links to 12000-pixel originals.
-- Article pages with summary, link to the full story and related stories. Article links are
-  public, so sharing works for anyone. The paper is personal: there are no public comments,
-  likes or counts.
-- Hide a story, mute a source entirely, or mute words (Settings > Sections & papers): stories that
-  mention a muted word are left off the front page.
-- A reading time ("4 min read") on stories, counted from the words on the publisher's page when the
-  story is fetched.
-- **Print clipping** on saved stories: a cut-out newspaper clipping with your note, for paper or PDF.
+- **One front page for everyone** (`/`): the lead story beside "Latest dispatches" (ten one-line
+  headlines), then every section in brief (a photo story, four headlines, "All World news"). Readers'
+  own sections come first. 8 sections from 33 RSS sources, refreshed every hour.
+- **Quick read**: pressing a headline opens the story in a sheet over the page (from the right on a
+  computer, from the bottom on a phone) with the photo, summary, Save, Share and the way on to the
+  publisher, and three more from the same desk at its foot. Close, Escape or Back return to the same
+  spot. A shared link opens the front page with that story's sheet open.
+- **Lists**: All the latest (`/latest`), each section (`/section/world`), each newspaper
+  (`/paper/the-guardian-world`) and search (`/search?q=…`), page by page (16 stories, then 15).
+  On phones each story is one row (picture left, headline right), five or six to a screen.
+- Pages are printed on the server; what every visitor sees alike (the sections, the newspapers and
+  the front page of a visitor without mutes) is kept between requests and refreshed after every news
+  fetch. Images are requested from each publisher's CDN at the size they are shown.
+- No sign-up wall: visitors read, search, choose sections, save stories and change Settings in their
+  browser; signing in moves all of it into the account.
+- Hide a story, mute a newspaper, or mute words (Settings > Sections & papers).
+- A reading time ("4 min read") on stories, an "On this day" almanac (three anniversaries from
+  Wikipedia), and **Print clipping** on saved stories.
 - An optional ambient **Sound** on the street banner (soft rain and a pocket watch, made in the
   browser; off by default).
 
@@ -50,13 +48,11 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
   switch. Opening a saved story marks it as read.
 
 **Account**
-- Email and password sign-up with confirmation, password reset and email change.
-- Optional "Continue with Google" (appears once Google is switched on in Supabase; see
+- Sign in with Google: the first sign-in makes the account (no passwords to keep; set-up in
   [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
-- Onboarding to pick topics (skippable), editable later.
-- Settings: byline (username) and avatar ink, Morning / Night / device edition (light, dark,
-  system), type size, accent ink for section labels, muted
-  sources, password change (asks for the current password), account deletion.
+- Sections (`/sections`): press postage stamps to choose the sections of your front page.
+- Settings (`/settings`): byline (username) and avatar ink, Morning / Night / by-the-clock edition, type size, accent ink for section labels, muted
+  sources, account deletion (after a fresh Google sign-in).
 
 **Admin panel** (`/admin`)
 - Dashboard: users, articles, source health, engagement, ingestion history with errors, articles
@@ -65,8 +61,9 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 - Readers: change roles (the last admin cannot be demoted), delete accounts.
 
 **Design**
-- Newsprint palette with a light paper grain, Playfair Display headlines, Source Serif body text and
-  Oswald labels, double rules, square corners, drop caps and justified columns on wider screens.
+- A 19th-century broadsheet: newsprint with a paper grain (and a night edition), a blackletter masthead
+  over an engraved star chart, Fraunces headlines, Source Serif body text and Jost labels, double rules,
+  square corners, drop caps, postage-stamp sections and public-domain engravings.
 - The paper's name and motto live in [`lib/site.ts`](lib/site.ts); colours and the newspaper
   utility classes (`.headline`, `.kicker`, `.paper-box`, `.news-grid`, ...) in
   [`styles/globals.css`](styles/globals.css).
@@ -80,7 +77,8 @@ nothing heavy runs on your computer.
 
 1. Create a Supabase project for development (any region). In *Authentication > URL Configuration*
    set the Site URL to `http://localhost:3000` and add `http://localhost:3000/**`; in
-   *Authentication > Sign In / Providers* switch **Confirm email** off (no mail server needed).
+   *Authentication > Sign In / Providers* switch **Google** on ([docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md))
+   and **Email** off.
 2. Load the schema into it:
    ```bash
    npm install
@@ -93,7 +91,7 @@ nothing heavy runs on your computer.
    npm run ingest               # fetch today's news (about a minute)
    npm run dev                  # http://localhost:3000
    ```
-4. Sign up, pick your sections, and make yourself an admin with
+4. Sign in with Google, pick your sections, and make yourself an admin with
    `npm run make-admin -- you@example.com`; reload and open `/admin`.
 
 The `db:push:dev`, `db:push:prod` and `db:types` scripts in `package.json` name this project's own
@@ -109,21 +107,16 @@ dev project; change the ref in them to yours.
    supabase db push --remote
    ```
 3. **Auth settings** in the Supabase dashboard:
-   - *Authentication > Sign In / Providers > Email*: make sure **Confirm email** is **on**. (It is
-     off only in the local development setup, where there is no real mailbox.)
    - *Authentication > URL Configuration*: set **Site URL** to your app URL
      (e.g. `https://your-app.vercel.app`) and add `https://your-app.vercel.app/**` to **Redirect URLs**.
-   - *Authentication > Email Templates* (recommended): paste the templates from
-     [`supabase/templates`](supabase/templates). They link to `/auth/confirm`, which works even when
-     the email is opened in another browser.
-   - Optional: *Authentication > Sign In / Providers > Google* for "Continue with Google"; the
-     Google Cloud steps are in [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md).
+   - *Authentication > Sign In / Providers*: switch **Google** on (the Google Cloud steps are in
+     [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)) and **Email** off: the site signs in with Google only.
 4. **Deploy to Vercel** (import the GitHub repo) and set the environment variables from
    [`.env.example`](.env.example): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET`. New Supabase projects may show *publishable* and
    *secret* keys instead of anon and service_role; both formats work. Link previews use the
    production domain automatically; set `NEXT_PUBLIC_SITE_URL` only for a custom domain.
-5. Sign up on the deployed site, then promote yourself: run
+5. Sign in on the deployed site, then promote yourself: run
    `select public.promote_to_admin('you@example.com');` in the Supabase SQL editor.
 
 ### Keeping the news fresh
@@ -132,13 +125,15 @@ Any one of these is enough:
 
 | Option | How |
 |---|---|
-| **Automatic (default)** | When someone opens the feed and the last fetch is older than `INGESTION_INTERVAL_MINUTES` (60), a fetch runs in the background. |
-| **Vercel Cron** | [`vercel.json`](vercel.json) calls `/api/cron/ingest` daily (the Hobby plan limit). Vercel sends `CRON_SECRET` automatically. |
-| **GitHub Actions** | [`.github/workflows/news-ingestion.yml`](.github/workflows/news-ingestion.yml) runs every 2 hours. Add the repository secrets `APP_URL` and `CRON_SECRET`. |
+| **Automatic (default)** | When someone opens the paper and the last fetch is older than `INGESTION_INTERVAL_MINUTES` (60), a fetch runs in the background. |
+| **cron-job.org (free)** | An hourly job (for example at :15) that calls `GET https://your-app/api/cron/ingest` with the header `Authorization: Bearer <CRON_SECRET>`. The endpoint takes the run lock and answers at once (cron-job.org gives up after 30 s); the run finishes in the background. |
+| **Vercel Cron** | [`vercel.json`](vercel.json) calls `/api/cron/ingest` daily (the Hobby plan limit), as a backup. Vercel sends `CRON_SECRET` automatically. |
+| **GitHub Actions** | [`.github/workflows/news-ingestion.yml`](.github/workflows/news-ingestion.yml) is run by hand (*Run workflow*; it has no schedule). Add the repository secrets `APP_URL` and `CRON_SECRET`. |
 | **Manual** | Admin dashboard > *Fetch news now*, or `npm run ingest`. |
 
 Anything else can call the endpoint too:
-`curl -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/cron/ingest`.
+`curl -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/cron/ingest`
+(`?wait=1` answers when the run ends, with its summary; two overlapping calls are safe: only one run goes on).
 
 ### Staying online on free plans ($0)
 
@@ -147,8 +142,7 @@ Anything else can call the endpoint too:
   pauses free projects after a week without activity). Set `CRON_SECRET` in Vercel, or the cron is
   refused and nothing touches the database.
 - Between cron runs the paper refreshes itself when people open the front page (at most hourly,
-  `INGESTION_INTERVAL_MINUTES`), and the optional GitHub Actions schedule adds a fetch every 2 hours.
-  GitHub turns scheduled workflows off after 60 days without commits; re-enable it in the Actions tab.
+  `INGESTION_INTERVAL_MINUTES`); an external cron service (cron-job.org) can fetch every hour.
 - **The database never fills up**: every full fetch deletes unsaved articles older than
   `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 33 feeds is
   roughly 30,000 short rows, well under the free 500 MB.
@@ -159,7 +153,7 @@ Anything else can call the endpoint too:
 
 Everyone can read, search, open stories, choose sections (kept in a cookie) and clip stories, with
 folders, notes and Print clipping (kept in the browser's storage, up to 200). An account adds the
-same things on every device, muted words and Settings; when a visitor signs in or signs up, their
+same things on every device and muted words; when a visitor signs in, their
 sections and clippings move into the account. Only Settings and the admin pages need a login.
 
 ## Security
@@ -178,10 +172,9 @@ What the app does to keep readers and the server safe:
 - **Browser protections**: a strict Content Security Policy with a fresh nonce on every page (no
   inline or injected scripts can run), HSTS, no framing, no sniffing, and session cookies marked
   `Secure` on HTTPS.
-- **Accounts**: passwords need 8+ characters with letters and numbers; deleting an account asks
-  for the password again (the server checks it; the browser cannot delete an account by itself),
-  or, for an account that only uses Google, a Google sign-in from the last 10 minutes; the sign-up form does not reveal whether an email is already registered;
-  login links can only send you to pages on this site; staff-like usernames (admin, editor,
+- **Accounts**: sign-in is Google only, so the site keeps no passwords; deleting an account needs a
+  Google sign-in from the last 10 minutes (the server checks it; the browser cannot delete an account
+  by itself); login links can only send you to pages on this site; staff-like usernames (admin, editor,
   moderator, ...) are reserved.
 - **Abuse limits**: 100 folders and 1000 saved stories per reader, search limited to 100
   characters.
@@ -192,14 +185,12 @@ What the app does to keep readers and the server safe:
 
 ### Checklist before going live
 
-- [ ] Supabase: **Confirm email** is on, **Site URL** and **Redirect URLs** point at your domain.
+- [ ] Supabase: **Google** on and **Email** off, **Site URL** and **Redirect URLs** point at your domain.
 - [ ] The schema came from `supabase db push --remote` (that is what creates the database rules). In
       *Database > Tables*, every table shows **RLS enabled**.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` are set only in Vercel (and GitHub secrets),
       never in a `NEXT_PUBLIC_` variable or in the repository. `CRON_SECRET` is long and random
       (for example `openssl rand -hex 32`).
-- [ ] *Authentication > Sign In / Providers > Email*: **Secure password change** is on (a password
-      change from a session older than 24 hours then needs a code from the inbox).
 - [ ] The site is served over HTTPS (Vercel does this automatically).
 - [ ] If a project's keys were ever shared or committed, rotate them in *Project Settings > API Keys*.
 - [ ] Optional: in *Authentication > Rate Limits*, keep the defaults or lower them; enable CAPTCHA
@@ -211,7 +202,7 @@ What the app does to keep readers and the server safe:
 RSS / Atom feeds ──> lib/ingestion (fetch, parse, normalize, dedupe, find images)
                         │  service-role key, one bulk insert per source
                         ▼
-                 Supabase Postgres ──> RPC functions (get_feed, get_article, ...)
+                 Supabase Postgres ──> RPC functions (get_front_page, get_feed, get_article, ...)
                         ▲                        │  row level security
                         │                        ▼
                  Next.js App Router (server components + client components)
@@ -226,23 +217,22 @@ RSS / Atom feeds ──> lib/ingestion (fetch, parse, normalize, dedupe, find im
   [`supabase/migrations`](supabase/migrations). Every table uses row level security. Users can only
   read and change their own data and cannot change their own role (enforced by a trigger).
 - **Auth**: Supabase Auth with `@supabase/ssr` cookies. The proxy (`proxy.ts`) refreshes the session and
-  protects private pages. `/auth/callback` (PKCE) completes Google sign-in and
-  default email links; `/auth/confirm` (token hash) completes the links from `supabase/templates`.
+  protects private pages. `/auth/callback` (PKCE) completes Google sign-in.
 
 ### Project structure
 
 ```
 app/                     routes (App Router)
-  (auth)/                login, signup, password reset, email confirmation pages
-  (main)/                landing page, feed, article, saved, onboarding, profile
+  (auth)/                the login page (Continue with Google)
+  (paper)/               front page, latest, sections, papers, search, story sheet, saved, settings
   (admin)/admin/         dashboard, sources, users
   actions/               server actions (profile, onboarding, admin)
   api/cron/ingest/       scheduled ingestion endpoint
-  auth/                  callback + confirm route handlers
+  auth/                  Google sign-in callback
 components/              UI (ui/ = shadcn-style primitives)
 lib/                     Supabase clients, ingestion, helpers, types
 scripts/                 ingest.ts, make-admin.ts
-supabase/                config, migrations, email templates
+supabase/                config, migrations
 tests/                   unit tests (node:test)
 ```
 

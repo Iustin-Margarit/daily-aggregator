@@ -1,4 +1,6 @@
 import 'server-only';
+import { revalidateTag } from 'next/cache';
+import { STORIES_TAG } from '@/lib/data/cached';
 import { getAutoRefreshMinutes, getRetentionDays } from '@/lib/env';
 import { runIngestion } from '@/lib/ingestion/run';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -26,6 +28,8 @@ export async function refreshNewsIfStale(options: { force?: boolean } = {}): Pro
       retentionDays: getRetentionDays(),
     });
     if (summary.status !== 'skipped') {
+      // New stories: the front page kept between requests is printed again on the next visit.
+      revalidateTag(STORIES_TAG, { expire: 0 });
       console.info(
         `[ingestion] auto refresh ${summary.status}: ${summary.inserted} new articles from ${summary.sources.length} sources in ${summary.durationMs} ms`,
       );

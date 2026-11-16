@@ -12,9 +12,8 @@ import { cn } from '@/lib/utils';
 
 /*
  * Small printed details with some soul: a live clock, tonight's moon and the
- * month's woodcut with a thought for the day, in the reader's edition. The
- * time, moon and month use the reader's own clock, so they only appear after
- * the page loads. (The edition's language: components/site/edition-selector.tsx.)
+ * month's woodcut with a thought for the day. The time, moon and month use the
+ * reader's own clock, so they only appear after the page loads.
  */
 
 // ---------------------------------------------------------------- time source
@@ -73,10 +72,10 @@ export function AlmanacTile({
 }) {
   if (layout === 'ear') {
     return (
-      <div className={cn('flex flex-col items-center justify-center gap-2 px-3 py-3 text-center', className)}>
+      <div className={cn('flex flex-col items-center justify-center gap-1.5 px-3 py-2 text-center', className)}>
         <p className="section-head w-full whitespace-nowrap font-label text-[0.68rem] tracking-[0.18em] text-muted-foreground">{label}</p>
         {/* Both instruments stand on the same line in the same box, so the lines under them stay level across the masthead. */}
-        <div className="flex h-[10rem] items-end justify-center">{picture}</div>
+        <div className="flex h-[8.25rem] items-end justify-center">{picture}</div>
         <div className="leading-tight">
           <p className="font-display text-[1.08rem] font-semibold">{value}</p>
           <p className="mt-0.5 font-label text-[0.8rem] text-muted-foreground">{note}</p>
@@ -170,8 +169,8 @@ export function Clock({ className }: { className?: string }) {
   const now = useNow(60);
   const date = now === null ? null : new Date(now * 1000);
   const clock = useReaderPref('clock');
-  const { t, fmt, locale } = useI18n();
-  const label = date ? fmt(t.almanac.timeIs, { time: formatClock(date, clock, locale) }) : t.almanac.clock;
+  const { t, fmt } = useI18n();
+  const label = date ? fmt(t.almanac.timeIs, { time: formatClock(date, clock) }) : t.almanac.clock;
   const caseMask = useSvgId('case');
   const brass = useSvgId('brass');
   const enamel = useSvgId('enamel');
@@ -276,9 +275,8 @@ function ClockHands() {
 export function ClockText({ className }: { className?: string }) {
   const now = useNow(60);
   const clock = useReaderPref('clock');
-  const { locale } = useI18n();
   if (now === null) return <span className={className}>{' '}</span>;
-  return <span className={className}>{formatClock(new Date(now * 1000), clock, locale)}</span>;
+  return <span className={className}>{formatClock(new Date(now * 1000), clock)}</span>;
 }
 
 /** "Thursday" ("Jeudi", "Jueves", ...) in the reader's time zone. */
@@ -306,7 +304,7 @@ export function moonAge(date: Date): number {
   return ((days % SYNODIC_MONTH) + SYNODIC_MONTH) % SYNODIC_MONTH;
 }
 
-/** The phase's name from the edition's eight (almanac.phases: new moon, waxing crescent, ... waning crescent). */
+/** The phase's name from the almanac's eight (almanac.phases: new moon, waxing crescent, ... waning crescent). */
 export function moonPhaseName(age: number, names: string[]): string {
   return names[Math.round((age / SYNODIC_MONTH) * 8) % 8];
 }
@@ -341,7 +339,7 @@ export function Moon({ className }: { className?: string }) {
   const hatch = useSvgId('hatch');
   const sky = useSvgId('sky');
   const trail = useSvgId('trail');
-  const { t, fmt, tag } = useI18n();
+  const { t, fmt } = useI18n();
   // Whole hours are enough; the shape barely changes within a day.
   const age = now === null ? null : moonAge(new Date(now * 1000));
   const r = MOON_R;
@@ -363,7 +361,7 @@ export function Moon({ className }: { className?: string }) {
   }
   return (
     <span className={cn('relative inline-block aspect-square shrink-0', className)}>
-      <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={age === null ? t.almanac.moon : fmt(t.almanac.moonTonight, { phase: moonPhaseName(age, t.almanac.phases).toLocaleLowerCase(tag) })}>
+      <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={age === null ? t.almanac.moon : fmt(t.almanac.moonTonight, { phase: moonPhaseName(age, t.almanac.phases).toLowerCase() })}>
         <defs>
           <InkMask id={engraving} href="/ornaments/moon-engraving.webp" x={c - r} y={c - r} width={2 * r} height={2 * r} />
           <InkMask id={bezel} href="/ornaments/watch-bezel.webp" width={100} height={100} />
@@ -459,7 +457,7 @@ export function MoonTile({ className, layout }: { className?: string; layout?: '
 
 // ---------------------------------------------------------------- month
 
-/** The Penfield woodcut for each month (public/engravings/month-*.webp); the words are in the dictionaries (almanac.months). */
+/** The Penfield woodcut for each month (public/engravings/month-*.webp); the words are in lib/i18n/en.ts (almanac.months). */
 const MONTH_WOODCUTS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'] as const;
 
 /** The reader's month (0-11) and day of the month (1-31). */

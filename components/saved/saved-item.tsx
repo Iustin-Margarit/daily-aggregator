@@ -1,10 +1,10 @@
 'use client';
 
-import { memo, useCallback, useState } from 'react';
-import Link from 'next/link';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { ArticleImage } from '@/components/articles/article-image';
 import { CategoryBadge } from '@/components/articles/category-badge';
 import { PrintClipping } from '@/components/saved/print-clipping';
+import { StoryLink } from '@/components/story/story-link';
 import { Engraving } from '@/components/site/engraving';
 import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
@@ -22,7 +22,7 @@ import {
 import { formatReadingTime } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/client';
 import { cleanText } from '@/lib/text';
-import type { SavedArticle, SavedFolder } from '@/lib/types';
+import type { FeedArticle, SavedArticle, SavedFolder } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type SavedItemProps = {
@@ -45,27 +45,28 @@ const mark = 'h-[0.95rem] [--ornament-ink:currentColor]';
  */
 function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFolder, onEditNote, onRemove }: SavedItemProps) {
   const folder = folders.find((f) => f.id === article.folder_id);
-  const href = `/article/${article.slug}`;
+  // The story as the quick-read sheet wants it, so it opens at once from this copy.
+  const story = useMemo<FeedArticle>(() => ({ ...article, id: article.article_id, author: null, is_saved: true }), [article]);
   const summary = cleanText(article.summary);
   const title = cleanText(article.title);
-  const { t, rich, locale } = useI18n();
+  const { t, rich } = useI18n();
   const w = t.saved.item;
-  const readingTime = formatReadingTime(article.reading_minutes, locale);
+  const readingTime = formatReadingTime(article.reading_minutes);
   // Each click mounts a fresh clipping, which opens the print dialog; 0 = none.
   const [printRun, setPrintRun] = useState(0);
   const printDone = useCallback(() => setPrintRun(0), []);
 
   return (
     <article className="grid grid-cols-[6rem_minmax(0,1fr)] gap-x-4 py-5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-x-6">
-      <Link
-        href={href}
+      <StoryLink
+        article={story}
         onClick={() => onOpen(article)}
         tabIndex={-1}
         aria-hidden="true"
         className="photo-plate self-start sm:row-span-2"
       >
         <ArticleImage src={article.image_url} alt="" category={article.category_name} width={400} sizes="(min-width: 640px) 11rem, 6rem" className="aspect-4/3 w-full" />
-      </Link>
+      </StoryLink>
 
       <div className="min-w-0">
         <p className="byline flex flex-wrap items-center gap-x-1.5 gap-y-1">
@@ -87,9 +88,9 @@ function SavedItemImpl({ article, folders, onOpen, onToggleRead, onMove, onNewFo
         </p>
 
         <h2 className={cn('headline mt-1.5 text-xl sm:text-[1.4rem]', article.is_read && 'text-foreground/60')}>
-          <Link href={href} onClick={() => onOpen(article)} className="decoration-1 underline-offset-4 hover:underline">
+          <StoryLink article={story} onClick={() => onOpen(article)} className="decoration-1 underline-offset-4 hover:underline">
             {title}
-          </Link>
+          </StoryLink>
         </h2>
 
         {summary && <p className="mt-1.5 line-clamp-2 text-[0.95rem] leading-relaxed text-foreground/80">{summary}</p>}

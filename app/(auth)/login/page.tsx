@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { getI18n } from '@/lib/i18n/server';
 import { Suspense } from 'react';
-import { LoginForm } from '@/components/auth/login-form';
+import { GoogleSignIn } from '@/components/auth/google-sign-in';
+import { getI18n } from '@/lib/i18n/server';
 import { getSignInOptions } from '@/lib/supabase/auth-settings';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -9,11 +9,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.meta.logIn };
 }
 
+/** Log in, which also creates the account on the first visit: Continue with Google. */
 export default async function LoginPage() {
   const { google } = await getSignInOptions();
   return (
     <Suspense>
-      <LoginForm googleEnabled={google} />
+      <GoogleSignIn googleEnabled={google} />
     </Suspense>
   );
 }

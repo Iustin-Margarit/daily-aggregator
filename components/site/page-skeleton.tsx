@@ -1,3 +1,4 @@
+import { ArticleGridSkeleton } from '@/components/articles/article-card-skeleton';
 import { ScrollDivider } from '@/components/site/scroll-divider';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -98,6 +99,52 @@ export function PageProof() {
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} className="h-64 w-full" />
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** The ribbon of sections, as on the front page and the lists. */
+function RibbonProof() {
+  return (
+    <div className="mt-5 flex gap-2 overflow-hidden">
+      {Array.from({ length: 8 }, (_, i) => (
+        <Skeleton key={i} className="h-11 w-24 shrink-0 rounded-[2px]" />
+      ))}
+    </div>
+  );
+}
+
+/** The front page: the nameplate, the ribbon, the lead story beside the latest headlines. */
+export function FrontProof() {
+  return (
+    <div className="container pt-5 sm:pt-6" aria-busy="true">
+      <Skeleton className="h-[15rem] w-full rounded-[3px] sm:h-[18rem]" />
+      <RibbonProof />
+      <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+        <Skeleton className="aspect-[4/3] w-full rounded-[3px]" />
+        <div className="space-y-4">
+          {Array.from({ length: 7 }, (_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** A list (the latest, a section, a search): its short head, the ribbon, the lead story and a row. */
+export function ListProof() {
+  return (
+    <div className="container pt-6 sm:pt-9" aria-busy="true">
+      <TitleProof />
+      <RibbonProof />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
+        <Skeleton className="aspect-[4/3] w-full rounded-[3px]" />
+        <Skeleton className="h-96 w-full rounded-[3px]" />
+      </div>
+      <div className="mt-10">
+        <ArticleGridSkeleton count={3} />
       </div>
     </div>
   );

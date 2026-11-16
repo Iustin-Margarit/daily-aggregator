@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AdminNav } from '@/components/admin/admin-nav';
 import { Logo } from '@/components/site/logo';
 import { createClient, getSessionUser } from '@/lib/supabase/server';
+import { FRONT_PATH } from '@/lib/routes';
 
 export const metadata: Metadata = { title: { default: 'Newsroom', template: '%s · Newsroom' } };
 
@@ -12,13 +13,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!user) redirect('/login?next=/admin/dashboard');
 
   const { data: isAdmin } = await supabase.rpc('is_admin');
-  if (!isAdmin) redirect('/feed');
+  if (!isAdmin) redirect(FRONT_PATH);
 
   return (
     <div className="paper flex min-h-screen flex-col">
       <header className="paper sticky top-0 z-40 border-b border-border/60">
         <div className="container flex h-16 items-center gap-3">
-          <Logo href="/feed" />
+          <Logo href={FRONT_PATH} />
           <span className="hidden rounded-[2px] border-[3px] border-double border-rule/30 bg-panel px-3 py-0.5 font-label text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:inline">The Newsroom</span>
           <div className="ml-auto">
             <AdminNav variant="back" />

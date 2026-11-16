@@ -1,28 +1,15 @@
 'use client';
 
-import { translator } from '@/lib/i18n';
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, LOCALE_INFO } from '@/lib/i18n/config';
-import { useClientValue } from '@/lib/use-client-value';
-
-/** The reader's edition from its cookie: the root layout (and its provider) is what failed, so it is read here. */
-function readLocale() {
-  const value = document.cookie
-    .split(';')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${LOCALE_COOKIE}=`))
-    ?.slice(LOCALE_COOKIE.length + 1);
-  return isLocale(value) ? value : DEFAULT_LOCALE;
-}
+import { i18n, LANG_TAG } from '@/lib/i18n';
 
 /**
  * The last safety net: shown only when the root layout itself fails, so it
  * brings its own <html> and plain styles (no fonts, no theme).
  */
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  const locale = useClientValue(readLocale, DEFAULT_LOCALE);
-  const { t } = translator(locale);
+  const { t } = i18n;
   return (
-    <html lang={LOCALE_INFO[locale].htmlLang}>
+    <html lang={LANG_TAG}>
       <body
         style={{
           margin: 0,

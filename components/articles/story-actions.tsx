@@ -8,7 +8,7 @@ import { safeExternalUrl } from '@/lib/redirect';
 import { cn } from '@/lib/utils';
 
 /*
- * The printed story actions, shared by the story cards and the story page:
+ * The printed story actions, shared by the story cards and the quick-read sheet:
  * an engraving in polished brass and a label in small capitals, like a line
  * of type at the foot of a column (colours: --action-icon, --action-ink).
  * Focus rings are drawn inside the button so a column never clips them.
@@ -143,13 +143,10 @@ export function ReadOnLink({
   url,
   source,
   className,
-  wrap = false,
 }: {
   url: string;
   source: string;
   className?: string;
-  /** In a narrow column (the story page's margin): let the words run onto a second line instead of cutting the name short. */
-  wrap?: boolean;
 }) {
   const { t, fmt } = useI18n();
   const href = safeExternalUrl(url);
@@ -161,18 +158,14 @@ export function ReadOnLink({
       target="_blank"
       rel="noopener noreferrer"
       title={fmt(t.story.readOnTitle, { source })}
-      className={cn('source-ticket', wrap && 'whitespace-normal py-1.5 leading-snug', className)}
+      className={cn('source-ticket', className)}
     >
       <Ornament name="spectacles" className="w-[1.6rem] shrink-0" />
-      {wrap ? (
-        <span className="min-w-0 break-words">{fmt(t.story.readOn, { source })}</span>
-      ) : (
-        <span className="flex min-w-0">
-          {before && <span className="shrink-0 whitespace-pre">{before}</span>}
-          <span className="truncate">{source}</span>
-          {after && <span className="shrink-0 whitespace-pre">{after}</span>}
-        </span>
-      )}
+      <span className="flex min-w-0">
+        {before && <span className="shrink-0 whitespace-pre">{before}</span>}
+        <span className="truncate">{source}</span>
+        {after && <span className="shrink-0 whitespace-pre">{after}</span>}
+      </span>
       {/* U+FE0E keeps phones from drawing the arrow as an emoji. */}
       <span className="source-ticket-arrow" aria-hidden="true">
         {'\u2197\uFE0E'}

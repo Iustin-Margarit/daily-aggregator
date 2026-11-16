@@ -90,6 +90,65 @@ describe('get_related_articles for a visitor', () => {
   });
 });
 
+describe('get_front_page for a visitor', () => {
+  type FrontRow = Database['public']['Functions']['get_front_page']['Returns'][number];
+  let rows: FrontRow[] = [];
+
+  before(async () => {
+    const { data, error } = await anon.rpc('get_front_page', { p_per_section: 5, p_latest: 10 });
+    assert.equal(error, null, error?.message);
+    rows = data ?? [];
+    assert.ok(rows.length > 10, 'the dev project needs stories (npm run ingest)');
+  });
+
+  it('gives each section its newest stories, numbered from 1, and each story once', () => {
+    assert.equal(new Set(rows.map((r) => r.id)).size, rows.length);
+    const bySection = new Map<string, FrontRow[]>();
+    for (const row of rows.filter((r) => r.section_rank !== null)) bySection.set(row.category_id, [...(bySection.get(row.category_id) ?? []), row]);
+    assert.ok(bySection.size >= 3, 'stories from several sections');
+    for (const list of bySection.values()) {
+      const ranks = list.map((r) => r.section_rank).sort((a, b) => (a ?? 0) - (b ?? 0));
+      assert.deepEqual(ranks, ranks.map((_, i) => i + 1));
+      assert.ok(list.length <= 5);
+      const byRank = [...list].sort((a, b) => (a.section_rank ?? 0) - (b.section_rank ?? 0)).map((r) => r.published_at);
+      assert.deepEqual(byRank, [...byRank].sort().reverse());
+    }
+  });
+
+  it('numbers the newest stories 1-10 across the paper', () => {
+    const latest = rows.filter((r) => r.latest_rank !== null).sort((a, b) => (a.latest_rank ?? 0) - (b.latest_rank ?? 0));
+    assert.deepEqual(latest.map((r) => r.latest_rank), Array.from({ length: 10 }, (_, i) => i + 1));
+    const dates = latest.map((r) => r.published_at);
+    assert.deepEqual(dates, [...dates].sort().reverse());
+    assert.ok(rows.every((r) => r.is_saved === false));
+  });
+
+  it('keeps the newest to the chosen sections, but still prints every section', async () => {
+    const section = rows[0].category_id;
+    const { data, error } = await anon.rpc('get_front_page', { p_category_ids: [section], p_per_section: 3, p_latest: 10 });
+    assert.equal(error, null, error?.message);
+    const list = data ?? [];
+    assert.ok(list.filter((r) => r.latest_rank !== null).every((r) => r.category_id === section));
+    assert.ok(new Set(list.filter((r) => r.section_rank !== null).map((r) => r.category_id)).size > 1);
+  });
+
+  it('honours a visitor’s muted paper and words', async () => {
+    const muted = rows[0].source_id;
+    const word = rows[0].title.split(/\s+/).find((w) => /^\p{L}{5,}$/u.test(w))?.toLowerCase();
+    const { data, error } = await anon.rpc('get_front_page', { p_muted_source_ids: [muted], p_muted_words: word ? [word] : [] });
+    assert.equal(error, null, error?.message);
+    assert.ok((data ?? []).length > 0);
+    assert.ok((data ?? []).every((r) => r.source_id !== muted && r.id !== rows[0].id));
+  });
+
+  it('keeps its limits', async () => {
+    const { data, error } = await anon.rpc('get_front_page', { p_per_section: 500, p_latest: 500 });
+    assert.equal(error, null, error?.message);
+    const sections = new Set((data ?? []).map((r) => r.category_id)).size;
+    assert.ok((data ?? []).length <= sections * 12 + 30);
+  });
+});
+
 describe('what a visitor cannot see or do', () => {
   it('cannot read feed addresses or fetch diagnostics', async () => {
     for (const column of ['rss_url', 'last_error', 'etag', 'last_modified']) {
@@ -100,6 +159,7 @@ describe('what a visitor cannot see or do', () => {
 
   it('cannot call the admin and ingestion functions', async () => {
     assert.ok((await anon.rpc('admin_list_sources')).error);
+    assert.ok((await anon.rpc('database_size_bytes')).error, 'the database size is for the server only');
     assert.ok((await anon.rpc('ingest_articles', { p_source_id: '00000000-0000-0000-0000-000000000000', p_articles: [] })).error);
   });
 });

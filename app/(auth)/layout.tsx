@@ -1,5 +1,4 @@
 import { BackLink } from '@/components/article/back-link';
-import { EditionName, EditionSelector } from '@/components/site/edition-selector';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Masthead, MottoRibbon } from '@/components/site/logo';
 import { SkipLink } from '@/components/site/skip-link';
@@ -14,17 +13,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
     <div className="flex min-h-screen flex-col">
       <SkipLink />
       <header className="container flex flex-col items-center pt-2 text-center sm:pt-3">
-        {/* Back to reading on the left; the same edition stamp as in the header bar of every other page, in the
-            same corner, on the right. The masthead below links to the front page too. */}
-        <div className="flex w-full items-center justify-between gap-3">
+        {/* Back to reading; the masthead below links to the front page too. */}
+        <div className="flex w-full items-center">
           <BackLink href="/" className="min-w-0 px-3 text-[0.9rem] sm:px-4 sm:text-[0.95rem]" />
-          <EditionSelector />
         </div>
         <Masthead className="text-[2.2rem] sm:text-[3.4rem]" />
         <MottoRibbon />
-        <div className="mt-2 font-label text-[0.82rem] text-muted-foreground">
-          <EditionName />
-        </div>
       </header>
 
       <main id="main" className="container flex flex-1 justify-center py-8 sm:py-10">

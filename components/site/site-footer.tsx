@@ -1,4 +1,3 @@
-import { EditionName } from '@/components/site/edition-selector';
 import { Engraving } from '@/components/site/engraving';
 import { Masthead } from '@/components/site/logo';
 import { Phrases } from '@/components/ui/phrases';
@@ -18,9 +17,6 @@ export async function SiteFooter() {
           <p className="text-balance font-display text-[1.02rem] italic text-muted-foreground">
             <Phrases text={t.footer.motto} />
           </p>
-          <div className="font-label text-[0.82rem] text-muted-foreground">
-            <EditionName />
-          </div>
           <div className="ornament my-2 w-56" />
           <p className="max-w-xl text-pretty text-sm text-muted-foreground">{t.footer.credits}</p>
           <p className="font-label text-[0.82rem] text-muted-foreground">

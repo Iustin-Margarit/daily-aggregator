@@ -1,6 +1,6 @@
-import en, { type Dictionary } from '@/lib/i18n/dictionaries/en';
+import en, { type Dictionary } from '@/lib/i18n/en';
 
-/** The messages below, in the reader's language (English when not given). */
+/** The messages below, from the dictionary (lib/i18n). */
 type Messages = Dictionary['validation'];
 
 export const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,30}$/;

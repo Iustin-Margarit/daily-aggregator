@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * The newspaper title in blackletter, as a link; it glows softly when pointed at
- * (styles: .masthead-glow). Size it with a text-* class. The title is the same
- * in every edition (lang="en", so screen readers say it the English way).
+ * (styles: .masthead-glow). Size it with a text-* class.
  */
 export function Masthead({ href = '/', className }: { href?: string; className?: string }) {
   return (

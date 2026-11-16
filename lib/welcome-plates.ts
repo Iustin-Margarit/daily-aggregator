@@ -2,7 +2,7 @@
  * The paintings shown in the front page's welcome, one chosen at random for each visit. All are
  * public domain or CC0 (sources in docs/ASSETS.md), cropped to 1000 x 800 in public/plates.
  * `focus` keeps the reader in view when phones show the picture as a wider strip.
- * Their descriptions and credits are in the dictionaries under `landing.pictures`.
+ * Their descriptions and credits are in lib/i18n/en.ts under `landing.pictures`.
  */
 export const WELCOME_PLATES = [
   { key: 'breakfast', focus: '50% 30%' },

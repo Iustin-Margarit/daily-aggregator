@@ -1,3 +1,5 @@
+import { storyPath } from '@/lib/routes';
+
 /**
  * Shares a link: the phone's own share sheet on touch screens (Web Share API),
  * otherwise the clipboard. Desktops copy too, even where they have a share
@@ -22,5 +24,5 @@ export async function shareLink(title: string, url: string): Promise<'shared' | 
 }
 
 export function articleShareUrl(slug: string): string {
-  return `${window.location.origin}/article/${slug}`;
+  return `${window.location.origin}${storyPath(slug)}`;
 }

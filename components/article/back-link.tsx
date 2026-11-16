@@ -6,15 +6,16 @@ import { previousAppPath } from '@/components/site/navigation-tracker';
 import { Ornament } from '@/components/site/ornament';
 import { useI18n } from '@/lib/i18n/client';
 import { cn } from '@/lib/utils';
+import { FRONT_PATH } from '@/lib/routes';
 
-/** Pages to step over: going back from Sign up should not land on Log in. */
-const AUTH_PAGES = /^\/(login|signup|forgot-password|update-password|email-confirmed)(\/|$)/;
+/** Pages to step over: going back should not land on Log in again. */
+const AUTH_PAGES = /^\/login(\/|$)/;
 
 /**
  * Goes back when the reader came from a reading page of the app, otherwise to `href` (the feed on articles,
  * the front page on the Log in pages). A printer's fist points the way (☜).
  */
-export function BackLink({ href = '/feed', className }: { href?: string; className?: string }) {
+export function BackLink({ href = FRONT_PATH, className }: { href?: string; className?: string }) {
   const router = useRouter();
   const { t } = useI18n();
   return (

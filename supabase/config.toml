@@ -152,8 +152,9 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-enabled = true
+# Accounts sign in with Google only (since V2.1): email sign-up and the email templates are gone.
+# In the hosted projects: Authentication > Sign In / Providers > Email switched off by the owner.
+enabled = false
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -179,21 +180,6 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
-
-# These templates use the token_hash flow handled by app/auth/confirm/route.ts, so links
-# keep working even when opened in a different browser than the one that requested them.
-# For a hosted project, paste the same HTML into Authentication > Email Templates.
-[auth.email.template.confirmation]
-subject = "Confirm your email"
-content_path = "./supabase/templates/confirmation.html"
-
-[auth.email.template.recovery]
-subject = "Reset your password"
-content_path = "./supabase/templates/recovery.html"
-
-[auth.email.template.email_change]
-subject = "Confirm your new email address"
-content_path = "./supabase/templates/email_change.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

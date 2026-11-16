@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import { Bookmark, FileText, Rss, Users } from 'lucide-react';
-import { CategoryBars, RecentRuns, StatTile, TopArticles, type IngestionRun } from '@/components/admin/dashboard-widgets';
+import { CategoryBars, DatabaseSize, RecentRuns, StatTile, TopArticles, type IngestionRun } from '@/components/admin/dashboard-widgets';
 import { FetchNewsButton } from '@/components/admin/ingestion-panel';
+import { getRetentionDays } from '@/lib/env';
 import { canIngest } from '@/lib/ingestion/auto-refresh';
+import { effectiveRetention } from '@/lib/ingestion/retention';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -31,6 +34,10 @@ export default async function DashboardPage() {
   }
   const stats = data as unknown as DashboardStats;
   const ingestionReady = canIngest();
+  // Only the server may ask for the size (database_size_bytes is locked to the service role); this page is admin-only.
+  const sizeResult = await createAdminClient()?.rpc('database_size_bytes');
+  const databaseBytes = sizeResult && !sizeResult.error ? (sizeResult.data ?? null) : null;
+  const retention = effectiveRetention(getRetentionDays(), databaseBytes);
 
   return (
     <div className="space-y-6">
@@ -61,6 +68,8 @@ export default async function DashboardPage() {
         />
         <StatTile icon={Bookmark} label="Saved stories" value={stats.saves_total} detail="Kept by all readers" />
       </div>
+
+      <DatabaseSize bytes={databaseBytes} retentionDays={retention.days} />
 
       <RecentRuns runs={stats.recent_runs} />
 

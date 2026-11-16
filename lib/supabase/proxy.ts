@@ -4,13 +4,13 @@ import { isSupabaseConfigured, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/env
 import { buildContentSecurityPolicy, createNonce } from '@/lib/security-headers';
 import { SESSION_CHECKED, SESSION_HEADERS, SESSION_USER_EMAIL, SESSION_USER_ID } from '@/lib/supabase/session-headers';
 
-/** Pages only for logged-out visitors. Logged-in users are sent to the feed. */
-const GUEST_ONLY = new Set(['/login', '/signup', '/forgot-password']);
+/** Pages only for logged-out visitors. Logged-in users are sent to the front page. */
+const GUEST_ONLY = new Set(['/login']);
 
 /**
  * Sections that need a session. Everything else is public: visitors can read
  * the paper, choose sections, clip stories and set their preferences in their
- * browser (/feed, /onboarding, /saved, /profile: Settings without the account
+ * browser (/, /latest, /section/…, /search, /sections, /saved, /settings: without the account
  * entries) without an account. Each of these pages also checks the session
  * itself; this redirect only adds the `?next=` return path.
  */
@@ -111,8 +111,8 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   };
 
-  if (isLoggedIn && (GUEST_ONLY.has(pathname) || pathname === '/')) {
-    return redirect('/feed');
+  if (isLoggedIn && GUEST_ONLY.has(pathname)) {
+    return redirect('/');
   }
 
   if (!isLoggedIn && isPrivatePath(pathname)) {

@@ -67,9 +67,8 @@
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   /* UnifrakturMaguntia: the blackletter newspaper title, and nothing else. */
   --font-masthead: var(--font-unifraktur), var(--font-fraunces), ui-serif, Georgia, serif;
-  /* Special Elite: typewriter type for stamps and small notes. Its Romanian supplement (Ă ă Ș ș Ț ț
-   * only, app/layout.tsx) comes first so those letters never fall back to another face mid-word. */
-  --font-typewriter: var(--font-special-elite-ro), var(--font-special-elite), ui-monospace, 'Courier New', monospace;
+  /* Special Elite: typewriter type for stamps and small notes. */
+  --font-typewriter: var(--font-special-elite), ui-monospace, 'Courier New', monospace;
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -434,10 +433,14 @@
    * exactly at its edges, so photographs, rules, the page buttons and the
    * footer frame all line up on the same two edges. Nothing inside a story
    * may reach outside its column (photo plates draw their frame inside).
+   * Phones print each story as a row (picture left, headline right), so the rows sit closer.
    */
   --col-gap: 2.25rem;
-  --row-gap: 2.25rem;
+  --row-gap: 1.4rem;
   display: grid;
+  @media (min-width: 640px) {
+    --row-gap: 2.25rem;
+  }
   column-gap: var(--col-gap);
   row-gap: var(--row-gap);
   grid-template-columns: minmax(0, 1fr);
@@ -448,6 +451,51 @@
   @media (min-width: 1100px) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     --col-gap: 3rem;
+  }
+  & > * {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+  & > *::before,
+  & > *::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  & > *::before {
+    top: calc(var(--row-gap) / -2);
+    bottom: calc(var(--row-gap) / -2);
+    left: calc(var(--col-gap) / -2);
+    border-left: 1px solid hsl(var(--rule) / 0.38);
+  }
+  & > *::after {
+    top: calc(var(--row-gap) / -2);
+    left: calc(var(--col-gap) / -2);
+    right: calc(var(--col-gap) / -2);
+    border-top: 1px solid hsl(var(--rule) / 0.38);
+  }
+}
+
+@utility digest-grid {
+  /*
+   * The sections in brief on the front page (components/front/section-digest.tsx): one
+   * column on phones, two on tablets, four on wide screens, with the same full-height
+   * column rules and hairlines between rows as the story grid (news-grid).
+   */
+  --col-gap: 2.25rem;
+  --row-gap: 3rem;
+  display: grid;
+  column-gap: var(--col-gap);
+  row-gap: var(--row-gap);
+  grid-template-columns: minmax(0, 1fr);
+  overflow: clip;
+  @media (min-width: 700px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    --col-gap: 2.5rem;
   }
   & > * {
     position: relative;
@@ -1036,7 +1084,8 @@
   }
 }
 /* Morning: the brightened orange of Sports read at 4.2:1 on its pale stamp; a little darker passes 4.5:1. */
-html:not(.dark) .section-stamp[data-section='sports'] {
+html:not(.dark) .section-stamp[data-section='sports'],
+html:not(.dark) [data-section='sports'] .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l - 0.03) calc(c * 1.5) h);
 }
 /* Morning: the unchosen "Choose" ring in a brown pencil on the pale stamps; the circle faint, the word legible. */
@@ -1109,6 +1158,10 @@ html:not(.dark) .section-stamp:not(:hover) .choose-ring-circle {
 }
 .photo-plate img {
   display: block;
+}
+/* A thumbnail (Latest dispatches): a narrower mount, so the print still fills most of the little plate. */
+.photo-plate.plate-thumb {
+  --plate-mount: 2.5px;
 }
 .photo-plate img,
 .photo-plate .article-placeholder {
@@ -1571,7 +1624,7 @@ article:focus-within .photo-plate::after,
       outline: 2px solid hsl(var(--ring));
       outline-offset: -5px;
     }
-    /* Small phones: a little tighter, so the longer French or Spanish labels and Filters share one row. */
+    /* Small phones: a little tighter, so more of the longer French or Spanish labels fit beside Search. */
     @media (width < 25rem) {
       padding-inline: 0.72rem;
     }
@@ -1607,11 +1660,6 @@ article:focus-within .photo-plate::after,
     flex: 1 0 auto;
   }
   /*
-   * The Filters button, set apart at the ribbon's right end so it never reads
-   * as one more section: a boxed ticket in a double rule with Pforr's funnel
-   * in brass, the type in full ink.
-   */
-  /*
    * "Skip to main content" (components/site/skip-link.tsx): off screen until a keyboard reader reaches it,
    * then a printed slip pinned at the top left, above the header.
    */
@@ -1641,7 +1689,7 @@ article:focus-within .photo-plate::after,
       outline-offset: 2px;
     }
   }
-  .filter-ticket {
+  .search-ticket {
     display: inline-flex;
     flex: none;
     align-items: center;
@@ -1675,12 +1723,17 @@ article:focus-within .photo-plate::after,
       padding-inline: 0.55rem 0.65rem;
       letter-spacing: 0.1em;
     }
+    /* On the search page itself. */
+    &[aria-current='page'] {
+      color: var(--brass-ink);
+      border-color: var(--ink-gold);
+    }
   }
 
   /*
    * "Read on [source]" under every story (components/articles/story-actions.tsx):
    * the way out to the publisher's site, so it is boxed apart from Save and
-   * Share in the Filters ticket's double rule, with the spectacles on the left
+   * Share in the search ticket's double rule, with the spectacles on the left
    * and a printed arrow on the right that steps out on hover. The focus ring is
    * drawn inside, so a column never clips it.
    */
@@ -1802,58 +1855,6 @@ article:focus-within .photo-plate::after,
   }
 
   /*
-   * The story page as a broadsheet spread (app/(main)/article/[id]/page.tsx):
-   * a margin column with the dateline, the story in a reading column of about
-   * 72 characters, and the story's actions in a right-hand column, divided by
-   * hairline column rules. Tablets drop the right column (the actions sit
-   * above the story); phones stack everything.
-   */
-  .story-columns {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'date' 'side' 'main';
-    row-gap: 1.25rem;
-    @media (width >= 1024px) {
-      grid-template-columns: 12.5rem minmax(0, 48.5rem);
-      grid-template-areas: 'date side' 'date main';
-      justify-content: center;
-      row-gap: 1.5rem;
-    }
-    @media (width >= 1280px) {
-      grid-template-columns: 13.5rem minmax(0, 50rem) 13.5rem;
-      grid-template-areas: 'date main side';
-    }
-  }
-  .story-date {
-    grid-area: date;
-    @media (width >= 1024px) {
-      padding-right: 2rem;
-      border-right: 1px solid hsl(var(--rule) / 0.38);
-    }
-  }
-  .story-main {
-    grid-area: main;
-    min-width: 0;
-    @media (width >= 1024px) {
-      padding-left: 2.5rem;
-    }
-    @media (width >= 1280px) {
-      padding-right: 2.5rem;
-    }
-  }
-  .story-side {
-    grid-area: side;
-    min-width: 0;
-    @media (width >= 1024px) {
-      padding-left: 2.5rem;
-    }
-    @media (width >= 1280px) {
-      padding-left: 2rem;
-      border-left: 1px solid hsl(var(--rule) / 0.38);
-    }
-  }
-
-  /*
    * The illuminated initial (components/articles/drop-cap.tsx): the first
    * letter in brass, inside an engraved Victorian frame on tinted vellum.
    */
@@ -1950,6 +1951,84 @@ article:focus-within .photo-plate::after,
   text-align: left;
   hyphens: manual;
 }
+
+/*
+ * Settings > The reading room: each choice shows what it does
+ * (components/profile/settings-sections.tsx). These never follow the reader's
+ * own data-photos / data-banner: each specimen always shows its own choice.
+ */
+.photo-specimen {
+  position: relative;
+  display: block;
+  width: 4rem;
+  height: 2.75rem;
+  padding: 2px;
+  overflow: hidden;
+  background-color: var(--plate);
+  border: 1px solid hsl(var(--rule) / 0.5);
+}
+.photo-specimen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 30% 4%;
+  transition: filter 0.5s ease;
+}
+.photo-specimen[data-look='archival'] img {
+  filter: saturate(0.45) sepia(0.45) contrast(1.06);
+}
+.photo-specimen[data-look='archival']::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  box-shadow: inset 0 0 8px rgb(40 22 6 / 0.55);
+  transition: opacity 0.5s ease;
+}
+/* "Sepia until you point at them": pointing at the choice shows it. */
+@media (hover: hover) {
+  button:hover > span > .photo-specimen[data-look='archival'] img {
+    filter: none;
+  }
+  button:hover > span > .photo-specimen[data-look='archival']::after {
+    opacity: 0.3;
+  }
+}
+.banner-specimen {
+  position: relative;
+  display: block;
+  width: 4.5rem;
+  height: 1.75rem;
+  overflow: hidden;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.8;
+}
+.banner-specimen[data-banner-look='hidden'] {
+  border: 1px dashed hsl(var(--rule) / 0.7);
+  opacity: 0.6;
+}
+.banner-specimen-cab {
+  position: absolute;
+  bottom: 1px;
+  left: 0.9rem;
+  width: 2.6rem;
+  height: 1.45rem;
+  background-color: currentColor;
+  mask: url(/street/cab-body.webp) center / 100% 100% no-repeat;
+}
+.banner-specimen[data-banner-look='moving'] .banner-specimen-cab {
+  animation: banner-specimen-drive 5s linear infinite;
+}
+@keyframes banner-specimen-drive {
+  from {
+    transform: translateX(-3.6rem);
+  }
+  to {
+    transform: translateX(4.4rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shooting-star {
     display: none;
@@ -2009,6 +2088,24 @@ article:focus-within .photo-plate::after,
   to {
     opacity: 0;
     transform: translateX(-60%);
+  }
+}
+/* A page link pressed: a brass rule pulses under it until the page arrives (components/feed/pagination.tsx). */
+.pagination-pending {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 4px;
+  height: 2px;
+  background: var(--ink-gold);
+  animation: pagination-pulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes pagination-pulse {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
   }
 }
 @keyframes page-sweep-prev {
