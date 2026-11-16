@@ -58,7 +58,9 @@ export function QuickRead({ slug, article, userId = null, related, standalone = 
   const [closing, setClosing] = useState(false);
   const story = article === undefined ? recallStory(slug) : article;
   const pending = article === undefined;
-  const open = !closing && (!standalone || samePath(pathname, storyPath(slug)));
+  // The sheet shows while the address is a story's: a link inside it that leads elsewhere (a newspaper's page)
+  // changes the address, and the sheet closes (the slot keeps its last page on a soft visit, so it is told here).
+  const open = !closing && (standalone ? samePath(pathname, storyPath(slug)) : pathname.startsWith('/article/'));
   // Taking over from a sheet already on screen: appear in place, without sliding in again.
   const [instant] = useState(sheetAlreadyShown);
   const still = instant ? { animation: 'none' } : undefined;
