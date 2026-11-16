@@ -13,7 +13,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
-import { runIngestionNow } from '@/app/actions/admin';
+import { paperListsChanged, runIngestionNow } from '@/app/actions/admin';
 import { FetchNewsButton } from '@/components/admin/ingestion-panel';
 import { SourceDialog, type SourceDraft } from '@/components/admin/source-dialog';
 import { TimeAgo } from '@/components/site/time-ago';
@@ -120,6 +120,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
       setSources((list) => list.map((s) => (s.id === source.id ? { ...s, is_enabled: !next } : s)));
       showToast({ type: 'error', title: 'Could not update the source', message: error.message });
     } else {
+      void paperListsChanged();
       showToast({
         type: 'success',
         title: `${source.name} ${next ? 'enabled' : 'disabled'}`,
@@ -145,6 +146,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
       return error.message;
     }
     await reload();
+    void paperListsChanged();
     showToast({
       type: 'success',
       title: dialog?.source ? 'Source updated' : 'Source added',
@@ -171,6 +173,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
     const { error } = await supabase.from('sources').delete().eq('id', source.id);
     if (error) return showToast({ type: 'error', title: 'Could not delete the source', message: error.message });
     setSources((list) => list.filter((s) => s.id !== source.id));
+    void paperListsChanged();
     showToast({ type: 'success', title: `${source.name} deleted` });
   };
 
@@ -185,6 +188,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
       return;
     }
     setCategories((list) => [...list, data]);
+    void paperListsChanged();
     setNewCategory('');
     showToast({ type: 'success', title: `Topic “${name}” added`, message: 'Add a source to it so it gets articles.' });
   };
@@ -200,6 +204,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
       return;
     }
     setCategories((list) => list.filter((c) => c.id !== category.id));
+    void paperListsChanged();
     showToast({ type: 'success', title: `Topic “${category.name}” deleted` });
   };
 

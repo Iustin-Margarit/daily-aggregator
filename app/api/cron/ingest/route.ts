@@ -1,4 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
+import { revalidateTag } from 'next/cache';
+import { STORIES_TAG } from '@/lib/data/cached';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getRetentionDays } from '@/lib/env';
 import { runIngestion } from '@/lib/ingestion/run';
@@ -34,6 +36,8 @@ async function handler(request: NextRequest) {
 
   try {
     const summary = await runIngestion(supabase, { trigger: 'cron', retentionDays: getRetentionDays() });
+    // New stories: the front page kept between requests is printed again on the next visit.
+    revalidateTag(STORIES_TAG, { expire: 0 });
     return NextResponse.json(summary, {
       status: summary.status === 'failed' ? 502 : 200,
       headers: { 'Cache-Control': 'no-store' },

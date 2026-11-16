@@ -20,7 +20,7 @@ import type { FontSize } from '@/lib/types';
  * (components/site/guest-prefs-keeper.tsx).
  */
 
-/** The page's paper (app/(main)/layout.tsx), which carries the accent ink's CSS variables. */
+/** The page's paper (app/(paper)/layout.tsx), which carries the accent ink's CSS variables. */
 export const PAPER_ID = 'paper';
 const MIRROR_KEY = 'guest-prefs';
 const YEAR = 60 * 60 * 24 * 365;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { checkUrlShape, isPrivateAddress, UnsafeUrlError } from '../lib/ingestion/safe-fetch';
-import { filtersFromSearchParams } from '../lib/feed';
+import { sectionFromSlug } from '../lib/feed';
 import { pickEvents } from '../lib/on-this-day';
 import { safeExternalUrl, safeNextPath } from '../lib/redirect';
 import { buildContentSecurityPolicy, createNonce } from '../lib/security-headers';
@@ -127,9 +127,9 @@ describe('safeNextPath', () => {
       '',
       `/${'a'.repeat(600)}`,
     ]) {
-      assert.equal(safeNextPath(value), '/feed', JSON.stringify(value));
+      assert.equal(safeNextPath(value), '/', JSON.stringify(value));
     }
-    assert.equal(safeNextPath(null), '/feed');
+    assert.equal(safeNextPath(null), '/');
     assert.equal(safeNextPath('//evil.example', '/'), '/');
   });
 });
@@ -195,12 +195,12 @@ describe('normalizeMutedKeyword', () => {
 });
 
 describe('untrusted input from links and outside feeds', () => {
-  it('keeps only well-formed source ids from ?sources= (a bad one used to break the feed query)', () => {
-    const good = '0b1d2c3e-4f50-4a6b-8c7d-9e0f1a2b3c4d';
-    const filters = filtersFromSearchParams({ sources: `${good},nope,'; drop table articles;--` }, [], []);
-    assert.deepEqual(filters.sourceIds, [good]);
-    const many = Array.from({ length: 150 }, () => good).join(',');
-    assert.equal(filtersFromSearchParams({ sources: many }, [], []).sourceIds.length, 100);
+  it('finds only real sections from a /section/<name> address (a broken one is "not found", never an error)', () => {
+    const sections = [{ id: 'c1', name: 'World', sort_order: 1 }];
+    for (const slug of ['%', '%E0%A4%A', "world'; drop table articles;--", '../admin', 'world/x']) {
+      assert.equal(sectionFromSlug(sections, slug), undefined, slug);
+    }
+    assert.equal(sectionFromSlug(sections, 'world')?.id, 'c1');
   });
 
   it('drops non-https links from the "On this day" feed', () => {

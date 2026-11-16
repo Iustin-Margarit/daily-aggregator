@@ -3,7 +3,10 @@ import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { isLightColor, shade } from '../lib/colors';
-import { FEED_PAGE_SIZE, FRONT_PAGE_SIZE, feedRpcArgs, filtersFromSearchParams, filtersToQueryString, gridGaps, pageCount, pageFromSearchParams, sinceFor, visiblePages } from '../lib/feed';
+import { FEED_PAGE_SIZE, FIRST_PAGE_SIZE, feedRpcArgs, gridGaps, pageCount, pageFromSearchParams, pageHref, queryWithout, searchFromParams, sectionFromSlug, visiblePages } from '../lib/feed';
+import { buildFrontPage, DIGEST_LINES, type FrontRow } from '../lib/front-page';
+import { isPaperPath, paperPath, paperSlug, searchPath, sectionPath, sectionSlug, storyPath } from '../lib/routes';
+import { recallStory, rememberStory } from '../lib/story-cache';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
 import { cleanText, decodeEntities, truncate } from '../lib/text';
@@ -43,70 +46,160 @@ describe('formatRelativeTime', () => {
   });
 });
 
-describe('feed filters', () => {
+describe('lists of stories', () => {
+  const asOf = '2026-11-12T12:00:00.000Z';
   const categories = [
     { id: 'c1', name: 'Technology', sort_order: 1 },
     { id: 'c2', name: 'Science', sort_order: 2 },
     { id: 'c3', name: 'Sports', sort_order: 3 },
   ];
-  const preferred = ['c1', 'c2'];
 
-  it('defaults to the preferred topics', () => {
-    const filters = filtersFromSearchParams({}, categories, preferred);
-    assert.deepEqual(filters, { categoryIds: ['c1', 'c2'], sourceIds: [], search: '', range: 'any', sort: 'latest' });
-    assert.equal(filtersToQueryString(filters, categories, preferred), '');
-  });
-
-  it('round-trips readable query strings', () => {
-    const filters = filtersFromSearchParams({ topics: 'sports', q: 'final', sort: 'for_you', range: 'week' }, categories, preferred);
-    assert.deepEqual(filters.categoryIds, ['c3']);
-    assert.equal(filtersToQueryString(filters, categories, preferred), '?topics=sports&q=final&range=week&sort=for_you');
-    assert.deepEqual(filtersFromSearchParams({ topics: 'all' }, categories, preferred).categoryIds, []);
-  });
-
-  it('ignores invalid values', () => {
-    const filters = filtersFromSearchParams({ sort: 'random', range: 'year' }, categories, preferred);
-    assert.equal(filters.sort, 'latest');
-    assert.equal(filters.range, 'any');
-  });
-
-  it('reads, writes and offsets page numbers', () => {
-    assert.equal(pageFromSearchParams({}), 1);
-    assert.equal(pageFromSearchParams({ page: '3' }), 3);
-    assert.equal(pageFromSearchParams({ page: '-2' }), 1);
-    assert.equal(pageFromSearchParams({ page: 'abc' }), 1);
-    const filters = filtersFromSearchParams({}, categories, preferred);
-    assert.equal(filtersToQueryString(filters, categories, preferred, 1), '');
-    assert.equal(filtersToQueryString(filters, categories, preferred, 4), '?page=4');
-    // Latest without a search: a front page of 16, then pages of 15.
-    assert.equal(feedRpcArgs(filters, 1, '2026-11-12T12:00:00.000Z').p_limit, FRONT_PAGE_SIZE);
-    assert.equal(feedRpcArgs(filters, 2, '2026-11-12T12:00:00.000Z').p_offset, FRONT_PAGE_SIZE);
-    assert.equal(feedRpcArgs(filters, 3, '2026-11-12T12:00:00.000Z').p_offset, FRONT_PAGE_SIZE + FEED_PAGE_SIZE);
-    assert.equal(feedRpcArgs(filters, 3, '2026-11-12T12:00:00.000Z').p_limit, FEED_PAGE_SIZE);
-    // For you (or a search): pages of 15 from the start.
-    const forYou = { ...filters, sort: 'for_you' as const };
-    assert.equal(feedRpcArgs(forYou, 1, '2026-11-12T12:00:00.000Z').p_limit, FEED_PAGE_SIZE);
-    assert.equal(feedRpcArgs(forYou, 3, '2026-11-12T12:00:00.000Z').p_offset, 2 * FEED_PAGE_SIZE);
+  it('pages a list: 16 on the first page with a lead, then 15; a search 15 from the start', () => {
+    const list = { categoryIds: ['c1'], search: '' };
+    assert.equal(feedRpcArgs(list, 1, asOf).p_limit, FIRST_PAGE_SIZE);
+    assert.equal(feedRpcArgs(list, 2, asOf).p_offset, FIRST_PAGE_SIZE);
+    assert.equal(feedRpcArgs(list, 3, asOf).p_offset, FIRST_PAGE_SIZE + FEED_PAGE_SIZE);
+    assert.equal(feedRpcArgs(list, 3, asOf).p_limit, FEED_PAGE_SIZE);
+    assert.deepEqual(feedRpcArgs(list, 1, asOf).p_category_ids, ['c1']);
+    const search = { categoryIds: [], search: 'storm' };
+    assert.equal(feedRpcArgs(search, 1, asOf).p_limit, FEED_PAGE_SIZE);
+    assert.equal(feedRpcArgs(search, 3, asOf).p_offset, 2 * FEED_PAGE_SIZE);
+    assert.equal(feedRpcArgs(search, 1, asOf).p_category_ids, undefined);
+    assert.equal(feedRpcArgs(search, 1, asOf).p_search, 'storm');
     assert.equal(pageCount(0, true), 1);
-    assert.equal(pageCount(FRONT_PAGE_SIZE, true), 1);
-    assert.equal(pageCount(FRONT_PAGE_SIZE + 1, true), 2);
-    assert.equal(pageCount(FRONT_PAGE_SIZE + FEED_PAGE_SIZE + 1, true), 3);
+    assert.equal(pageCount(FIRST_PAGE_SIZE, true), 1);
+    assert.equal(pageCount(FIRST_PAGE_SIZE + 1, true), 2);
+    assert.equal(pageCount(FIRST_PAGE_SIZE + FEED_PAGE_SIZE + 1, true), 3);
     assert.equal(pageCount(FEED_PAGE_SIZE, false), 1);
     assert.equal(pageCount(FEED_PAGE_SIZE + 1, false), 2);
   });
 
-  it('computes the date window', () => {
-    assert.equal(sinceFor('today', '2026-11-12T12:00:00.000Z'), '2026-11-11T12:00:00.000Z');
-    assert.equal(sinceFor('any', '2026-11-12T12:00:00.000Z'), undefined);
+  it('reads the page and the search from the address', () => {
+    assert.equal(pageFromSearchParams({}), 1);
+    assert.equal(pageFromSearchParams({ page: '3' }), 3);
+    assert.equal(pageFromSearchParams({ page: '-2' }), 1);
+    assert.equal(pageFromSearchParams({ page: 'abc' }), 1);
+    assert.equal(searchFromParams({ q: '  storm  ' }), 'storm');
+    assert.equal(searchFromParams({ q: ['one', 'two'] }), 'one');
+    assert.equal(searchFromParams({ q: 'x'.repeat(150) }).length, 100);
+    assert.equal(searchFromParams({}), '');
+  });
+
+  it('writes the address of each page of a list', () => {
+    assert.equal(pageHref('/latest', {}, 1), '/latest');
+    assert.equal(pageHref('/latest', {}, 4), '/latest?page=4');
+    assert.equal(pageHref('/latest', { topics: 'all' }, 2), '/latest?topics=all&page=2');
+    assert.equal(pageHref('/search', { q: 'rain & wind' }, 1), '/search?q=rain+%26+wind');
+  });
+
+  it('finds a section by the name in its address, safely', () => {
+    assert.equal(sectionFromSlug(categories, 'sports')?.id, 'c3');
+    assert.equal(sectionFromSlug(categories, 'Sports')?.id, 'c3');
+    assert.equal(sectionFromSlug(categories, 'cooking'), undefined);
+    assert.equal(sectionFromSlug(categories, '%E0%A4%A'), undefined);
+  });
+
+  it('names addresses and keeps the rest of a query', () => {
+    assert.equal(sectionSlug(' Science Fiction '), 'science-fiction');
+    assert.equal(sectionPath('World'), '/section/world');
+    assert.equal(searchPath('rain'), '/search?q=rain');
+    assert.equal(searchPath(''), '/search');
+    assert.ok(isPaperPath('/') && isPaperPath('/latest') && isPaperPath('/search') && isPaperPath('/section/world'));
+    assert.ok(!isPaperPath('/sections') && !isPaperPath('/saved') && !isPaperPath('/settings'));
+    assert.equal(queryWithout({ topics: 'world', page: '2', sources: 'a,b', x: undefined }, ['topics']), '?page=2&sources=a,b');
+    assert.equal(queryWithout({ q: ['one', 'two'] }, []), '?q=one');
+    assert.equal(queryWithout({ topics: 'world' }, ['topics']), '');
+  });
+
+  it('names the address of a newspaper and of a story', () => {
+    assert.equal(paperSlug('The Guardian - World'), 'the-guardian-world');
+    assert.equal(paperSlug('Phys.org'), 'phys-org');
+    assert.equal(paperSlug('Le Monde & Café'), 'le-monde-and-cafe');
+    assert.equal(paperPath('BBC News - World'), '/paper/bbc-news-world');
+    assert.equal(storyPath('a-story-1a2b'), '/article/a-story-1a2b');
+    assert.ok(isPaperPath('/paper/wired'));
+  });
+
+  it('remembers the stories just pressed for the quick-read sheet', () => {
+    const story = { slug: 'über-story', title: 'T' } as Parameters<typeof rememberStory>[0];
+    rememberStory(story);
+    assert.equal(recallStory('%C3%BCber-story'), story);
+    assert.equal(recallStory('missing'), null);
+    assert.equal(recallStory('%E0%A4%A'), null);
+    for (let i = 0; i < 50; i++) rememberStory({ ...story, slug: 's' + i });
+    assert.equal(recallStory('über-story'), null, 'only the last few are kept');
+    assert.ok(recallStory('s49'));
+  });
+});
+
+describe('the front page', () => {
+  const categories = [
+    { id: 'w', name: 'World', sort_order: 1 },
+    { id: 't', name: 'Technology', sort_order: 2 },
+    { id: 's', name: 'Sports', sort_order: 3 },
+  ];
+  let clock = Date.parse('2026-11-16T12:00:00Z');
+  const row = (id: string, category: string, rank: { s?: number; l?: number }, image = true): FrontRow => ({
+    id,
+    title: id,
+    summary: null,
+    url: 'https://example.com/' + id,
+    slug: id,
+    image_url: image ? 'https://example.com/' + id + '.jpg' : null,
+    author: null,
+    published_at: new Date((clock -= 60_000)).toISOString(),
+    reading_minutes: null,
+    source_id: 'p',
+    source_name: 'Paper',
+    category_id: category,
+    category_name: categories.find((c) => c.id === category)?.name ?? '',
+    is_saved: false,
+    section_rank: rank.s ?? null,
+    latest_rank: rank.l ?? null,
+  });
+
+  it('leads with the newest story that has a photograph, then the newest headlines', () => {
+    const rows = [row('a', 'w', { s: 1, l: 1 }, false), row('b', 't', { s: 1, l: 2 }), row('c', 'w', { s: 2, l: 3 }), row('d', 's', { s: 1, l: 4 })];
+    const front = buildFrontPage(rows, categories, []);
+    assert.equal(front.lead?.id, 'b');
+    assert.deepEqual(front.dispatches.map((r) => r.id), ['a', 'c', 'd']);
+  });
+
+  it('prints each story once, unless a section would otherwise be empty', () => {
+    const rows = [row('a', 'w', { s: 1, l: 1 }), row('b', 'w', { s: 2 }), row('c', 'w', { s: 3 }, false), row('d', 's', { s: 1, l: 2 })];
+    const front = buildFrontPage(rows, categories, []);
+    const world = front.digests.find((d) => d.category.id === 'w');
+    assert.equal(world?.photo?.id, 'b');
+    assert.deepEqual(world?.lines.map((r) => r.id), ['c']);
+    // Sports' only story is in the dispatches: it is repeated rather than the section left out.
+    assert.equal(front.digests.find((d) => d.category.id === 's')?.photo?.id, 'd');
+    // A section without stories is left out.
+    assert.equal(front.digests.some((d) => d.category.id === 't'), false);
+  });
+
+  it('puts the reader\'s own sections first, then the rest in the paper\'s order', () => {
+    const rows = [row('a', 'w', { s: 1 }), row('b', 't', { s: 1 }), row('c', 's', { s: 1 })];
+    assert.deepEqual(buildFrontPage(rows, categories, ['s']).digests.map((d) => d.category.id), ['s', 'w', 't']);
+    assert.deepEqual(buildFrontPage(rows, categories, []).digests.map((d) => d.category.id), ['w', 't', 's']);
+  });
+
+  it('keeps a digest to one photograph and four lines (five without a photograph)', () => {
+    const many = Array.from({ length: 8 }, (_, i) => row('x' + i, 'w', { s: i + 1 }, i === 2));
+    const digest = buildFrontPage(many, categories, []).digests[0];
+    assert.equal(digest.photo?.id, 'x2');
+    assert.equal(digest.lines.length, DIGEST_LINES);
+    assert.ok(!digest.lines.some((r) => r.id === 'x2'));
+    const plain = Array.from({ length: 8 }, (_, i) => row('y' + i, 'w', { s: i + 1 }, false));
+    assert.equal(buildFrontPage(plain, categories, []).digests[0].lines.length, DIGEST_LINES + 1);
   });
 });
 
 describe('safeNextPath', () => {
   it('only allows same-site relative paths', () => {
     assert.equal(safeNextPath('/saved?folder=1'), '/saved?folder=1');
-    assert.equal(safeNextPath('https://evil.example'), '/feed');
-    assert.equal(safeNextPath('//evil.example'), '/feed');
-    assert.equal(safeNextPath('/\\evil.example'), '/feed');
+    assert.equal(safeNextPath('https://evil.example'), '/');
+    assert.equal(safeNextPath('//evil.example'), '/');
+    assert.equal(safeNextPath('/\\evil.example'), '/');
     assert.equal(safeNextPath(null, '/'), '/');
   });
 });
@@ -166,7 +259,7 @@ describe('pagination', () => {
 describe('story grid', () => {
   it('ends on full rows for full pages', () => {
     // Front page: 16 stories, 4 beside the lead, 12 in the grid. Other pages: 15.
-    assert.deepEqual(gridGaps(FRONT_PAGE_SIZE - 4), { two: 0, three: 0 });
+    assert.deepEqual(gridGaps(FIRST_PAGE_SIZE - 4), { two: 0, three: 0 });
     assert.deepEqual(gridGaps(FEED_PAGE_SIZE), { two: 1, three: 0 });
   });
 

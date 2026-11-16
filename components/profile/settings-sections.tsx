@@ -5,12 +5,11 @@ import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
-import { deleteAccount, saveAccentInk, saveFontSize, updateEmail, updatePassword, updateProfile } from '@/app/actions/profile';
+import { deleteAccount, saveAccentInk, saveFontSize, updateProfile } from '@/app/actions/profile';
 import { muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
 import { ledgerIndex, type LedgerEntryId, type LedgerIndex } from '@/components/profile/ledger-index';
 import { CategoryBadge } from '@/components/articles/category-badge';
-import { EditionMark } from '@/components/site/edition-stamp';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Ornament, type OrnamentName } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
-import { PasswordInput } from '@/components/ui/password-input';
-import { PasswordStrength } from '@/components/ui/password-strength';
 import { Segmented } from '@/components/ui/segmented';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
@@ -30,17 +27,18 @@ import { errorText } from '@/lib/error-text';
 import { GUEST_MAX_MUTED_WORDS, guestMutedWordsFit } from '@/lib/guest';
 import { applyAccent, applyFontSize, readGuestMutes, saveGuestAccent, saveGuestFontSize, saveGuestMutes } from '@/lib/guest-prefs';
 import { sectionText } from '@/lib/i18n';
-import { LOCALE_INFO, LOCALES, type Locale } from '@/lib/i18n/config';
-import { useChangeLocale, useI18n } from '@/lib/i18n/client';
+import { useI18n } from '@/lib/i18n/client';
 import { getCategoryStyle } from '@/lib/category-styles';
-import { type ReaderPref, type ReaderPrefValue } from '@/lib/reader-prefs';
+import { formatClock, type ReaderPref, type ReaderPrefValue } from '@/lib/reader-prefs';
 import { createClient } from '@/lib/supabase/client';
 import type { ActionResult, Category, FontSize, SourceOption } from '@/lib/types';
 import { MAX_MUTED_KEYWORDS, normalizeMutedKeyword } from '@/lib/validation';
-import { useHydrated } from '@/lib/use-client-value';
+import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cleanText } from '@/lib/text';
+import { markSheetOverPage } from '@/lib/story-cache';
 import { cn } from '@/lib/utils';
+import { SECTIONS_PATH, SETTINGS_PATH, storyPath } from '@/lib/routes';
 
 /*
  * The Settings page as the Reader's Ledger: each part is an entry on a sheet
@@ -194,52 +192,15 @@ const EDITIONS: { value: ThemeChoice; ornament: OrnamentName }[] = [
   { value: 'auto', ornament: 'watch-case' },
 ];
 
-/** A choice printed as a card in a double rule (the edition, its language): brass-washed when chosen. */
+/** A choice printed as a card in a double rule (the edition): brass-washed when chosen. */
 const choiceCard = (active: boolean) =>
   cn(
-    // min-w-0 and hyphenation: three cards share a tablet's width even with "Nach der Uhrzeit".
     'flex min-w-0 flex-col items-center gap-1.5 rounded-[2px] border-[3px] border-double px-2 py-3.5 text-center hyphens-auto break-words transition-colors focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
     active ? 'border-(--ink-gold) bg-(--ink-gold)/14' : 'border-rule/35 bg-card/50 hover:border-rule/60',
   );
 
-/** The language of the paper, as a card per edition with its stamp and flag; applies at once on this device. */
-function LanguageChoice() {
-  const { t, locale } = useI18n();
-  const { change, pending } = useChangeLocale();
-  const w = t.settings.printing;
-  return (
-    <div>
-      <SubHead>{w.language}</SubHead>
-      {/* Five cards: two a row on phones (the last one spans both), three on tablets, all five on a wide screen. */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5" role="radiogroup" aria-label={w.language} aria-busy={pending}>
-        {LOCALES.map((code: Locale) => {
-          const info = LOCALE_INFO[code];
-          const active = code === locale;
-          return (
-            <button
-              key={code}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => !active && change(code)}
-              className={cn(choiceCard(active), 'edition-card break-normal hyphens-none last:odd:col-span-2 sm:last:odd:col-span-1')}
-            >
-              <EditionMark code={code} active={active} className="edition-mark-card mb-0.5" />
-              {/* Whole words only: "Édition française" may wrap between its words, never inside one. */}
-              <span lang={info.htmlLang} className="font-display text-[1rem] font-semibold leading-tight text-balance hyphens-none">
-                {info.edition}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-      <p className="mt-2 text-[0.85rem] italic text-muted-foreground">{w.languageNote}</p>
-    </div>
-  );
-}
-
 /**
- * The edition, type size, ink and language. Every choice applies the moment
+ * The edition, type size and ink. Every choice applies the moment
  * it is made: for an account the type size and ink are saved to it straight
  * away; a visitor's are kept in this browser (lib/guest-prefs.ts).
  */
@@ -336,16 +297,15 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
 
             <div>
               <SubHead>{w.typeSize}</SubHead>
-              <Hint>{w.typeSizeNote}</Hint>
               <Segmented<FontSize>
                 fill
                 aria-label={w.typeSize}
                 value={size}
                 onChange={(next) => void chooseSize(next)}
                 options={[
-                  { value: 'small', label: <span className="text-xs">{w.sizes.small}</span> },
-                  { value: 'medium', label: <span className="text-sm">{w.sizes.medium}</span> },
-                  { value: 'large', label: <span className="text-base">{w.sizes.large}</span> },
+                  { value: 'small', label: w.sizes.small, preview: <TypeSpecimen size="small" /> },
+                  { value: 'medium', label: w.sizes.medium, preview: <TypeSpecimen size="medium" /> },
+                  { value: 'large', label: w.sizes.large, preview: <TypeSpecimen size="large" /> },
                 ]}
               />
             </div>
@@ -364,16 +324,70 @@ export function AppearanceSection({ bannerColor, fontSize, guest = false }: { ba
             </div>
           </div>
         </div>
-        {/* The five editions get the whole width, so their names never break inside a word. */}
-        <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
-          <LanguageChoice />
-        </div>
       </div>
     </LedgerEntry>
   );
 }
 
 // ---------------------------------------------------------------- III. reading room
+
+/*
+ * Pictures of what each choice does, printed inside the choice itself, so the
+ * reader sees the result instead of reading about it. All decorative (aria-hidden
+ * in Segmented): the label beside each one still names the choice.
+ */
+
+/** A piece of lead type, "Aa", at the size the choice prints the paper in. */
+function TypeSpecimen({ size }: { size: FontSize }) {
+  const px = { small: 'text-[1.05rem]', medium: 'text-[1.4rem]', large: 'text-[1.8rem]' }[size];
+  return <span className={cn('flex h-9 items-end font-display font-semibold leading-none', px)}>Aa</span>;
+}
+
+/** The time now, as the masthead would print it with this choice (a fixed 3:42 in the afternoon until the page has loaded). */
+function ClockSpecimen({ clock }: { clock: ReaderPrefValue<'clock'> }) {
+  // The current minute, as a number (useClientValue needs a value that compares equal between calls).
+  const minute = useClientValue(() => Math.floor(Date.now() / 60_000), null);
+  const date = minute === null ? new Date(2026, 0, 1, 15, 42) : new Date(minute * 60_000);
+  return <span className="font-display text-[1.15rem] font-semibold leading-none tabular-nums">{formatClock(date, clock)}</span>;
+}
+
+/** Five lines of type: a straight block (the last line short), or a ragged right edge. */
+const COLUMN_LINES = { justified: [100, 100, 100, 100, 58], ragged: [92, 76, 100, 68, 84] } as const;
+function ColumnSpecimen({ columns }: { columns: ReaderPrefValue<'columns'> }) {
+  return (
+    <span className="flex w-12 flex-col gap-[3px] py-0.5">
+      {COLUMN_LINES[columns].map((width, i) => (
+        <span key={i} className="block h-[2.5px] rounded-[1px] bg-current opacity-65" style={{ width: `${width}%` }} />
+      ))}
+    </span>
+  );
+}
+
+/** A corner of a colour plate (Penfield's reader, 1896), as a news photo would look: archival (sepia until pointed at) or in full colour. */
+function PhotoSpecimen({ look }: { look: ReaderPrefValue<'photos'> }) {
+  return (
+    <span className="photo-specimen" data-look={look}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a tiny local plate */}
+      <img src="/plates/reader.webp" alt="" width={64} height={44} decoding="async" />
+    </span>
+  );
+}
+
+/** The hansom cab from the street banner: driving across, standing still, or an empty frame. */
+function BannerSpecimen({ banner }: { banner: ReaderPrefValue<'banner'> }) {
+  return (
+    <span className="banner-specimen" data-banner-look={banner}>
+      {banner !== 'hidden' && <span className="banner-specimen-cab" />}
+    </span>
+  );
+}
+
+const PREVIEWS: { [K in ReaderPref]: (value: ReaderPrefValue<K>) => React.ReactNode } = {
+  clock: (value) => <ClockSpecimen clock={value} />,
+  banner: (value) => <BannerSpecimen banner={value} />,
+  photos: (value) => <PhotoSpecimen look={value} />,
+  columns: (value) => <ColumnSpecimen columns={value} />,
+};
 
 /** The reading preferences on their slips, in order; their words are in settings.reading.<name>. */
 const PREF_SLIPS: { [K in ReaderPref]: { name: K; values: ReaderPrefValue<K>[] } }[ReaderPref][] = [
@@ -399,7 +413,7 @@ function PrefSlipRow<K extends ReaderPref>({ name, values }: { name: K; values: 
         className="max-w-full self-start"
         value={value}
         onChange={(next) => setReaderPref(name, next)}
-        options={values.map((option) => ({ value: option, label: slip.options[option] }))}
+        options={values.map((option) => ({ value: option, label: slip.options[option], preview: PREVIEWS[name](option) }))}
       />
     </div>
   );
@@ -659,7 +673,7 @@ function MutedPapers({
   );
 }
 
-/** A story the reader hid from their paper (story page > More > Hide). */
+/** A story the reader hid from their paper (quick-read sheet > More > Hide). */
 export type HiddenStory = { id: string; title: string; slug: string };
 
 /**
@@ -691,7 +705,7 @@ function HiddenStories({ userId, initial }: { userId: string; initial: HiddenSto
       <ul className="divide-y divide-dashed divide-rule/40 border-y border-rule/40" aria-label={w.hiddenStories}>
         {list.map((story) => (
           <li key={story.id} className="flex items-center justify-between gap-3 py-2">
-            <Link href={`/article/${story.slug}`} className="min-w-0 font-display text-[1rem] font-semibold leading-snug underline-offset-4 hover:underline">
+            <Link href={storyPath(story.slug)} onClick={() => markSheetOverPage(true)} className="min-w-0 font-display text-[1rem] font-semibold leading-snug underline-offset-4 hover:underline">
               {cleanText(story.title)}
             </Link>
             <Button variant="stamp" size="sm" onClick={() => showAgain(story)} aria-label={fmt(w.showAgainLabel, { title: cleanText(story.title) })}>
@@ -740,7 +754,7 @@ export function SectionsAndSourcesSection({
           </div>
           {/* May wrap with large type on a narrow phone rather than run off the page. */}
           <Button variant="outline" asChild className="mt-5 h-auto min-h-10 max-w-full whitespace-normal text-center">
-            <Link href="/onboarding">{w.edit}</Link>
+            <Link href={SECTIONS_PATH}>{w.edit}</Link>
           </Button>
         </div>
         <div className="md:pl-8">
@@ -755,111 +769,15 @@ export function SectionsAndSourcesSection({
   );
 }
 
-// ---------------------------------------------------------------- V. signing in
-
-function EmailForm({ email }: { email: string }) {
-  const [state, action] = useActionState(updateEmail, null);
-  useActionFeedback(state);
-  const { t, rich } = useI18n();
-  const w = t.settings.signingIn;
-  return (
-    <form action={action} className="flex h-full flex-col">
-      <SubHead htmlFor="new-email">{w.email}</SubHead>
-      <p className="mb-3 text-[0.92rem] italic text-muted-foreground">
-        {rich(w.emailNow, { email: <span className="break-all font-medium not-italic text-foreground">{email}</span> })}
-      </p>
-      <Input id="new-email" name="email" type="email" autoComplete="email" placeholder="new@example.com" required />
-      <LedgerFoot className="mt-auto pt-5">
-        <SubmitButton>{w.changeEmail}</SubmitButton>
-      </LedgerFoot>
-    </form>
-  );
-}
-
-function PasswordForm() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [next, setNext] = useState('');
-  const [state, action] = useActionState(updatePassword, null);
-  useActionFeedback(state, () => {
-    formRef.current?.reset();
-    setNext('');
-  });
-  const w = useI18n().t.settings.signingIn;
-  return (
-    <form ref={formRef} action={action}>
-      <p className="label mb-1 block text-muted-foreground">{w.password}</p>
-      <p className="mb-3 text-[0.92rem] italic text-muted-foreground">{w.passwordHint}</p>
-      <div className="grid gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="current-password">{w.current}</Label>
-          <PasswordInput id="current-password" name="current_password" autoComplete="current-password" required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="new-password">{w.new}</Label>
-          <PasswordInput
-            id="new-password"
-            name="new_password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-          />
-          <PasswordStrength password={next} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm-new-password">{w.confirmNew}</Label>
-          <PasswordInput id="confirm-new-password" name="confirm_password" autoComplete="new-password" required minLength={8} />
-        </div>
-      </div>
-      <LedgerFoot>
-        <SubmitButton>{w.changePassword}</SubmitButton>
-      </LedgerFoot>
-    </form>
-  );
-}
-
-/** Email and password side by side; readers who sign in with Google get a note instead. */
-export function SigningInSection({ email, hasPassword }: { email: string; hasPassword: boolean }) {
-  const { t, rich } = useI18n();
-  const w = t.settings.signingIn;
-  return (
-    <LedgerEntry id="signing-in" description={hasPassword ? w.description : w.descriptionGoogle}>
-      {hasPassword ? (
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-0">
-          <div className="lg:border-r lg:border-rule/30 lg:pr-8">
-            <EmailForm email={email} />
-          </div>
-          <div className="lg:pl-8">
-            <PasswordForm />
-          </div>
-        </div>
-      ) : (
-        <p className="max-w-2xl text-pretty text-[1rem] leading-relaxed">
-          {rich(w.google, {
-            email: email ? (
-              <>
-                {' '}
-                <span className="break-all font-semibold">{email}</span>
-              </>
-            ) : null,
-          })}
-        </p>
-      )}
-    </LedgerEntry>
-  );
-}
-
-// ---------------------------------------------------------------- VI. closing the account
+// ---------------------------------------------------------------- V. closing the account
 
 /**
- * Accounts with a password confirm with it. Google-only accounts must have signed
- * in with Google in the last few minutes; otherwise they are sent to Google once
- * and come back here (`?delete=confirm`) with the dialog open again.
+ * The reader must have signed in with Google in the last few minutes; otherwise
+ * they are sent to Google once and come back here (`?delete=confirm`) with the
+ * dialog open again.
  */
-export function DangerZone({ hasPassword, openOnLoad = false }: { hasPassword: boolean; openOnLoad?: boolean }) {
+export function DangerZone({ openOnLoad = false }: { openOnLoad?: boolean }) {
   const [open, setOpen] = useState(openOnLoad);
-  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsGoogle, setNeedsGoogle] = useState(false);
@@ -869,7 +787,6 @@ export function DangerZone({ hasPassword, openOnLoad = false }: { hasPassword: b
   const close = () => {
     if (busy) return;
     setOpen(false);
-    setPassword('');
     setError(null);
     setNeedsGoogle(false);
   };
@@ -879,7 +796,7 @@ export function DangerZone({ hasPassword, openOnLoad = false }: { hasPassword: b
     setBusy(true);
     setError(null);
     // On success the server redirects to the front page, so this only returns on failure.
-    const result = await deleteAccount(hasPassword ? password : null);
+    const result = await deleteAccount();
     setBusy(false);
     if (result && !result.ok) {
       setError(result.message ?? w.failed);
@@ -899,32 +816,16 @@ export function DangerZone({ hasPassword, openOnLoad = false }: { hasPassword: b
           <form onSubmit={confirm} className="grid min-w-0 grid-cols-1 gap-4">
             <DialogHeader>
               <DialogTitle>{w.title}</DialogTitle>
-              <DialogDescription>
-                {w.note}
-                {hasPassword && w.notePassword}
-              </DialogDescription>
+              <DialogDescription>{w.note}</DialogDescription>
             </DialogHeader>
-            {hasPassword && (
-              <div className="space-y-2">
-                <Label htmlFor="delete-account-password">{w.password}</Label>
-                <PasswordInput
-                  id="delete-account-password"
-                  autoComplete="current-password"
-                  autoFocus
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
-            {needsGoogle && <GoogleButton next="/profile?delete=confirm" label={w.google} />}
+            {needsGoogle && <GoogleButton next={`${SETTINGS_PATH}?delete=confirm`} label={w.google} />}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={close} disabled={busy}>
                 {t.common.cancel}
               </Button>
               {!needsGoogle && (
-                <Button type="submit" variant="destructive" disabled={busy || (hasPassword && password.length === 0)}>
+                <Button type="submit" variant="destructive" disabled={busy}>
                   {busy && <Spinner />}
                   {w.confirm}
                 </Button>

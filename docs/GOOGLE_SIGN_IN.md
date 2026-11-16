@@ -26,10 +26,9 @@ OAuth client, which only the owner of the Google account can create. It takes ab
 
 ## 2. Supabase dashboard (production, then dev)
 
-**First** make sure *Authentication > Sign In / Providers > Email > Confirm email* is **on** (it
-needs the custom SMTP from the go-live list). With it off, anyone can register someone else's
-address with a password of their choosing; when the real owner later uses "Continue with Google",
-Supabase adds Google to that account and the stranger's password still opens it.
+Google is the only way to sign in. Once Google works, switch *Authentication > Sign In / Providers >
+Email* **off**: then nobody can register someone else's address with a password (which Supabase
+would later join to the real owner's account when they use Google).
 
 1. *Authentication > Sign In / Providers > Google*: switch it on, paste the Client ID and the
    Client secret, save.
@@ -41,13 +40,12 @@ Supabase adds Google to that account and the stranger's password still opens it.
    After Google, Supabase sends people to `/auth/callback` on the site; an address that is not in
    this list is replaced by the Site URL.
 
-Within five minutes the button shows up on `/login` and `/signup` (the app checks which sign-in
-methods are on and keeps the answer for five minutes).
+Within five minutes the button shows up on `/login` (the app checks which sign-in methods are on and
+keeps the answer for five minutes; while Google is off, the page says signing in is switched off).
 
 ## 3. Dev project
 
-Do the same two steps in the dev project's dashboard (same Client ID and secret). Dev has Confirm
-email off, which is fine there: it only holds test accounts.
+Do the same two steps in the dev project's dashboard (same Client ID and secret).
 
 ## How it behaves
 
@@ -55,12 +53,9 @@ email off, which is fine there: it only holds test accounts.
   confirmation email). The byline starts as their first name from Google, accents folded
   (María -> Maria); if that leaves fewer than three letters, or the name is in another script, it is
   the part of the email before the @. They can change it on the first-run page or in Settings.
-- **Same email as an existing, confirmed account**: Supabase adds Google to that account instead of creating
-  a second one, so the reader keeps their saved stories. The password keeps working too.
-- **Settings**: a reader who only uses Google sees "How you sign in" instead of the email and
-  password forms (there is no password to change).
-- **Deleting a Google-only account**: there is no password to ask for, so the reader must have
-  signed in with Google in the last 10 minutes. If not, the dialog shows **Confirm with Google**;
+- **Same email as an older email-and-password account**: Supabase adds Google to that account instead of
+  creating a second one, so the reader keeps their saved stories.
+- **Deleting an account**: the reader must have signed in with Google in the last 10 minutes. If not, the dialog shows **Confirm with Google**;
   after Google they return to Settings with the dialog open again.
 - **Pressing "Cancel" on Google's page** brings the reader back to the login page with
   "Signing in did not finish. Please try again."
@@ -70,5 +65,4 @@ email off, which is fine there: it only holds test accounts.
 - Google's page says "to continue to zjxzzecffppaffrdhmds.supabase.co", because the free plan has no
   custom domain for Supabase. A Supabase custom domain (paid add-on) would show your own address.
 - Apple and Facebook sign-in were left out on purpose: Apple needs a paid developer account
-  (99 USD a year), Facebook needs a business verification. Google covers most people, and email
-  and password stay for everyone else.
+  (99 USD a year), Facebook needs a business verification. Google covers most people.

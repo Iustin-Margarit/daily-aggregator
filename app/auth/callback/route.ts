@@ -3,16 +3,19 @@ import { requestOrigin } from '@/app/auth/request-origin';
 import { callbackErrorCode } from '@/lib/auth';
 import { safeNextPath } from '@/lib/redirect';
 import { createClient } from '@/lib/supabase/server';
+import { FRONT_PATH, SECTIONS_PATH } from '@/lib/routes';
 
 /**
  * PKCE flow: Supabase redirects here with ?code=... after "Continue with Google"
- * and after a confirmation / password-reset link from the default email templates.
+ * (the only way to sign in since V2.1).
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const origin = requestOrigin(request);
   const code = searchParams.get('code');
-  const next = safeNextPath(searchParams.get('next'));
+  // Old confirmation emails (from before Google-only sign-in) ask for /onboarding: the front page instead.
+  const asked = safeNextPath(searchParams.get('next'));
+  const next = /^\/onboarding(?:[/?#]|$)/.test(asked) ? FRONT_PATH : asked;
 
   if (code) {
     const supabase = await createClient();
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
  * A reader on their way to a particular page (?next=) goes there instead.
  */
 async function landingPath(supabase: Awaited<ReturnType<typeof createClient>>, userId: string | undefined, next: string) {
-  if (next !== '/feed' || !userId) return next;
+  if (next !== FRONT_PATH || !userId) return next;
   const { data: profile } = await supabase.from('profiles').select('has_completed_onboarding').eq('id', userId).maybeSingle();
-  return profile && !profile.has_completed_onboarding ? '/onboarding' : next;
+  return profile && !profile.has_completed_onboarding ? SECTIONS_PATH : next;
 }

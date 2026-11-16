@@ -2,7 +2,6 @@
 
 import { useSyncExternalStore } from 'react';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
-import { useI18n } from '@/lib/i18n/client';
 
 // One timer for every "3h ago" on the page (a page of stories has dozens), ticking once a minute.
 const listeners = new Set<() => void>();
@@ -23,11 +22,9 @@ const currentMinute = () => Math.floor(Date.now() / 60_000);
 /** Relative time ("3h ago") that refreshes every minute; full date on hover. */
 export function TimeAgo({ date, className }: { date: string; className?: string }) {
   const minute = useSyncExternalStore(subscribeMinutes, currentMinute, currentMinute);
-  const { locale } = useI18n();
-
   return (
-    <time dateTime={date} title={formatDateTime(date, locale)} className={className} suppressHydrationWarning>
-      {formatRelativeTime(date, minute * 60_000, locale)}
+    <time dateTime={date} title={formatDateTime(date)} className={className} suppressHydrationWarning>
+      {formatRelativeTime(date, minute * 60_000)}
     </time>
   );
 }

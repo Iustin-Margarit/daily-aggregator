@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n/client';
 import { createClient } from '@/lib/supabase/client';
+import { FRONT_PATH } from '@/lib/routes';
 
 /** Google's "G" mark, in the colours its branding rules ask for. */
 function GoogleLogo() {
@@ -25,7 +26,7 @@ function GoogleLogo() {
  * New readers get an account automatically; an existing account with the same
  * (verified) email address is used instead of creating a second one.
  */
-export function GoogleButton({ next = '/feed', label }: { next?: string; label?: string }) {
+export function GoogleButton({ next = FRONT_PATH, label }: { next?: string; label?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useI18n();
@@ -55,18 +56,6 @@ export function GoogleButton({ next = '/feed', label }: { next?: string; label?:
         {loading ? <Spinner /> : <GoogleLogo />}
         {loading ? t.auth.openingGoogle : (label ?? t.auth.google)}
       </Button>
-    </div>
-  );
-}
-
-/** The thin "or" rule between the Google button and the email form. */
-export function OrDivider({ children }: { children?: React.ReactNode }) {
-  const { t } = useI18n();
-  return (
-    <div className="my-6 flex items-center gap-3" role="separator">
-      <span className="h-px flex-1 bg-border" />
-      <span className="text-xs italic text-muted-foreground">{children ?? t.auth.orEmail}</span>
-      <span className="h-px flex-1 bg-border" />
     </div>
   );
 }

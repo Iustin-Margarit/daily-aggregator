@@ -8,12 +8,12 @@ export const siteConfig = {
   masthead: 'The Daily Aggregator',
   /** Short name for tight spaces. */
   shortName: 'Daily Aggregator',
-  // The motto, tagline and description are translated: see masthead.motto and meta.* in lib/i18n/dictionaries.
+  // The motto, tagline and description: masthead.motto and meta.* in lib/i18n/en.ts.
 };
 
 /**
  * "Vol. II · No. 316" - volume counts years since launch, number is the day of
- * the year. `template` is the edition's wording (masthead.volNo: "Vol. {vol} · N° {no}", ...).
+ * the year. `template` is the masthead's wording (masthead.volNo).
  */
 export function editionLabel(date: Date = new Date(), template = 'Vol. {vol} · No. {no}'): string {
   const start = Date.UTC(date.getUTCFullYear(), 0, 0);

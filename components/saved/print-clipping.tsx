@@ -22,8 +22,8 @@ import type { SavedArticle } from '@/lib/types';
 export function PrintClipping({ article, onDone }: { article: SavedArticle; onDone: () => void }) {
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
-  const { t, fmt, locale, dates } = useI18n();
-  const readingTime = formatReadingTime(article.reading_minutes, locale);
+  const { t, fmt, dates } = useI18n();
+  const readingTime = formatReadingTime(article.reading_minutes);
   const longDate = (iso: string) => dates.long(new Date(iso));
   const fileTitle = fmt(t.saved.print.fileSuffix, { title });
   const done = useEffectEvent(onDone);

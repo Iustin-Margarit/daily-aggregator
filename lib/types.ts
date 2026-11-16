@@ -48,15 +48,11 @@ export type RelatedArticle = {
   category_name: string;
 };
 
-export type FeedSort = 'latest' | 'for_you';
-export type DateRange = 'any' | 'today' | 'week';
-
+/** What a list of stories shows: some sections (none = every section), one newspaper's feeds (none = all) and, on a search, the words. */
 export type FeedFilters = {
   categoryIds: string[];
-  sourceIds: string[];
+  sourceIds?: string[];
   search: string;
-  range: DateRange;
-  sort: FeedSort;
 };
 
 export type SavedFolder = {

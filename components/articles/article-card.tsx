@@ -10,20 +10,27 @@ import { TopStoryStamp } from '@/components/articles/top-story-stamp';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
+import { StoryLink } from '@/components/story/story-link';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { formatReadingTime } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/client';
+import { paperPath } from '@/lib/routes';
 import { cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-export type StoryVariant = 'lead' | 'standard' | 'compact';
+/** The grid's picture: a small thumbnail in a phone's story row, the column's width from 640px. */
+const PHONE_ROW_SIZES = `(max-width: 639px) min(38vw, 10rem), ${GRID_SIZES}`;
+
+export type StoryVariant = 'lead' | 'standard' | 'compact' | 'digest';
 
 type ArticleCardProps = {
   article: FeedArticle;
   userId: string | null;
   eagerImage?: boolean;
   variant?: StoryVariant;
+  /** The lead on the front page itself: franked with the red Top story seal. */
+  topStory?: boolean;
 };
 
 /**
@@ -51,9 +58,9 @@ function StoryActions({ article, userId, className }: { article: FeedArticle; us
 }
 
 function Byline({ article, withAuthor = false, className }: { article: FeedArticle; withAuthor?: boolean; className?: string }) {
-  const { t, fmt, locale } = useI18n();
+  const { t, fmt } = useI18n();
   const author = withAuthor && article.author ? cleanText(article.author) : null;
-  const readingTime = formatReadingTime(article.reading_minutes, locale);
+  const readingTime = formatReadingTime(article.reading_minutes);
   return (
     <p className={cn('byline flex min-w-0 flex-wrap items-center gap-x-1.5', className)}>
       {author && (
@@ -62,7 +69,9 @@ function Byline({ article, withAuthor = false, className }: { article: FeedArtic
           <span aria-hidden="true">·</span>
         </>
       )}
-      <span className="truncate font-medium text-foreground/80">{article.source_name}</span>
+      <Link href={paperPath(article.source_name)} className="truncate font-medium text-foreground/80 underline-offset-2 hover:underline">
+        {article.source_name}
+      </Link>
       <span aria-hidden="true">·</span>
       <TimeAgo date={article.published_at} />
       {readingTime && (
@@ -79,8 +88,7 @@ function Byline({ article, withAuthor = false, className }: { article: FeedArtic
  * One story, printed straight on the page (the grid around it draws the
  * column rules). Photographs sit in a dark photo plate (.photo-plate).
  */
-function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: ArticleCardProps) {
-  const href = `/article/${article.slug}`;
+function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard', topStory = false }: ArticleCardProps) {
   const title = cleanText(article.title);
   const summary = cleanText(article.summary);
   const section = getCategoryStyle(article.category_name).key ?? undefined;
@@ -90,7 +98,7 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
     return (
       <article className="flex h-full w-full flex-col" data-section={section}>
         <figure className="relative lg:min-h-[26rem] lg:flex-1">
-          <Link href={href} tabIndex={-1} aria-hidden="true" className="photo-plate h-full">
+          <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate h-full">
             {/* On desktops the photo fills the plate inside its 4px mount (.photo-plate). */}
             <ArticleImage
               src={article.image_url}
@@ -102,35 +110,64 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
               eager={eagerImage}
               className="aspect-video w-full lg:absolute lg:inset-1 lg:aspect-auto lg:h-[calc(100%-0.5rem)] lg:w-[calc(100%-0.5rem)]"
             />
-          </Link>
-          <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />
+          </StoryLink>
+          {topStory && <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />}
         </figure>
         {/*
-         * On desktops the headline is printed above the photograph, as broadsheets do, so it shows
-         * on a laptop screen without scrolling; on smaller screens the photo leads.
+         * The headline is printed above the photograph, as broadsheets do, so the news shows on the
+         * first screen of a laptop or a phone without scrolling past the picture.
          */}
-        <div className="pt-5 sm:pt-6 lg:contents">
-          <div className="lg:order-first lg:pb-5">
+        <div className="contents">
+          <div className="order-first pb-4 lg:pb-5">
             <CategoryBadge name={article.category_name} />
-            <h2 className="headline mt-3 text-[1.85rem] sm:text-[2.5rem] lg:text-[2.85rem]">
-              <Link href={href} className="decoration-2 underline-offset-4 hover:underline">
+            <h2 className="headline mt-2.5 text-[1.7rem] sm:mt-3 sm:text-[2.5rem] lg:text-[2.85rem]">
+              <StoryLink article={article} className="decoration-2 underline-offset-4 hover:underline">
                 {title}
-              </Link>
+              </StoryLink>
             </h2>
-            <Byline article={article} withAuthor className="mt-3" />
+            <Byline article={article} withAuthor className="mt-2 sm:mt-3" />
           </div>
-          {summary && <DropCap text={summary} className="news-text mt-5 text-[1.08rem] leading-relaxed text-foreground/90" />}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3">
-            <Link
-              href={href}
+          {summary && <DropCap text={summary} className="news-text mt-4 text-[1.08rem] leading-relaxed text-foreground/90 sm:mt-5" />}
+          {/* Phones: like the story rows, Save and Share wait in the quick-read sheet, so the next headlines come sooner. */}
+          <div className="mt-5 hidden flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3 sm:flex">
+            <StoryLink
+              article={article}
               className="group/read inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold text-(--brass-ink) hover:text-foreground"
             >
               {t.story.readDispatch}
               <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
-            </Link>
+            </StoryLink>
             {/* Fills the rest of the line beside "Read dispatch", or takes a line of its own when that is too narrow. */}
             <StoryActions article={article} userId={userId} className="min-w-[min(17rem,100%)] flex-1" />
           </div>
+        </div>
+      </article>
+    );
+  }
+
+  // A section's photograph on the front page: the picture, the headline and its byline (its section is the digest's head).
+  if (variant === 'digest') {
+    return (
+      // Phones: a row like the lists (the picture small on the left); from 640px the picture across the column.
+      <article className="flex w-full gap-3.5 sm:flex-col sm:gap-0" data-section={section}>
+        <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate w-[38%] max-w-[10rem] shrink-0 self-start sm:w-auto sm:max-w-none">
+          <ArticleImage
+            src={article.image_url}
+            alt=""
+            category={article.category_name}
+            width={800}
+            sizes="(min-width: 1280px) 22vw, (min-width: 768px) 45vw, (min-width: 640px) 100vw, min(38vw, 10rem)"
+            eager={eagerImage}
+            className="aspect-[4/3] w-full sm:aspect-[16/10]"
+          />
+        </StoryLink>
+        <div className="min-w-0 flex-1">
+          <h3 className="headline text-[1.08rem] leading-snug sm:mt-3 sm:text-[1.25rem] sm:leading-tight">
+            <StoryLink article={article} className="line-clamp-4 decoration-1 underline-offset-2 hover:underline sm:line-clamp-3">
+              {title}
+            </StoryLink>
+          </h3>
+          <Byline article={article} className="mt-1.5" />
         </div>
       </article>
     );
@@ -142,44 +179,48 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard' }: 
         <div className="min-w-0 flex-1">
           <CategoryBadge name={article.category_name} />
           <h3 className="headline mt-1.5 text-[1.1rem]">
-            <Link href={href} className="line-clamp-3 decoration-1 underline-offset-2 hover:underline">
+            <StoryLink article={article} className="line-clamp-3 decoration-1 underline-offset-2 hover:underline">
               {title}
-            </Link>
+            </StoryLink>
           </h3>
           <Byline article={article} className="mt-1.5" />
         </div>
         {article.image_url && (
-          <Link href={href} tabIndex={-1} aria-hidden="true" className="photo-plate mt-1 w-20 shrink-0 self-start sm:w-24">
+          <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate mt-1 w-20 shrink-0 self-start sm:w-24">
             <ArticleImage src={article.image_url} alt="" category={article.category_name} width={240} sizes="6rem" className="aspect-square w-full" />
-          </Link>
+          </StoryLink>
         )}
       </article>
     );
   }
 
   return (
-    <article className="content-auto flex h-full w-full flex-col" data-section={section}>
-      <Link href={href} tabIndex={-1} aria-hidden="true" className="photo-plate">
+    // Phones: one story per row, the picture small on the left and the headline beside it, so a screen
+    // holds five or six stories (Save and Share are in the quick-read sheet). From 640px: the full card.
+    <article className="content-auto flex h-full w-full gap-3.5 sm:flex-col sm:gap-0" data-section={section}>
+      <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate w-[38%] max-w-[10rem] shrink-0 self-start sm:w-auto sm:max-w-none sm:self-auto">
         <ArticleImage
           src={article.image_url}
           alt=""
           category={article.category_name}
           width={800}
-          sizes={GRID_SIZES}
+          sizes={PHONE_ROW_SIZES}
           eager={eagerImage}
-          className="aspect-[16/10] w-full"
+          className="aspect-[4/3] w-full sm:aspect-[16/10]"
         />
-      </Link>
-      <div className="flex flex-1 flex-col pt-4">
-        <CategoryBadge name={article.category_name} className="self-start" />
-        <h3 className="headline mt-2.5 text-[1.32rem]">
-          <Link href={href} className="line-clamp-3 decoration-1 underline-offset-2 hover:underline">
+      </StoryLink>
+      <div className="flex min-w-0 flex-1 flex-col sm:pt-4">
+        <div className="hidden sm:block">
+          <CategoryBadge name={article.category_name} />
+        </div>
+        <h3 className="headline text-[1.08rem] leading-snug sm:mt-2.5 sm:text-[1.32rem] sm:leading-tight">
+          <StoryLink article={article} className="line-clamp-4 decoration-1 underline-offset-2 hover:underline sm:line-clamp-3">
             {title}
-          </Link>
+          </StoryLink>
         </h3>
-        {summary && <p className="mt-2 line-clamp-3 text-[0.97rem] leading-relaxed text-foreground/80">{summary}</p>}
-        <Byline article={article} className="mt-3" />
-        <StoryActions article={article} userId={userId} className="mt-auto pt-2" />
+        {summary && <p className="mt-2 hidden text-[0.97rem] leading-relaxed text-foreground/80 sm:line-clamp-3">{summary}</p>}
+        <Byline article={article} className="mt-1.5 sm:mt-3" />
+        <StoryActions article={article} userId={userId} className="mt-auto hidden pt-2 sm:block" />
       </div>
     </article>
   );

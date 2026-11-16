@@ -498,6 +498,34 @@ export type Database = {
           url: string
         }[]
       }
+      get_front_page: {
+        Args: {
+          p_as_of?: string
+          p_category_ids?: string[]
+          p_latest?: number
+          p_muted_source_ids?: string[]
+          p_muted_words?: string[]
+          p_per_section?: number
+        }
+        Returns: {
+          author: string
+          category_id: string
+          category_name: string
+          id: string
+          image_url: string
+          is_saved: boolean
+          latest_rank: number
+          published_at: string
+          reading_minutes: number
+          section_rank: number
+          slug: string
+          source_id: string
+          source_name: string
+          summary: string
+          title: string
+          url: string
+        }[]
+      }
       get_related_articles: {
         Args: {
           p_article_id: string

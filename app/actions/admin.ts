@@ -1,10 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { LISTS_TAG, STORIES_TAG } from '@/lib/data/cached';
 import { getRetentionDays } from '@/lib/env';
 import { previewFeed, runIngestion, type IngestionSummary } from '@/lib/ingestion/run';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { FRONT_PATH } from '@/lib/routes';
 
 async function assertAdmin() {
   const supabase = await createClient();
@@ -30,7 +32,8 @@ export async function runIngestionNow(sourceId?: string): Promise<IngestionActio
       retentionDays: getRetentionDays(),
     });
     revalidatePath('/admin', 'layout');
-    revalidatePath('/feed');
+    revalidatePath(FRONT_PATH);
+    updateTag(STORIES_TAG);
     const { sources, ...rest } = summary;
     return {
       ok: true,
@@ -39,6 +42,16 @@ export async function runIngestionNow(sourceId?: string): Promise<IngestionActio
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }
+}
+
+/**
+ * The Newsroom changed a newspaper or a section (components/admin/sources-manager.tsx writes the change
+ * itself): the lists and the front pages kept between requests are read again on the next visit.
+ */
+export async function paperListsChanged(): Promise<void> {
+  await assertAdmin();
+  updateTag(LISTS_TAG);
+  updateTag(STORIES_TAG);
 }
 
 export type FeedTestResult =

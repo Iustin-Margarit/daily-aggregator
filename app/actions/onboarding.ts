@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { ActionResult } from '@/lib/types';
 import { profileSaveError, validateUsername } from '@/lib/validation';
 import { UUID } from '@/lib/uuid';
+import { FRONT_PATH } from '@/lib/routes';
 
 const fail = (message: string): ActionResult => ({ ok: false, message, at: Date.now() });
 
@@ -58,8 +59,8 @@ export async function saveSections(ids: string[]): Promise<ActionResult> {
     }
     jar.delete(GUEST_SECTIONS_COOKIE);
   }
-  // The front page reads the sections: let it print the new choice.
-  revalidatePath('/feed');
+  // Every page of the paper reads the sections (the ribbon's "My sections"): let them print the new choice.
+  revalidatePath('/', 'layout');
   return { ok: true, at: Date.now() };
 }
 
@@ -78,7 +79,7 @@ export async function saveTopics(_previous: ActionResult | null, formData: FormD
   if (!user) {
     const jar = await cookies();
     writeGuestSections(jar, categoryIds);
-    redirect('/feed');
+    redirect(FRONT_PATH);
   }
   const rawUsername = formData.get('username');
   const { t } = await getI18n();
@@ -111,5 +112,5 @@ export async function saveTopics(_previous: ActionResult | null, formData: FormD
   // The sections are in the account now; the visitor's cookie is no longer needed.
   (await cookies()).delete(GUEST_SECTIONS_COOKIE);
   revalidatePath('/', 'layout');
-  redirect('/feed');
+  redirect(FRONT_PATH);
 }

@@ -1,13 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
-import localFont from 'next/font/local';
 import { NavigationTracker } from '@/components/site/navigation-tracker';
 import { SoundTicket } from '@/components/site/sound-ticket';
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
-import { LOCALE_INFO } from '@/lib/i18n/config';
-import { I18nProvider } from '@/lib/i18n/client';
+import { LANG_TAG } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { prefAttributes } from '@/lib/reader-prefs';
 import { siteConfig } from '@/lib/site';
@@ -23,19 +21,6 @@ const label = Jost({ subsets: ['latin', 'latin-ext'], variable: '--font-jost', d
 const masthead = UnifrakturMaguntia({ weight: '400', subsets: ['latin'], variable: '--font-unifraktur', display: 'swap' });
 // Typewriter type for stamps and small notes.
 const typewriter = Special_Elite({ weight: '400', subsets: ['latin'], variable: '--font-special-elite', display: 'swap' });
-// Special Elite has no comma-below Ș ș Ț ț: this 4 KB supplement adds them (with Ă ă), composed from the
-// font's own letters (app/fonts, Apache 2.0). It comes first in --font-typewriter but only covers those
-// letters (unicode-range), so it is fetched only when a page prints them, in the Romanian edition.
-const typewriterRo = localFont({
-  src: './fonts/special-elite-ro.woff2',
-  weight: '400',
-  variable: '--font-special-elite-ro',
-  display: 'swap',
-  preload: false,
-  adjustFontFallback: false,
-  declarations: [{ prop: 'unicode-range', value: 'U+0102-0103, U+0218-021B' }],
-});
-
 /**
  * The site's public address, for absolute links in link previews: NEXT_PUBLIC_SITE_URL
  * when set (a custom domain), else the Vercel production domain, else localhost.
@@ -52,8 +37,8 @@ function siteUrl(): URL {
 
 // Link previews use app/opengraph-image.png and app/twitter-image.png (picked up by file name).
 export async function generateMetadata(): Promise<Metadata> {
-  const { t, locale } = await getI18n();
-  const motto = t.masthead.motto.toLocaleLowerCase(LOCALE_INFO[locale].tag);
+  const { t } = await getI18n();
+  const motto = t.masthead.motto.toLocaleLowerCase(LANG_TAG);
   return {
     metadataBase: siteUrl(),
     title: { default: `${siteConfig.masthead} · ${t.meta.titleDefault}`, template: `%s · ${siteConfig.masthead}` },
@@ -64,7 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: siteConfig.masthead,
       title: `${siteConfig.masthead}: ${motto}`,
       description: t.meta.description,
-      locale: LOCALE_INFO[locale].ogLocale,
+      locale: 'en_GB',
       url: '/',
     },
     twitter: {
@@ -84,20 +69,20 @@ const FONT_SIZES = new Set(['small', 'medium', 'large']);
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Cookies mirror per-reader display preferences so they apply before hydration.
-  const [cookieStore, requestHeaders, { locale }] = await Promise.all([cookies(), headers(), getI18n()]);
+  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
   const fontSize = cookieStore.get('font-size')?.value;
   // Set by the proxy (proxy.ts); lets the theme's inline script pass the Content-Security-Policy.
   const nonce = requestHeaders.get('x-nonce') ?? undefined;
 
   return (
     <html
-      // The reader's edition (lib/i18n): French, Spanish or German pages also hyphenate in that language.
-      lang={LOCALE_INFO[locale].htmlLang}
+      // British English: also the language the browser hyphenates justified columns in.
+      lang={LANG_TAG}
       suppressHydrationWarning
       data-font-size={fontSize && FONT_SIZES.has(fontSize) ? fontSize : 'medium'}
       // Reading preferences kept on this device (clock, street banner, photographs, columns): lib/reader-prefs.ts.
-      {...prefAttributes((name) => cookieStore.get(name)?.value, locale)}
-      className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable} ${typewriterRo.variable}`}
+      {...prefAttributes((name) => cookieStore.get(name)?.value)}
+      className={`${display.variable} ${serif.variable} ${label.variable} ${masthead.variable} ${typewriter.variable}`}
     >
       <head>
         {/* The Morning or Night edition before the first paint (lib/theme.ts). */}
@@ -105,16 +90,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-screen">
         <ThemeProvider>
-          <I18nProvider locale={locale}>
-            <ToastProvider>
-              {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
-              <div className="sheet">{children}</div>
-              {/* Stop the street sound from any page once the banner is out of sight. */}
-              <SoundTicket />
-              {/* Remembers the page the reader came from, for the Back links. */}
-              <NavigationTracker />
-            </ToastProvider>
-          </I18nProvider>
+          <ToastProvider>
+            {/* Every page is printed on one sheet of newsprint (styles/globals.css). */}
+            <div className="sheet">{children}</div>
+            {/* Stop the street sound from any page once the banner is out of sight. */}
+            <SoundTicket />
+            {/* Remembers the page the reader came from, for the Back links. */}
+            <NavigationTracker />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

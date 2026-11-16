@@ -1,7 +1,7 @@
 'use client';
 
 import { hideArticle, muteSource, unhideArticle, unmuteSource } from '@/components/articles/moderation';
-import { ActionDivider, MoreButton, ReadOnLink, SaveButton, ShareButton } from '@/components/articles/story-actions';
+import { ActionDivider, MoreButton, SaveButton, ShareButton } from '@/components/articles/story-actions';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -10,16 +10,14 @@ import { errorText } from '@/lib/error-text';
 import { GUEST_MAX_MUTED_PAPERS } from '@/lib/guest';
 import { readGuestMutes, saveGuestMutes } from '@/lib/guest-prefs';
 import { useI18n } from '@/lib/i18n/client';
-import type { ArticleDetail } from '@/lib/types';
+import type { FeedArticle } from '@/lib/types';
 
 /**
- * The story page's printed actions: Save, as under every story on the
+ * The quick-read sheet's printed actions: Save, as under every story on the
  * front page, plus Share and More (hide the story, mute its newspaper; a
- * visitor can mute, kept in this browser). A row on phones
- * and tablets; on wide screens a list in the page's right-hand column, ruled
- * between the lines, that stays in view while the reader scrolls.
+ * visitor can mute, kept in this browser), in one ruled row.
  */
-export function ArticleActionsBar({ article, userId }: { article: ArticleDetail; userId: string | null }) {
+export function ArticleActionsBar({ article, userId }: { article: FeedArticle; userId: string | null }) {
   const { saved, busy, toggleSave, share } = useArticleActions(article, userId);
   const { showToast } = useToast();
   const { t, fmt } = useI18n();
@@ -82,38 +80,31 @@ export function ArticleActionsBar({ article, userId }: { article: ArticleDetail;
     );
   };
 
-  // In the right-hand column each action is a full-width line with a rule under it.
-  const line = 'xl:w-full xl:justify-start xl:border-b xl:border-rule/30 xl:pl-0 xl:h-11';
-  // Hairlines between the actions where they sit in one row (not on phones, where the row wraps).
-  const divider = <ActionDivider className="hidden sm:block xl:hidden" />;
+  // Hairlines between the actions (not on phones, where the row may wrap).
+  const divider = <ActionDivider className="hidden sm:block" />;
 
   return (
-    <div className="xl:sticky xl:top-24">
-      <p className="label mb-1 hidden text-muted-foreground xl:block">{t.article.thisStory}</p>
-      <div className="flex flex-wrap items-center gap-x-1 border-y border-rule/30 py-1 xl:flex-col xl:items-stretch xl:border-b-0 xl:py-0">
-        <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} className={line} />
-        {divider}
-        <ShareButton onShare={share} className={line} />
-        {divider}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <MoreButton className={line} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            {/* Hiding one story is kept in an account; muting a whole newspaper works for visitors too. */}
-            {userId && (
-              <DropdownMenuItem onSelect={hide}>
-                <Ornament name="scissors" className="mr-3 h-[0.8rem] [--ornament-ink:var(--brass-ink)]" /> {t.article.hideFromFeed}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={mute}>
-              <Ornament name="broadsheet" className="mr-3 h-[0.95rem] [--ornament-ink:var(--brass-ink)]" /> {fmt(t.story.mute, { source: article.source_name })}
+    <div className="flex flex-wrap items-center gap-x-1 border-y border-rule/30 py-1">
+      <SaveButton saved={saved} disabled={busy} onToggle={toggleSave} />
+      {divider}
+      <ShareButton onShare={share} />
+      {divider}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <MoreButton />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60">
+          {/* Hiding one story is kept in an account; muting a whole newspaper works for visitors too. */}
+          {userId && (
+            <DropdownMenuItem onSelect={hide}>
+              <Ornament name="scissors" className="mr-3 h-[0.8rem] [--ornament-ink:var(--brass-ink)]" /> {t.article.hideFromFeed}
             </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      {/* The way out to the publisher, in reach before the photograph (the same ticket as under every story). */}
-      <ReadOnLink url={article.url} source={article.source_name} wrap className="mt-3 xl:mt-4 xl:flex xl:w-full" />
+          )}
+          <DropdownMenuItem onSelect={mute}>
+            <Ornament name="broadsheet" className="mr-3 h-[0.95rem] [--ornament-ink:var(--brass-ink)]" /> {fmt(t.story.mute, { source: article.source_name })}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

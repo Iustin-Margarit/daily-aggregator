@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, LayoutDashboard, Rss, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FRONT_PATH } from '@/lib/routes';
 
 const LINKS = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -16,7 +17,7 @@ export function AdminNav({ variant }: { variant: 'sidebar' | 'back' }) {
 
   if (variant === 'back') {
     return (
-      <Link href="/feed" className="label inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+      <Link href={FRONT_PATH} className="label inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" /> Back to the paper
       </Link>
     );

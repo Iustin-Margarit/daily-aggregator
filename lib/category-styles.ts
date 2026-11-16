@@ -21,8 +21,8 @@ export type CategoryStyle = {
 };
 
 /*
- * The sections' names and descriptions are in the reader's language:
- * sections.<key> in lib/i18n/dictionaries (sectionText() in lib/i18n).
+ * The sections' names and descriptions are in the dictionary:
+ * sections.<key> in lib/i18n/en.ts (sectionText() in lib/i18n).
  */
 
 const STYLES: Record<string, CategoryStyle> = {

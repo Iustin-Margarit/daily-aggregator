@@ -4,6 +4,7 @@ import { TimeAgo } from '@/components/site/time-ago';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDuration, pluralize } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { storyPath } from '@/lib/routes';
 
 export type IngestionRun = {
   id: string;
@@ -188,7 +189,7 @@ export function TopArticles({ rows }: { rows: { title: string; slug: string; sav
               <li key={row.slug} className="flex gap-3 text-sm">
                 <span className="w-5 shrink-0 font-display text-xl font-bold leading-none tabular-nums text-muted-foreground">{index + 1}</span>
                 <div className="min-w-0">
-                  <Link href={`/article/${row.slug}`} className="headline line-clamp-2 text-base hover:underline">
+                  <Link href={storyPath(row.slug)} className="headline line-clamp-2 text-base hover:underline">
                     {row.title}
                   </Link>
                   <p className="text-xs text-muted-foreground">

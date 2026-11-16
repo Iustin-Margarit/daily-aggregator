@@ -3,17 +3,8 @@
  * can be unit-tested (tests/auth.test.ts).
  */
 
-/** How recently a Google-only reader must have signed in to delete their account. */
+/** How recently a reader must have signed in (with Google) to delete their account. */
 export const RECENT_SIGN_IN_SECONDS = 10 * 60;
-
-/**
- * True when the account can log in with a password (it was created with email and
- * password). Accounts created with "Continue with Google" only have a `google`
- * identity and no password, so password checks cannot be used for them.
- */
-export function hasPasswordLogin(identities: { provider: string }[] | null | undefined): boolean {
-  return (identities ?? []).some((identity) => identity.provider === 'email');
-}
 
 /**
  * True when the session's latest sign-in (the `amr` claim of the access token) is at
@@ -37,11 +28,4 @@ export function signedInRecently(
 export function callbackErrorCode(params: URLSearchParams): 'link_invalid' | 'sign_in_failed' {
   if (params.get('error_code') === 'otp_expired') return 'link_invalid';
   return params.has('error') ? 'sign_in_failed' : 'link_invalid';
-}
-
-/** Supabase (bcrypt) ignores everything after 72 bytes of a password, so longer ones are refused. */
-export const MAX_PASSWORD_BYTES = 72;
-
-export function passwordTooLong(password: string): boolean {
-  return new TextEncoder().encode(password).length > MAX_PASSWORD_BYTES;
 }
