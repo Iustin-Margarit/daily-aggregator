@@ -4,6 +4,7 @@ import { canResizeImage } from '@/lib/images';
 import { inspectPage } from '@/lib/ingestion/enrich';
 import { probeImageSize } from '@/lib/ingestion/image-size';
 import { isResting, RETRY_FAILING_HOURS } from '@/lib/ingestion/backoff';
+import { effectiveRetention } from '@/lib/ingestion/retention';
 import { fetchFeed } from '@/lib/ingestion/fetch-feed';
 import { dropRepeatedTitles, normalizeItem, REPEAT_WINDOW_HOURS, undatedFallback, type NormalizedArticle } from '@/lib/ingestion/normalize';
 import { parseFeed } from '@/lib/ingestion/parse-feed';
@@ -54,6 +55,8 @@ export type IngestionSummary = {
   itemsFound: number;
   inserted: number;
   deleted: number;
+  /** Days of news kept by this run (fewer than configured while the database is large). */
+  retentionDays?: number;
   durationMs: number;
 };
 
@@ -254,39 +257,66 @@ async function readPages(supabase: ServiceClient, articles: NewArticle[], option
   return stats;
 }
 
-/**
- * Runs one ingestion pass. Needs a service-role client. Only one run can be
- * active at a time; concurrent calls return { status: 'skipped' }.
- */
-export async function runIngestion(supabase: ServiceClient, options: IngestionOptions): Promise<IngestionSummary> {
-  const started = Date.now();
-  const log = options.log ?? (() => {});
-  const retentionDays = options.retentionDays ?? 30;
-  const maxItemsPerSource = options.maxItemsPerSource ?? 50;
+function skippedSummary(started: number, options: IngestionOptions): IngestionSummary {
+  return {
+    status: 'skipped',
+    skippedReason: options.minIntervalMinutes
+      ? 'Another run is in progress or news was refreshed recently.'
+      : 'Another ingestion run is already in progress.',
+    sources: [],
+    itemsFound: 0,
+    inserted: 0,
+    deleted: 0,
+    durationMs: Date.now() - started,
+  };
+}
 
-  const { data: runId, error: lockError } = await supabase.rpc('start_ingestion_run', {
+/**
+ * Takes the ingestion lock (one run at a time, in the database). Returns the new run's id,
+ * or null when another run is in progress (or, with minIntervalMinutes, one ran recently).
+ * Pass the id to runIngestion as `claimedRunId`, or the run stays "running" until it times out.
+ */
+export async function claimIngestionRun(supabase: ServiceClient, options: Pick<IngestionOptions, 'trigger' | 'minIntervalMinutes'>) {
+  const { data: runId, error } = await supabase.rpc('start_ingestion_run', {
     p_trigger: options.trigger,
     p_min_interval_minutes: options.minIntervalMinutes,
   });
-  if (lockError) throw new Error(`Could not start ingestion: ${lockError.message}`);
-  if (!runId) {
-    return {
-      status: 'skipped',
-      skippedReason: options.minIntervalMinutes
-        ? 'Another run is in progress or news was refreshed recently.'
-        : 'Another ingestion run is already in progress.',
-      sources: [],
-      itemsFound: 0,
-      inserted: 0,
-      deleted: 0,
-      durationMs: Date.now() - started,
-    };
-  }
+  if (error) throw new Error(`Could not start ingestion: ${error.message}`);
+  return runId ?? null;
+}
+
+/** For a caller that must answer before the run ends (cron services time out after 30 s). */
+export function skippedRun(options: IngestionOptions): IngestionSummary {
+  return skippedSummary(Date.now(), options);
+}
+
+/**
+ * Runs one ingestion pass. Needs a service-role client. Only one run can be
+ * active at a time; concurrent calls return { status: 'skipped' }.
+ * `claimedRunId`: the lock was already taken with claimIngestionRun.
+ */
+export async function runIngestion(
+  supabase: ServiceClient,
+  options: IngestionOptions & { claimedRunId?: string },
+): Promise<IngestionSummary> {
+  const started = Date.now();
+  const log = options.log ?? (() => {});
+  const configuredDays = options.retentionDays ?? 30;
+  const maxItemsPerSource = options.maxItemsPerSource ?? 50;
+
+  const runId = options.claimedRunId ?? (await claimIngestionRun(supabase, options));
+  if (!runId) return skippedSummary(started, options);
 
   try {
     // Old stories are removed first, so the database cannot keep growing even
     // if a slow run is stopped by the host's time limit before it finishes.
     // Only on full runs, so a single-source refresh stays fast.
+    // Near the free plan's size limit the run keeps fewer days (retention.ts); the size is unknown on an error.
+    const { data: databaseBytes } = await supabase.rpc('database_size_bytes');
+    const retention = effectiveRetention(configuredDays, databaseBytes ?? null);
+    const retentionDays = retention.days;
+    if (retention.shortened) log(`Database over 300 MB: keeping ${retentionDays} days of news instead of ${configuredDays}.`);
+
     let deleted = 0;
     if (!options.sourceIds?.length) {
       const { data, error } = await supabase.rpc('cleanup_old_articles', { p_retention_days: retentionDays });
@@ -365,6 +395,7 @@ export async function runIngestion(supabase: ServiceClient, options: IngestionOp
       itemsFound: results.reduce((sum, r) => sum + r.found, 0),
       inserted: results.reduce((sum, r) => sum + r.inserted, 0),
       deleted,
+      retentionDays,
       durationMs: Date.now() - started,
     };
 

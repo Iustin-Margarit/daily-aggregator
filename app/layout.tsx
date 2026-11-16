@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata, Viewport } from 'next';
 import { cookies, headers } from 'next/headers';
 import { Fraunces, Jost, Source_Serif_4, Special_Elite, UnifrakturMaguntia } from 'next/font/google';
@@ -97,6 +98,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <SoundTicket />
             {/* Remembers the page the reader came from, for the Back links. */}
             <NavigationTracker />
+            {/* Vercel Web Analytics (page views, no cookies), only on Vercel. The script is added by the page's own
+                nonced scripts, so 'strict-dynamic' lets it run; it talks to /_vercel/insights on our own origin. */}
+            {process.env.VERCEL ? <Analytics /> : null}
           </ToastProvider>
         </ThemeProvider>
       </body>

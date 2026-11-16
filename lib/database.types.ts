@@ -446,6 +446,7 @@ export type Database = {
         Args: { p_retention_days?: number }
         Returns: number
       }
+      database_size_bytes: { Args: never; Returns: number }
       delete_user_account: { Args: { p_user_id: string }; Returns: undefined }
       get_article: {
         Args: { p_slug_or_id: string }

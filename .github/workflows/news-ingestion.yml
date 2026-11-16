@@ -1,15 +1,14 @@
 name: News ingestion
 
-# Calls the deployed app's cron endpoint every 2 hours. Optional: the app also
-# refreshes itself when people open the feed (INGESTION_INTERVAL_MINUTES).
+# Manual only (Actions > News ingestion > Run workflow). The news is fetched every hour by cron-job.org,
+# with Vercel's daily cron as the backup, so the schedule that used to be here is off.
+# The endpoint answers at once and finishes the run in the background; ?wait=1 waits for the summary.
 #
 # Repository secrets (Settings > Secrets and variables > Actions):
 #   APP_URL      e.g. https://your-app.vercel.app   (no trailing slash)
 #   CRON_SECRET  same value as the CRON_SECRET environment variable of the app
 
 on:
-  schedule:
-    - cron: '15 */2 * * *'
   workflow_dispatch:
 
 # This job only calls a URL; it needs no access to the repository.
@@ -30,7 +29,7 @@ jobs:
             exit 0
           fi
           status=$(curl --silent --show-error --max-time 120 --output response.json --write-out '%{http_code}' \
-            --header "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/ingest")
+            --header "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/ingest?wait=1")
           echo "HTTP $status"
           jq '{status, inserted, deleted, durationMs, failed: [.sources[]? | select(.ok == false) | {name, error}]}' response.json || cat response.json
           if [ "$status" -ge 400 ]; then

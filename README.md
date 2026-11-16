@@ -126,12 +126,14 @@ Any one of these is enough:
 | Option | How |
 |---|---|
 | **Automatic (default)** | When someone opens the paper and the last fetch is older than `INGESTION_INTERVAL_MINUTES` (60), a fetch runs in the background. |
-| **Vercel Cron** | [`vercel.json`](vercel.json) calls `/api/cron/ingest` daily (the Hobby plan limit). Vercel sends `CRON_SECRET` automatically. |
-| **GitHub Actions** | [`.github/workflows/news-ingestion.yml`](.github/workflows/news-ingestion.yml) runs every 2 hours. Add the repository secrets `APP_URL` and `CRON_SECRET`. |
+| **cron-job.org (free)** | An hourly job (for example at :15) that calls `GET https://your-app/api/cron/ingest` with the header `Authorization: Bearer <CRON_SECRET>`. The endpoint takes the run lock and answers at once (cron-job.org gives up after 30 s); the run finishes in the background. |
+| **Vercel Cron** | [`vercel.json`](vercel.json) calls `/api/cron/ingest` daily (the Hobby plan limit), as a backup. Vercel sends `CRON_SECRET` automatically. |
+| **GitHub Actions** | [`.github/workflows/news-ingestion.yml`](.github/workflows/news-ingestion.yml) is run by hand (*Run workflow*; it has no schedule). Add the repository secrets `APP_URL` and `CRON_SECRET`. |
 | **Manual** | Admin dashboard > *Fetch news now*, or `npm run ingest`. |
 
 Anything else can call the endpoint too:
-`curl -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/cron/ingest`.
+`curl -H "Authorization: Bearer $CRON_SECRET" https://your-app/api/cron/ingest`
+(`?wait=1` answers when the run ends, with its summary; two overlapping calls are safe: only one run goes on).
 
 ### Staying online on free plans ($0)
 
@@ -140,8 +142,7 @@ Anything else can call the endpoint too:
   pauses free projects after a week without activity). Set `CRON_SECRET` in Vercel, or the cron is
   refused and nothing touches the database.
 - Between cron runs the paper refreshes itself when people open the front page (at most hourly,
-  `INGESTION_INTERVAL_MINUTES`), and the optional GitHub Actions schedule adds a fetch every 2 hours.
-  GitHub turns scheduled workflows off after 60 days without commits; re-enable it in the Actions tab.
+  `INGESTION_INTERVAL_MINUTES`); an external cron service (cron-job.org) can fetch every hour.
 - **The database never fills up**: every full fetch deletes unsaved articles older than
   `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 33 feeds is
   roughly 30,000 short rows, well under the free 500 MB.

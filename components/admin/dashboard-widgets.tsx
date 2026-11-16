@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, CircleSlash, Loader2, XCircle, type Lucide
 import { TimeAgo } from '@/components/site/time-ago';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDuration, pluralize } from '@/lib/format';
+import { DATABASE_LIMIT_BYTES, DATABASE_SOFT_LIMIT_BYTES, formatMegabytes, SHORT_RETENTION_DAYS } from '@/lib/ingestion/retention';
 import { cn } from '@/lib/utils';
 import { storyPath } from '@/lib/routes';
 
@@ -72,6 +73,40 @@ export function RunStatus({ status }: { status: IngestionRun['status'] }) {
     <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', className)}>
       <Icon className={cn('h-4 w-4', status === 'running' && 'animate-spin')} /> {label}
     </span>
+  );
+}
+
+/** How full the free database is, and how many days of news the next run keeps (retention.ts). */
+export function DatabaseSize({ bytes, retentionDays }: { bytes: number | null; retentionDays: number }) {
+  if (bytes === null) {
+    return <p className="text-sm italic text-muted-foreground">Database size: not available.</p>;
+  }
+  const over = bytes > DATABASE_SOFT_LIMIT_BYTES;
+  const percent = Math.min(100, Math.round((bytes / DATABASE_LIMIT_BYTES) * 100));
+  return (
+    <div className="card-paper px-5 py-3.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="label text-muted-foreground">Database</p>
+        <p className={cn('text-sm tabular-nums', over && 'font-semibold text-destructive')}>
+          {formatMegabytes(bytes)} of {formatMegabytes(DATABASE_LIMIT_BYTES)} on the free plan
+        </p>
+      </div>
+      <div
+        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-border"
+        role="progressbar"
+        aria-label="Database size"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
+        <div className={cn('h-full rounded-full', over ? 'bg-destructive' : 'bg-foreground/60')} style={{ width: `${Math.max(percent, 1)}%` }} />
+      </div>
+      <p className="mt-2 text-xs italic text-muted-foreground">
+        {over
+          ? `Over ${formatMegabytes(DATABASE_SOFT_LIMIT_BYTES)}: each run keeps only ${retentionDays} days of news (saved stories are always kept).`
+          : `Stories are kept for ${retentionDays} days (${SHORT_RETENTION_DAYS} days if the database passes ${formatMegabytes(DATABASE_SOFT_LIMIT_BYTES)}).`}
+      </p>
+    </div>
   );
 }
 
