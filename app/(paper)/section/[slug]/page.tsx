@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { PaperPage } from '@/components/feed/paper-page';
 import { getCategoryStyle } from '@/lib/category-styles';
-import { queryWithout, type SearchParams } from '@/lib/feed';
+import { getSections } from '@/lib/data/cached';
+import { queryWithout, sectionFromSlug, type SearchParams } from '@/lib/feed';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { SECTION_PREFIX } from '@/lib/routes';
@@ -18,7 +19,9 @@ function nameFromSlug(slug: string): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const [{ slug }, { t }] = await Promise.all([params, getI18n()]);
+  const [{ slug }, { t }, sections] = await Promise.all([params, getI18n(), getSections().catch(() => null)]);
+  // An unknown section: the not-found page, with its title and noindex (a real 404 where the status can still change).
+  if (sections && !sectionFromSlug(sections, slug)) notFound();
   const name = nameFromSlug(slug);
   return { title: sectionText(t, getCategoryStyle(name).key, name).name };
 }

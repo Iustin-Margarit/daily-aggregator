@@ -18,7 +18,8 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const [article, { t, fmt }] = await Promise.all([getArticle((await params).id), getI18n()]);
-  if (!article) return { title: t.meta.articleNotFound };
+  // A story that is gone (or never was): the not-found page, with its title and noindex.
+  if (!article) notFound();
   const title = cleanText(article.title);
   const section = sectionText(t, getCategoryStyle(article.category_name).key, article.category_name).name;
   const description = truncate(cleanText(article.summary), 180) || fmt(t.meta.articleFallback, { section, source: article.source_name });

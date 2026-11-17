@@ -9,7 +9,7 @@ import { isPaperPath, loginPath, paperPath, paperSlug, searchPath, sectionPath, 
 import { recallStory, rememberStory } from '../lib/story-cache';
 import { formatRelativeTime } from '../lib/format';
 import { safeNextPath } from '../lib/redirect';
-import { cleanText, decodeEntities, truncate } from '../lib/text';
+import { cleanText, decodeEntities, plainText, truncate } from '../lib/text';
 import { validateUsername } from '../lib/validation';
 
 describe('text helpers', () => {
@@ -24,6 +24,16 @@ describe('text helpers', () => {
     assert.equal(cleanText('<p>Hello <b>world</b></p>\n\n<script>alert(1)</script>'), 'Hello world');
     assert.equal(cleanText('&lt;p&gt;Encoded &lt;em&gt;markup&lt;/em&gt;&lt;/p&gt;'), 'Encoded markup');
     assert.equal(cleanText(null), '');
+  });
+
+  it('cleanText prints typewriter quotes as printer’s quotes; plainText keeps the feed’s own', () => {
+    assert.equal(
+      cleanText(`The documentary's close-ups: "Hopefully, it wasn't too claustrophobic."`),
+      'The documentary’s close-ups: “Hopefully, it wasn’t too claustrophobic.”',
+    );
+    assert.equal(cleanText(`Evans' scene, 'a quote' and the '90s (“kept”)`), 'Evans’ scene, ‘a quote’ and the ’90s (“kept”)');
+    assert.equal(cleanText(`He said: "'Yes,' she said"`), 'He said: “‘Yes,’ she said”');
+    assert.equal(plainText(`it's "plain"`), `it's "plain"`);
   });
 
   it('cleanText drops unfilled template and tracking placeholders, not real text in braces', () => {
@@ -172,6 +182,22 @@ describe('the front page', () => {
     assert.deepEqual(front.dispatches.map((r) => r.id), ['a', 'c', 'd']);
   });
 
+  it('leads only with World or Technology, even when a newer sports story has a photograph', () => {
+    const rows = [row('a', 's', { s: 1, l: 1 }), row('b', 'w', { s: 1, l: 2 }, false), row('c', 't', { s: 1, l: 3 }), row('d', 'w', { s: 2, l: 4 })];
+    const front = buildFrontPage(rows, categories);
+    assert.equal(front.lead?.id, 'c');
+    assert.deepEqual(front.dispatches.map((r) => r.id), ['a', 'b', 'd']);
+  });
+
+  it('leads with the news most papers carry when there is such a story', () => {
+    const rows = [row('a', 'w', { s: 1, l: 1 }), row('b', 't', { s: 1, l: 2 }), { ...row('c', 't', {}), lead_rank: 1 }, { ...row('d', 'w', { s: 2 }), lead_rank: 2 }];
+    const front = buildFrontPage(rows, categories);
+    assert.equal(front.lead?.id, 'c');
+    // Printed once: the dispatches are the newest stories after it, and no digest repeats it.
+    assert.deepEqual(front.dispatches.map((r) => r.id), ['a', 'b']);
+    assert.ok(!front.digests.some((d) => d.photo?.id === 'c' || d.lines.some((r) => r.id === 'c')));
+  });
+
   it('prints each story once, unless a section would otherwise be empty', () => {
     const rows = [row('a', 'w', { s: 1, l: 1 }), row('b', 'w', { s: 2 }), row('c', 'w', { s: 3 }, false), row('d', 's', { s: 1, l: 2 })];
     const front = buildFrontPage(rows, categories);
@@ -190,7 +216,7 @@ describe('the front page', () => {
   });
 
   it('keeps a digest to one photograph and four lines (five without a photograph)', () => {
-    const many = Array.from({ length: 8 }, (_, i) => row('x' + i, 'w', { s: i + 1 }, i === 2));
+    const many = Array.from({ length: 8 }, (_, i) => row('x' + i, 's', { s: i + 1 }, i === 2));
     const digest = buildFrontPage(many, categories).digests[0];
     assert.equal(digest.photo?.id, 'x2');
     assert.equal(digest.lines.length, DIGEST_LINES);

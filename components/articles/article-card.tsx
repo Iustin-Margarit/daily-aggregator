@@ -135,7 +135,8 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard', to
             </StoryLink>
             {topStory && <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />}
           </figure>
-          {summary && <DropCap text={summary} className="news-text mt-4 text-[1.08rem] leading-relaxed text-foreground/90 sm:mt-5 xl:mt-0" />}
+          {/* Beside the photo (from 1280px) the column is too narrow to justify without wide gaps: ragged there. */}
+          {summary && <DropCap text={summary} className="news-text mt-4 text-[1.08rem] leading-relaxed text-foreground/90 sm:mt-5 xl:mt-0 xl:text-left!" />}
         </div>
         {/* Phones: like the story rows, Save and Share wait in the quick-read sheet, so the next headlines come sooner. */}
         <div className="mt-5 hidden flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3 sm:flex">

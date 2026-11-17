@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Database, KeyRound, Play, Terminal } from 'lucide-react';
+import { notFound } from 'next/navigation';
 import { Logo } from '@/components/site/logo';
 import { isSupabaseConfigured } from '@/lib/env';
 
@@ -42,36 +43,33 @@ const STEPS = [
   },
 ];
 
+/** Shown in place of every page while the database is not connected (lib/supabase/proxy.ts); a 404 once it is. */
 export default function SetupPage() {
-  const configured = isSupabaseConfigured();
+  if (isSupabaseConfigured()) notFound();
   return (
     <div className="container max-w-2xl py-12">
       <Logo />
       <h1 className="headline mt-10 border-t border-dashed border-border pt-5 text-4xl">
-        {configured ? 'Supabase is configured' : 'Almost there - connect a database'}
+        Almost there - connect a database
       </h1>
       <p className="mt-2 italic text-muted-foreground">
-        {configured
-          ? 'Everything looks good. Head to the home page to get started.'
-          : 'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set, so the app cannot start yet. The README has the full guide.'}
+        NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are not set, so the app cannot start yet. The README has the full guide.
       </p>
-      {!configured && (
-        <ol className="mt-8 space-y-6">
-          {STEPS.map(({ icon: Icon, title, body }, index) => (
-            <li key={title} className="flex gap-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-primary font-display shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] text-lg font-semibold text-primary-foreground">
-                <Icon className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 flex-1 text-sm text-muted-foreground">
-                <p className="label text-foreground">
-                  {index + 1}. {title}
-                </p>
-                <div className="mt-1">{body}</div>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+      <ol className="mt-8 space-y-6">
+        {STEPS.map(({ icon: Icon, title, body }, index) => (
+          <li key={title} className="flex gap-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] bg-primary font-display shadow-[inset_0_0_0_2px_hsl(var(--primary)),inset_0_0_0_3px_hsl(var(--primary-foreground)/0.4)] text-lg font-semibold text-primary-foreground">
+              <Icon className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1 text-sm text-muted-foreground">
+              <p className="label text-foreground">
+                {index + 1}. {title}
+              </p>
+              <div className="mt-1">{body}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

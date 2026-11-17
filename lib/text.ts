@@ -100,8 +100,11 @@ export function stripHtml(text: string): string {
  */
 const PLACEHOLDER = /\{\{\s*[a-z_][\w.-]{0,40}\s*\}\}|\{[a-z_][\w.-]{0,40}\}|%%[a-z_][\w.-]{0,40}%%/gi;
 
-/** Plain, single-line text safe to render. */
-export function cleanText(text: string | null | undefined): string {
+/**
+ * Plain, single-line text, the publisher's own characters kept: what ingestion stores (lib/ingestion/normalize.ts),
+ * so repeated headlines, searches and muted words compare what the feed really said.
+ */
+export function plainText(text: string | null | undefined): string {
   if (!text) return '';
   // Decode first so entity-encoded tags (&lt;p&gt;) are stripped too, then
   // decode again for entities that were inside the markup.
@@ -110,6 +113,25 @@ export function cleanText(text: string | null | undefined): string {
     .replace(/[​-‍﻿]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Typewriter quotes set as printer's quotes ("a" -> “a”, don't -> don’t, '90s -> ’90s), so a summary matches the
+ * curly quotes of the headline above it. Opening after the start, a space, a bracket or a dash; closing otherwise.
+ */
+export function smartQuotes(text: string): string {
+  return text
+    .replace(/([\p{L}\p{N}])'(?=\p{L})/gu, '$1’')
+    .replace(/(^|[\s([{“"—–-])'(?=\d\d)/gu, '$1’')
+    .replace(/(^|[\s([{“"—–-])'/gu, '$1‘')
+    .replace(/'/g, '’')
+    .replace(/(^|[\s([{‘—–-])"/gu, '$1“')
+    .replace(/"/g, '”');
+}
+
+/** Plain, single-line text safe to render, with printer's quotes. */
+export function cleanText(text: string | null | undefined): string {
+  return smartQuotes(plainText(text));
 }
 
 /** What some feeds put in the author field when there is none ("None" from a Python null, "null", "N/A"). */
