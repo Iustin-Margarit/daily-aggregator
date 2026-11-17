@@ -6,7 +6,7 @@ care about.
 
 **Read it live: [daily-aggregator.vercel.app](https://daily-aggregator.vercel.app)**, no account needed.
 
-![The front page in the morning edition: the blackletter masthead with a pocket watch and tonight's moon, the section ribbon, the lead story beside the latest dispatches, and the paper-theatre street](docs/screenshots/feed.jpg)
+![The front page in the morning edition: the blackletter masthead with a pocket watch and tonight's moon, the section ribbon, and the lead story beside the latest dispatches](docs/screenshots/feed.jpg)
 
 ![The paper-theatre street at night, moving: gas lamps flicker and moths circle them, a hansom cab trots past, a newsboy waves the evening paper and passers-by stroll along the railings](docs/screenshots/street.gif)
 
