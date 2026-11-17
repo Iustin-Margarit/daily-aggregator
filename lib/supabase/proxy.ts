@@ -9,7 +9,7 @@ const GUEST_ONLY = new Set(['/login']);
 
 /**
  * Sections that need a session. Everything else is public: visitors can read
- * the paper, choose sections, clip stories and set their preferences in their
+ * the paper, clip stories and set their preferences in their
  * browser (/, /latest, /section/…, /search, /sections, /saved, /settings: without the account
  * entries) without an account. Each of these pages also checks the session
  * itself; this redirect only adds the `?next=` return path.

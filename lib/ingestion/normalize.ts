@@ -66,10 +66,13 @@ export function parseFeedDate(raw: string | null | undefined): Date | null {
 
 // Boilerplate that WordPress & co. append to feed descriptions.
 const BOILERPLATE = [
-  /\s*The post .{1,300}? appeared first on .{1,120}?\.?\s*$/i,
+  // Everything from "The post … appeared first on" on (The Spectator Australia adds "What to read next: …" after it).
+  /\s*The post .{1,300}? appeared first on [\s\S]*$/i,
   /\s*(Continue reading|Read more|Read the full story|Keep reading)\s*(\.{3}|…|»|→)?\s*$/i,
   /\s*\[(…|\.\.\.)\]\s*$/,
   /^\s*(Photo|Image):?\s.{0,120}?(Getty Images|AP|Reuters|AFP|Shutterstock)\s*/i,
+  // A newsletter plug inside the summary (The Guardian: "Sign up for Guardian Australia's breaking news email").
+  /\s*Sign up (for|to) (the |our )?(Guardian|newsletter|email|briefing|breaking news)[^.!?]*([.!?]|$)/gi,
 ];
 
 function cleanSummary(html: string | null): string {
@@ -92,10 +95,18 @@ function cleanAuthor(raw: string | null): string | null {
 /*
  * Headlines that are advertising or gambling, never news, kept off the paper at
  * ingestion (sports feeds in particular carry sportsbook promotions and betting
- * tips as articles). Two lists so either can be loosened on its own.
+ * tips as articles; Wired's feed carries coupon pages). Two lists so either can be
+ * loosened on its own. Narrow on purpose: a story that only mentions a deal, odds or
+ * draft picks stays.
  */
 const ADVERT_TITLE = [
   /\b(promo|bonus|coupon|referral|discount) codes?\b/i,
+  // Coupon and shopping-deal pages: "Wayfair Coupons: Up to 80% Off", "Headphone Deals (2026)".
+  /\bcoupons?\s*:/i,
+  /\b\d{1,2}\s?% off\b/i,
+  /\bdeals\s*\((19|20)\d\d\)/i,
+  /\bdeals? roundup\b/i,
+  /\b(best|early|top)\b.*\b(black friday|cyber monday|prime day)\b.*\bdeals?\b/i,
   /\bbonus bets?\b/i,
   /\b(betting|sportsbook|casino) (promos?|bonus(es)?|offers?|apps?)\b/i,
   /\bsportsbooks?\b/i,
@@ -109,11 +120,31 @@ const BETTING_TITLE = [
   /\bbetting (guide|preview|lines|picks|tips)\b/i,
   /\bodds\b.*\b(picks?|predictions?|spreads?|lines)\b/i,
   /\b(picks?|predictions?)\b.*\bodds\b/i,
+  // "Week 11 early odds: Bills favored by 16.5"
+  /\b(early|opening|latest|updated) odds\b/i,
+  /\bodds\s*:/i,
+  // Fantasy-team tips: "Top daily Fantasy picks", "Fantasy Football Week 11 Injury Report", "NFL DFS".
+  /\bfantasy (football|basketball|baseball|hockey|picks|rankings|lineups?)\b/i,
+  /\b(dfs|daily fantasy)\b/i,
 ];
+
+/** Game picks ("Rockets vs. Heat NBA picks:", "College basketball picks, schedule"), not draft picks or "picks up". */
+function isGamePicks(title: string): boolean {
+  return /\bpicks\b(?!\s+up\b)/i.test(title) && /\b(vs\.?|v\.|week \d+|predictions?|schedule|tonight|today)\b/i.test(title) && !/\bdraft\b/i.test(title);
+}
+
+/**
+ * A sponsored newsletter sent through a news feed (The Hill's: a news-like headline over "Presented by EQT …
+ * {beacon} …"): the summary starts with its sponsor, or carries the newsletter's tracking placeholder.
+ */
+function isSponsoredNewsletter(summaryHtml: string | null): boolean {
+  if (!summaryHtml) return false;
+  return /\{beacon\}/i.test(summaryHtml) || /^presented by\b/i.test(cleanText(summaryHtml));
+}
 
 /** True when a headline is an advert or a betting tip rather than news. */
 export function isAdvertTitle(title: string): boolean {
-  return ADVERT_TITLE.some((pattern) => pattern.test(title)) || BETTING_TITLE.some((pattern) => pattern.test(title));
+  return ADVERT_TITLE.some((pattern) => pattern.test(title)) || BETTING_TITLE.some((pattern) => pattern.test(title)) || isGamePicks(title);
 }
 
 export type NormalizeOptions = {
@@ -128,7 +159,7 @@ export function normalizeItem(item: ParsedFeedItem, options: NormalizeOptions = 
   const now = options.now ?? Date.now();
 
   const title = truncate(cleanText(item.title), 300);
-  if (title.length < 3 || isAdvertTitle(title)) return null;
+  if (title.length < 3 || isAdvertTitle(title) || isSponsoredNewsletter(item.summaryHtml)) return null;
 
   const url = normalizeUrl(item.link, options.baseUrl);
   if (!url) return null;

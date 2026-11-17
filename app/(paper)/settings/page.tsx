@@ -7,14 +7,14 @@ import {
   DangerZone,
   Ledger,
   ProfileSection,
+  MutesSection,
   ReadingRoomSection,
-  SectionsAndSourcesSection,
 } from '@/components/profile/settings-sections';
 import { ledgerIndex } from '@/components/profile/ledger-index';
 import { PageHeader } from '@/components/site/page-header';
 import { PeekNav } from '@/components/site/peek-nav';
 import { DEFAULT_ACCENT } from '@/lib/colors';
-import { GUEST_ACCENT_COOKIE, GUEST_SECTIONS_COOKIE, guestMutesFrom, parseGuestAccent, parseGuestSections } from '@/lib/guest';
+import { GUEST_ACCENT_COOKIE, guestMutesFrom, parseGuestAccent } from '@/lib/guest';
 import { getI18n } from '@/lib/i18n/server';
 import { createClient, getCurrentProfile, getCurrentUser, getSessionUser } from '@/lib/supabase/server';
 import type { Category, FontSize, SourceOption } from '@/lib/types';
@@ -30,14 +30,14 @@ const FONT_SIZES = new Set(['small', 'medium', 'large']);
 /**
  * Settings as the Reader's Ledger: a short head, the ledger's index (a ribbon on phones, the margin on wide
  * screens) and its entries, each a few plain choices that apply at once. Visitors get the entries kept in their
- * browser only: appearance, reading, sections and papers.
+ * browser only: appearance, reading, muted papers and words.
  */
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ delete?: string }> }) {
   const [session, query, { t, rich }, supabase, jar] = await Promise.all([getSessionUser(), searchParams, getI18n(), createClient(), cookies()]);
   const w = t.settings;
   const guest = !session;
 
-  // Everyone gets the newspapers (for the Mute menu) and the sections; the account's lists load at the same time.
+  // Everyone gets the newspapers (for the Mute menu, grouped by section); the account's lists load at the same time.
   const [user, profile, { data: categoryRows }, { data: sourceRows }, account] = await Promise.all([
     guest ? null : getCurrentUser(),
     guest ? null : getCurrentProfile(),
@@ -46,7 +46,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
     session
       ? Promise.all([
           supabase.from('muted_sources').select('source_id, sources(name)').eq('user_id', session.id),
-          supabase.from('user_preferred_categories').select('category_id').eq('user_id', session.id),
           supabase.from('muted_keywords').select('keyword').eq('user_id', session.id).order('keyword'),
         ])
       : null,
@@ -57,23 +56,19 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   const sources: SourceOption[] = (sourceRows ?? []) as SourceOption[];
   const nameOf = (id: string) => sources.find((s) => s.id === id)?.name ?? w.unknownSource;
 
-  let sectionIds: string[];
   let muted: { id: string; name: string }[];
   let keywords: string[];
   if (account) {
-    const [{ data: mutedRows }, { data: preferences }, { data: mutedWords }] = account;
-    sectionIds = (preferences ?? []).map((p) => p.category_id);
+    const [{ data: mutedRows }, { data: mutedWords }] = account;
     muted = (mutedRows ?? []).map((m) => ({ id: m.source_id, name: m.sources?.name ?? w.unknownSource }));
     keywords = (mutedWords ?? []).map((k) => k.keyword);
   } else {
     // A visitor's choices, from this browser's cookies (lib/guest.ts).
     const mutes = guestMutesFrom((name) => jar.get(name)?.value);
-    sectionIds = parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value);
     muted = mutes.sourceIds.filter((id) => sources.some((s) => s.id === id)).map((id) => ({ id, name: nameOf(id) }));
     keywords = mutes.words;
   }
   muted.sort((a, b) => a.name.localeCompare(b.name));
-  const topics = categories.filter((c) => sectionIds.includes(c.id)).map((c) => c.name);
 
   const fontCookie = jar.get('font-size')?.value;
   const fontSize = (profile?.font_size ?? (fontCookie && FONT_SIZES.has(fontCookie) ? fontCookie : 'medium')) as FontSize;
@@ -105,8 +100,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {user && profile && <ProfileSection username={profile.username} email={user.email ?? ''} />}
             <AppearanceSection bannerColor={accent} fontSize={fontSize} guest={guest} />
             <ReadingRoomSection />
-            <SectionsAndSourcesSection
-              topics={topics}
+            <MutesSection
               userId={user?.id ?? null}
               muted={muted}
               sources={sources}

@@ -87,10 +87,42 @@ function Health({ source }: { source: AdminSource }) {
   );
 }
 
+/** A paper's last 7 days (admin_source_stats): its stories and how many of them have a photograph. */
+export type SourceStats = { stories: number; photos: number };
+
+/** "12 a day · photos 96% · last error: HTTP 429": is the paper noisy, picture-less or failing? */
+function WeekLine({ source, stats }: { source: AdminSource; stats: SourceStats | undefined }) {
+  const stories = stats?.stories ?? 0;
+  const perDay = stories / 7;
+  const parts = [
+    stories === 0 ? 'no stories this week' : `${perDay < 1 ? perDay.toFixed(1) : Math.round(perDay)} a day`,
+    stories > 0 ? `photos ${Math.round((100 * (stats?.photos ?? 0)) / stories)}%` : null,
+  ].filter(Boolean);
+  return (
+    <p className="mt-1 text-xs text-muted-foreground" title="The last 7 days">
+      {parts.join(' · ')}
+      {source.last_error && (
+        <>
+          {' · '}
+          <span className="text-amber-700 dark:text-amber-400">last error: {source.last_error}</span>
+        </>
+      )}
+    </p>
+  );
+}
+
 type SourceDialogState = { source?: AdminSource } | null;
 type ConfirmState = { kind: 'source'; source: AdminSource } | { kind: 'category'; category: Category } | null;
 
-export function SourcesManager({ initialSources, categories: initialCategories }: { initialSources: AdminSource[]; categories: Category[] }) {
+export function SourcesManager({
+  initialSources,
+  categories: initialCategories,
+  stats = {},
+}: {
+  initialSources: AdminSource[];
+  categories: Category[];
+  stats?: Record<string, SourceStats>;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const { showToast } = useToast();
@@ -112,33 +144,41 @@ export function SourcesManager({ initialSources, categories: initialCategories }
     if (data) setSources(data as AdminSource[]);
   };
 
-  const toggle = async (source: AdminSource) => {
-    const next = !source.is_enabled;
+  /** On / Off. Off pauses a paper: not fetched, and its stories (old ones too) hidden until it is on again. */
+  const setEnabled = async (source: AdminSource, next: boolean, offerUndo = true) => {
     setSources((list) => list.map((s) => (s.id === source.id ? { ...s, is_enabled: next } : s)));
     const { error } = await supabase.from('sources').update({ is_enabled: next }).eq('id', source.id);
     if (error) {
       setSources((list) => list.map((s) => (s.id === source.id ? { ...s, is_enabled: !next } : s)));
       showToast({ type: 'error', title: 'Could not update the source', message: error.message });
-    } else {
-      void paperListsChanged();
+      return;
+    }
+    void paperListsChanged();
+    // The switch already shows the change: the toast is only there for Undo.
+    if (offerUndo) {
       showToast({
-        type: 'success',
-        title: `${source.name} ${next ? 'enabled' : 'disabled'}`,
-        message: next ? undefined : 'Its articles are hidden from feeds and it will not be fetched.',
+        type: 'info',
+        title: next ? `${source.name} is on` : `${source.name} is off`,
+        message: next ? 'Fetched again, and its stories are back in the paper.' : 'Not fetched, and its stories are hidden from the paper, old ones too.',
+        action: { label: 'Undo', onClick: () => void setEnabled(source, !next, false) },
       });
     }
   };
 
   const save = async (draft: SourceDraft): Promise<string | null> => {
+    const editing = dialog?.source;
+    // A new feed address: the old address's download markers and failure count do not apply to it.
+    const newAddress = editing && editing.rss_url !== draft.rss_url;
     const values = {
       name: draft.name,
       rss_url: draft.rss_url,
       website_url: draft.website_url || null,
       description: draft.description || null,
       category_id: draft.category_id,
+      ...(newAddress ? { etag: null, last_modified: null, consecutive_failures: 0, last_error: null } : {}),
     };
-    const { error } = dialog?.source
-      ? await supabase.from('sources').update(values).eq('id', dialog.source.id)
+    const { error } = editing
+      ? await supabase.from('sources').update(values).eq('id', editing.id)
       : await supabase.from('sources').insert(values);
     if (error) {
       if (error.code === '23505') return 'A source with that name or feed URL already exists.';
@@ -149,8 +189,8 @@ export function SourcesManager({ initialSources, categories: initialCategories }
     void paperListsChanged();
     showToast({
       type: 'success',
-      title: dialog?.source ? 'Source updated' : 'Source added',
-      message: dialog?.source ? undefined : 'Use “Fetch now” in its menu to import articles straight away.',
+      title: editing ? 'Source updated' : 'Source added',
+      message: editing ? undefined : 'Use “Fetch now” in its menu to import articles straight away.',
     });
     return null;
   };
@@ -215,7 +255,12 @@ export function SourcesManager({ initialSources, categories: initialCategories }
           <p className="kicker">The newsroom</p>
           <h1 className="headline mt-1 text-4xl">Wire services</h1>
           <p className="mt-1 italic text-muted-foreground">
-            {sources.filter((s) => s.is_enabled).length} of {sources.length} sources enabled across {categories.length} sections.
+            {sources.filter((s) => s.is_enabled).length} of {sources.length} sources on across {categories.length} sections.
+          </p>
+          <p className="mt-1 max-w-2xl text-pretty text-sm text-muted-foreground">
+            <strong className="font-semibold text-foreground">Off</strong> pauses a paper: it is not fetched and its stories are
+            hidden, old ones too, until it is on again. <strong className="font-semibold text-foreground">Delete</strong> removes
+            it and its stories for good.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -264,6 +309,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
                       >
                         {source.rss_url.replace(/^https?:\/\//, '')}
                       </a>
+                      <WeekLine source={source} stats={stats[source.id]} />
                     </td>
                     <td className="px-4 py-3">
                       <Health source={source} />
@@ -277,8 +323,11 @@ export function SourcesManager({ initialSources, categories: initialCategories }
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                        <Switch checked={source.is_enabled} onCheckedChange={() => toggle(source)} aria-label={`Enable ${source.name}`} />
+                      <label
+                        className="inline-flex items-center gap-2 text-xs text-muted-foreground"
+                        title={source.is_enabled ? 'Off pauses it: not fetched, and its stories hidden, old ones too' : 'Off: not fetched, its stories hidden'}
+                      >
+                        <Switch checked={source.is_enabled} onCheckedChange={(next) => setEnabled(source, next)} aria-label={`${source.name} on`} />
                         {source.is_enabled ? 'On' : 'Off'}
                       </label>
                     </td>
@@ -324,7 +373,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
       <Card>
         <CardHeader>
           <CardTitle>Sections</CardTitle>
-          <CardDescription>Every source belongs to one topic. Readers pick topics during onboarding.</CardDescription>
+          <CardDescription>Every source belongs to one topic. Readers open each topic from the Sections page.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -383,7 +432,7 @@ export function SourcesManager({ initialSources, categories: initialCategories }
         title={confirm?.kind === 'source' ? `Delete ${confirm.source.name}?` : `Delete the topic “${confirm?.kind === 'category' ? confirm.category.name : ''}”?`}
         description={
           confirm?.kind === 'source'
-            ? `This also deletes its ${confirm.source.article_count} articles, including saved copies. To keep them, disable the source instead.`
+            ? `This deletes it with its ${confirm.source.article_count} stories, for good, including the ones readers saved. To take it out of the paper and keep everything, switch it Off instead.`
             : 'Readers who picked this topic will simply stop seeing it.'
         }
         confirmLabel="Delete"

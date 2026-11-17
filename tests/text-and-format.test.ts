@@ -1,4 +1,4 @@
-import { GUEST_MAX_HIDDEN, guestMutesFrom, noGuestMutes, parseGuestHidden, parseGuestSections } from '../lib/guest';
+import { GUEST_MAX_HIDDEN, guestMutesFrom, noGuestMutes, parseGuestHidden } from '../lib/guest';
 import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -167,14 +167,14 @@ describe('the front page', () => {
 
   it('leads with the newest story that has a photograph, then the newest headlines', () => {
     const rows = [row('a', 'w', { s: 1, l: 1 }, false), row('b', 't', { s: 1, l: 2 }), row('c', 'w', { s: 2, l: 3 }), row('d', 's', { s: 1, l: 4 })];
-    const front = buildFrontPage(rows, categories, []);
+    const front = buildFrontPage(rows, categories);
     assert.equal(front.lead?.id, 'b');
     assert.deepEqual(front.dispatches.map((r) => r.id), ['a', 'c', 'd']);
   });
 
   it('prints each story once, unless a section would otherwise be empty', () => {
     const rows = [row('a', 'w', { s: 1, l: 1 }), row('b', 'w', { s: 2 }), row('c', 'w', { s: 3 }, false), row('d', 's', { s: 1, l: 2 })];
-    const front = buildFrontPage(rows, categories, []);
+    const front = buildFrontPage(rows, categories);
     const world = front.digests.find((d) => d.category.id === 'w');
     assert.equal(world?.photo?.id, 'b');
     assert.deepEqual(world?.lines.map((r) => r.id), ['c']);
@@ -184,20 +184,19 @@ describe('the front page', () => {
     assert.equal(front.digests.some((d) => d.category.id === 't'), false);
   });
 
-  it('puts the reader\'s own sections first, then the rest in the paper\'s order', () => {
+  it('prints every section in the paper\'s order', () => {
     const rows = [row('a', 'w', { s: 1 }), row('b', 't', { s: 1 }), row('c', 's', { s: 1 })];
-    assert.deepEqual(buildFrontPage(rows, categories, ['s']).digests.map((d) => d.category.id), ['s', 'w', 't']);
-    assert.deepEqual(buildFrontPage(rows, categories, []).digests.map((d) => d.category.id), ['w', 't', 's']);
+    assert.deepEqual(buildFrontPage(rows, categories).digests.map((d) => d.category.id), ['w', 't', 's']);
   });
 
   it('keeps a digest to one photograph and four lines (five without a photograph)', () => {
     const many = Array.from({ length: 8 }, (_, i) => row('x' + i, 'w', { s: i + 1 }, i === 2));
-    const digest = buildFrontPage(many, categories, []).digests[0];
+    const digest = buildFrontPage(many, categories).digests[0];
     assert.equal(digest.photo?.id, 'x2');
     assert.equal(digest.lines.length, DIGEST_LINES);
     assert.ok(!digest.lines.some((r) => r.id === 'x2'));
     const plain = Array.from({ length: 8 }, (_, i) => row('y' + i, 'w', { s: i + 1 }, false));
-    assert.equal(buildFrontPage(plain, categories, []).digests[0].lines.length, DIGEST_LINES + 1);
+    assert.equal(buildFrontPage(plain, categories).digests[0].lines.length, DIGEST_LINES + 1);
   });
 });
 
@@ -228,14 +227,6 @@ describe('colors', () => {
 });
 
 describe('guest mode', () => {
-  it('reads the sections a visitor chose from their cookie', () => {
-    const a = '11111111-1111-4111-8111-111111111111';
-    const b = '22222222-2222-4222-8222-222222222222';
-    assert.deepEqual(parseGuestSections(`${a},${b},${a}`), [a, b]);
-    assert.deepEqual(parseGuestSections(`${a},not-a-uuid,'; drop table x`), [a]);
-    assert.deepEqual(parseGuestSections(undefined), []);
-  });
-
   it('reads the stories a visitor hid, keeping the newest when there are too many', () => {
     const a = '11111111-1111-4111-8111-111111111111';
     const b = '22222222-2222-4222-8222-222222222222';

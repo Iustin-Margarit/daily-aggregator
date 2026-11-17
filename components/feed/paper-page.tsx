@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/site/page-header';
 import { getCategoryStyle } from '@/lib/category-styles';
 import { getPapers, ribbonPapers } from '@/lib/data/cached';
 import { getReaderContext } from '@/lib/data/reader';
-import { feedRpcArgs, firstParam, hasLeadPage, pageFromSearchParams, pageHref, paperSlugsFromParams, searchFromParams, sectionFromSlug, type SearchParams } from '@/lib/feed';
+import { feedRpcArgs, hasLeadPage, pageFromSearchParams, pageHref, paperSlugsFromParams, searchFromParams, sectionFromSlug, type SearchParams } from '@/lib/feed';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { refreshNewsIfStale } from '@/lib/ingestion/auto-refresh';
@@ -22,8 +22,8 @@ export type ListKind = { kind: 'latest' } | { kind: 'section'; slug: string } | 
 const linkClass = 'font-medium not-italic text-foreground underline decoration-(--ink-gold) underline-offset-4 hover:decoration-2';
 
 /**
- * One list of the paper, page by page, printed by the server: All the latest (the reader's
- * sections, or every section with ?topics=all), one section (/section/<name>), one newspaper
+ * One list of the paper, page by page, printed by the server: All the latest (every section),
+ * one section (/section/<name>), one newspaper
  * (/paper/<name>) or a search (/search?q=…). A short head of its own (the big nameplate belongs
  * to the front page), the section ribbon, then the stories (components/feed/story-list.tsx).
  */
@@ -31,8 +31,7 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
   // The newspapers (kept between requests) for the ribbon's Filter ticket and a newspaper's own page.
   const [i18n, reader, sources] = await Promise.all([getI18n(), getReaderContext(), getPapers().catch(() => null)]);
   const { t, fmt, rich, list: listOf } = i18n;
-  const { supabase, userId, categories, preferredIds, guestMutes } = reader;
-  const names = (ids: string[]) => categories.filter((c) => ids.includes(c.id)).map((c) => sectionText(t, getCategoryStyle(c.name).key, c.name).name);
+  const { supabase, userId, categories, guestMutes } = reader;
 
   let filters: FeedFilters;
   let path: string;
@@ -106,39 +105,10 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
       />
     );
   } else if (list.kind === 'latest') {
-    // The reader's own sections, unless they asked for every one (?topics=all).
-    const every = firstParam(params.topics) === 'all' || preferredIds.length === 0;
-    filters = { categoryIds: every ? [] : preferredIds, search: '' };
+    filters = { categoryIds: [], search: '' };
     path = LATEST_PATH;
-    query = every && preferredIds.length > 0 ? { topics: 'all' } : {};
     place = { kind: 'latest' };
-    const mine = names(preferredIds);
-    head = (
-      <PageHeader
-        compact
-        kicker={t.list.latestKicker}
-        title={t.list.latestTitle}
-        description={
-          preferredIds.length === 0 ? (
-            t.feed.everySection
-          ) : every ? (
-            <>
-              {t.feed.everySection}{' '}
-              <Link href={LATEST_PATH} className={linkClass}>
-                {t.list.onlyMine}
-              </Link>
-            </>
-          ) : (
-            <>
-              {mine.length <= 3 ? fmt(t.feed.covers, { list: listOf(mine) }) : fmt(t.feed.coversMany, { first: mine[0], second: mine[1], n: mine.length - 2 })}{' '}
-              <Link href={`${LATEST_PATH}?topics=all`} className={linkClass}>
-                {t.list.everySection}
-              </Link>
-            </>
-          )
-        }
-      />
-    );
+    head = <PageHeader compact kicker={t.list.latestKicker} title={t.list.latestTitle} description={t.feed.everySection} />;
   } else {
     const q = searchFromParams(params);
     filters = { categoryIds: [], search: q };
@@ -154,12 +124,14 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
   }
 
   // Filter > Apply: only some newspapers (?papers=…, their address names), on the latest, a section or a search.
+  // A section keeps only its own newspapers from the address, so an old or hand-made link never prints an empty page.
+  const sectionId = place?.kind === 'section' ? place.id : null;
   const chosenPapers =
     list.kind === 'paper'
       ? []
       : paperSlugsFromParams(params).flatMap((slug) => {
           const paper = (sources ?? []).find((s) => paperSlug(s.name) === slug);
-          return paper ? [paper] : [];
+          return paper && (!sectionId || paper.category_id === sectionId) ? [paper] : [];
         });
   const unfiltered = pageHref(path, query, 1);
   if (chosenPapers.length > 0) {

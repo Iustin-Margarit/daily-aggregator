@@ -992,13 +992,9 @@
 }
 
 /*
- * The section stamps (Sections, components/onboarding/topics-form.tsx): printed
- * in rich, bright inks like real coloured stamps (--stamp-ink: the section's ink
- * with more colour), with a printed frame line inside the perforations. Three
- * states that must never be confused: an unchosen stamp rests close to the paper
- * with a faint dashed "Choose" ring; pointing at one only lifts it and adds a light
- * tint; a chosen stamp is richly tinted, double-framed in its ink, raised, tilted
- * and franked with a dark postmark and an inked tick.
+ * The section stamps (Sections, app/(paper)/sections/page.tsx): printed in rich, bright inks like real
+ * coloured stamps (--stamp-ink: the section's ink with more colour), with a printed frame line inside the
+ * perforations. Each stamp is a link to its section: pointing at one lifts it and deepens its tint.
  */
 .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l + 0.03) calc(c * 1.55) h);
@@ -1006,81 +1002,39 @@
   transition:
     transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1),
     filter 0.2s;
-  /* Not chosen: close to the resting paper, a thin frame line; the engraving and name keep their colour. */
   & > .stamp {
     --engraving-ink: var(--stamp-ink);
-    background-color: color-mix(in oklab, var(--stamp-ink) 5%, hsl(var(--card)));
-    outline: 1px solid color-mix(in oklab, var(--stamp-ink) 40%, transparent);
+    background-color: color-mix(in oklab, var(--stamp-ink) 7%, hsl(var(--card)));
+    outline: 1px solid color-mix(in oklab, var(--stamp-ink) 45%, transparent);
     outline-offset: -9px;
-    box-shadow: none;
     transition:
       outline-color 0.2s,
-      background-color 0.2s,
-      box-shadow 0.2s;
+      background-color 0.2s;
   }
-  /*
-   * A pencilled, dashed "Choose" ring: present, but never competing with a real postmark. Only the circle
-   * is faint; the word is printed in full pencil so it can be read (WCAG contrast, older eyes).
-   */
-  & .choose-ring {
-    color: hsl(var(--muted-foreground));
-    transform: rotate(-6deg);
-    transition:
-      color 0.2s,
-      transform 0.2s;
-  }
-  & .choose-ring-circle {
-    opacity: 0.45;
-    transition: opacity 0.2s;
-  }
-  /* Pointing: a gentle lift and a light preview tint, well short of a chosen stamp. */
   &:hover {
     transform: translateY(-4px) rotate(-0.5deg);
     filter: drop-shadow(0 10px 10px rgb(60 38 16 / 0.2));
   }
   &:hover > .stamp {
-    background-color: color-mix(in oklab, var(--stamp-ink) 9%, hsl(var(--card)));
-    outline-color: color-mix(in oklab, var(--stamp-ink) 70%, transparent);
+    background-color: color-mix(in oklab, var(--stamp-ink) 14%, hsl(var(--card)));
+    outline-color: color-mix(in oklab, var(--stamp-ink) 80%, transparent);
   }
-  &:hover .choose-ring {
-    color: var(--stamp-ink);
-    transform: rotate(-10deg) scale(1.05);
-  }
-  &:hover .choose-ring-circle {
-    opacity: 0.75;
-  }
-  /* Chosen: a rich tint, a crisp double frame line in the stamp's ink, raised off the page, postmarked. */
-  &[data-chosen] {
-    transform: translateY(-2px) rotate(-1deg);
-    filter: drop-shadow(0 9px 12px rgb(60 38 16 / 0.32));
-  }
-  &[data-chosen] > .stamp {
-    background-color: color-mix(in oklab, var(--stamp-ink) 27%, hsl(var(--card)));
-    outline: 2.5px solid var(--stamp-ink);
-    box-shadow: inset 0 0 0 12px transparent, inset 0 0 0 13px color-mix(in oklab, var(--stamp-ink) 55%, transparent);
-  }
-  &[data-chosen]:hover {
-    transform: translateY(-5px) rotate(-1.4deg);
-    filter: drop-shadow(0 14px 14px rgb(60 38 16 / 0.34));
+  /* Pressed: the stamp settles back onto the page as the section opens. */
+  &:active {
+    transform: translateY(-1px);
   }
 }
 .dark .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l + 0.05) calc(c * 1.7) h);
   filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.4));
   & > .stamp {
-    background-color: color-mix(in oklab, var(--stamp-ink) 6%, hsl(var(--card)));
+    background-color: color-mix(in oklab, var(--stamp-ink) 8%, hsl(var(--card)));
   }
   &:hover {
     filter: drop-shadow(0 12px 14px rgb(0 0 0 / 0.65));
   }
   &:hover > .stamp {
-    background-color: color-mix(in oklab, var(--stamp-ink) 11%, hsl(var(--card)));
-  }
-  &[data-chosen] {
-    filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.75));
-  }
-  &[data-chosen] > .stamp {
-    background-color: color-mix(in oklab, var(--stamp-ink) 30%, hsl(var(--card)));
+    background-color: color-mix(in oklab, var(--stamp-ink) 15%, hsl(var(--card)));
   }
 }
 /* Morning: the brightened orange of Sports read at 4.2:1 on its pale stamp; a little darker passes 4.5:1. */
@@ -1088,38 +1042,13 @@ html:not(.dark) .section-stamp[data-section='sports'],
 html:not(.dark) [data-section='sports'] .section-stamp {
   --stamp-ink: oklch(from var(--section) calc(l - 0.03) calc(c * 1.5) h);
 }
-/* Morning: the unchosen "Choose" ring in a brown pencil on the pale stamps; the circle faint, the word legible. */
-html:not(.dark) .section-stamp:not(:hover) .choose-ring {
-  color: hsl(28 22% 30%);
-}
-html:not(.dark) .section-stamp:not(:hover) .choose-ring-circle {
-  opacity: 0.5;
-}
 @media (prefers-reduced-motion: reduce) {
-  .section-stamp,
-  .section-stamp .choose-ring,
-  .section-stamp .choose-ring-circle {
+  .section-stamp {
     transition: none;
   }
 }
 
-/* A postmark struck on a chosen stamp (Sections), and a tick inked into a ledger box. */
-:root {
-  --postmark-ink: hsl(26 34% 12% / 0.92);
-}
-.dark {
-  --postmark-ink: hsl(40 45% 90% / 0.95);
-}
-.postmark {
-  transform: rotate(-9deg);
-  animation: postmark-strike 0.32s cubic-bezier(0.2, 1.5, 0.4, 1);
-}
-@keyframes postmark-strike {
-  from {
-    opacity: 0;
-    transform: rotate(-9deg) scale(1.4);
-  }
-}
+/* A tick inked into a ledger box (components/ui/checkbox.tsx). */
 .ink-tick {
   animation: ink-tick 0.22s ease-out;
 }
@@ -1132,7 +1061,6 @@ html:not(.dark) .section-stamp:not(:hover) .choose-ring-circle {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .postmark,
   .ink-tick {
     animation: none;
   }
@@ -1983,27 +1911,59 @@ article:focus-within .photo-plate::after,
   border: 1px dashed hsl(var(--rule) / 0.7);
   opacity: 0.6;
 }
-.banner-specimen-cab {
+/* The cab and, when Moving, its speed rules ride together (the cab is a mask, so the rules are a sibling). */
+.banner-specimen-ride {
   position: absolute;
   bottom: 1px;
   left: 0.9rem;
   width: 2.6rem;
   height: 1.45rem;
+}
+.banner-specimen-cab {
+  position: absolute;
+  inset: 0;
   background-color: currentColor;
   mask: url(/street/cab-body.webp) center / 100% 100% no-repeat;
 }
-.banner-specimen[data-banner-look='moving'] .banner-specimen-cab {
-  animation: banner-specimen-drive 5s linear infinite;
+/* Three short printer's rules trailing behind the cab, the lowest longest, like the wind of its passing. */
+.banner-specimen-lines {
+  position: absolute;
+  right: calc(100% - 0.15rem);
+  top: 35%;
+  width: 0.95rem;
+  height: 0.6rem;
+  background:
+    linear-gradient(currentColor, currentColor) right 0 top 0 / 55% 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) right 0 top 50% / 80% 1.5px no-repeat,
+    linear-gradient(currentColor, currentColor) right 0 bottom 0 / 100% 1.5px no-repeat;
+  opacity: 0.75;
 }
-@keyframes banner-specimen-drive {
+/*
+ * Moving: the cab stays in the frame (a glance always finds it), a little forward of Still, trotting, with its speed
+ * rules streaming back behind it. Still: the same cab, standing, no rules.
+ */
+.banner-specimen[data-banner-look='moving'] .banner-specimen-ride {
+  left: 1.5rem;
+  animation: banner-specimen-trot 0.45s ease-in-out infinite alternate;
+}
+@keyframes banner-specimen-trot {
+  to {
+    translate: 0 -1px;
+  }
+}
+.banner-specimen[data-banner-look='moving'] .banner-specimen-lines {
+  animation: banner-specimen-wind 0.9s linear infinite;
+}
+@keyframes banner-specimen-wind {
   from {
-    transform: translateX(-3.6rem);
+    transform: translateX(0.2rem);
+    opacity: 0.9;
   }
   to {
-    transform: translateX(4.4rem);
+    transform: translateX(-0.3rem);
+    opacity: 0.35;
   }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .shooting-star {
     display: none;
