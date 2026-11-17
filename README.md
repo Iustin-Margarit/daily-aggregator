@@ -20,7 +20,7 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 **Reading**
 - **One front page for everyone** (`/`): the lead story beside "Latest dispatches" (ten one-line
   headlines), then every section in brief (a photo story, four headlines, "All World news"). 8 sections
-  from 54 RSS sources, refreshed every hour; the Newsroom switches any of them on or off.
+  from 48 RSS sources, refreshed every hour; the Newsroom switches any of them on or off.
 - **Quick read**: pressing a headline opens the story in a sheet over the page (from the right on a
   computer, from the bottom on a phone) with the photo, summary, Save, Share and the way on to the
   publisher, and three more from the same desk at its foot. Close, Escape or Back return to the same
@@ -151,7 +151,7 @@ Anything else can call the endpoint too:
 - Between cron runs the paper refreshes itself when people open the front page (at most hourly,
   `INGESTION_INTERVAL_MINUTES`); an external cron service (cron-job.org) can fetch every hour.
 - **The database never fills up**: every full fetch deletes unsaved articles older than
-  `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 54 feeds is
+  `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 48 feeds is
   roughly 34,000 short rows (about 100 MB), well under the free 500 MB.
 - Photos are loaded straight from each publisher's CDN, so they use none of Vercel's image or
   bandwidth allowance beyond the page itself.

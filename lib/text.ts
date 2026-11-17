@@ -112,6 +112,15 @@ export function cleanText(text: string | null | undefined): string {
     .trim();
 }
 
+/** What some feeds put in the author field when there is none ("None" from a Python null, "null", "N/A"). */
+const NO_AUTHOR = /^(none|null|undefined|nil|n\/?a|unknown|anonymous|-+)$/i;
+
+/** An author's name fit to print after "By", or null when the feed gave none (empty or a placeholder). */
+export function authorName(raw: string | null | undefined): string | null {
+  const text = cleanText(raw);
+  return text && !NO_AUTHOR.test(text) ? text : null;
+}
+
 /** Truncates at a word boundary and appends an ellipsis. */
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;

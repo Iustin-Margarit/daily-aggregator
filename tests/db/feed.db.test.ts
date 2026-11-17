@@ -59,22 +59,21 @@ describe('get_feed for a visitor', () => {
     assert.ok(!(data ?? []).some((row) => row.id === page[0].id));
   });
 
-  it('leaves a visitor’s hidden story out of the lists, but a search still finds it', async () => {
+  it('leaves a visitor’s hidden story out of the lists and out of a search', async () => {
     const story = page[1];
     const { data, error } = await anon.rpc('get_feed', { p_limit: 30, p_hidden_ids: [story.id] });
     assert.equal(error, null, error?.message);
     assert.ok((data ?? []).length > 0);
     assert.ok(!(data ?? []).some((row) => row.id === story.id));
-    // Searching its headline's longest word (within its paper, so it is on the first page).
-    const word = story.title.split(/[^p{L}p{N}]+/u).sort((x, y) => y.length - x.length)[0];
-    const { data: found, error: searchError } = await anon.rpc('get_feed', {
-      p_limit: 60,
-      p_search: word,
-      p_source_ids: [story.source_id],
-      p_hidden_ids: [story.id],
-    });
-    assert.equal(searchError, null, searchError?.message);
-    assert.ok((found ?? []).some((row) => row.id === story.id), `a search for "${word}" finds the hidden story`);
+    // Its headline's longest word (within its paper, so it is on the first page) finds it, until it is hidden.
+    const word = story.title.split(/[^\p{L}\p{N}]+/u).sort((x, y) => y.length - x.length)[0];
+    const search = { p_limit: 60, p_search: word, p_source_ids: [story.source_id] };
+    const { data: before, error: beforeError } = await anon.rpc('get_feed', search);
+    assert.equal(beforeError, null, beforeError?.message);
+    assert.ok((before ?? []).some((row) => row.id === story.id), `a search for "${word}" finds the story`);
+    const { data: after, error: afterError } = await anon.rpc('get_feed', { ...search, p_hidden_ids: [story.id] });
+    assert.equal(afterError, null, afterError?.message);
+    assert.ok(!(after ?? []).some((row) => row.id === story.id), `a search for "${word}" leaves the hidden story out`);
   });
 
   it('keeps to the chosen sections', async () => {

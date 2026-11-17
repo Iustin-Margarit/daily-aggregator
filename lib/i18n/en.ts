@@ -304,7 +304,7 @@ const en = {
     mutedTag: 'Muted',
     /** The slip printed in a hidden story's place (Undo brings it back, × folds the slip away). */
     hiddenSlip: 'Story hidden',
-    hiddenSlipNote: 'It will not appear in your paper again (a search still finds it).',
+    hiddenSlipNote: 'It will not appear in your paper or your searches again.',
     dismissSlip: 'Dismiss',
     readDispatch: 'Read dispatch',
     save: 'Save',
@@ -366,7 +366,7 @@ const en = {
     shareTitle: 'Share this story with someone',
     hideFromFeed: 'Hide from my paper',
     hiddenFromFeed: 'Hidden from your paper',
-    /** In the sheet's More menu on a story the reader hid (a search still finds it). */
+    /** In the sheet's More menu on a story the reader hid (opened from Saved, a shared link or its own address). */
     unhide: 'Unhide this story',
     hiddenTag: 'Hidden',
     mutedNote: 'Their stories will no longer appear in your paper.',

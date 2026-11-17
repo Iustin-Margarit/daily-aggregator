@@ -22,7 +22,7 @@ import type { FeedArticle } from '@/lib/types';
  *
  * Hide closes the sheet and leaves a slip in the story's place on the page ("Story hidden", Undo, ×:
  * lib/hidden-stories.ts); only when the story is not printed on the page does a notice offer Undo instead.
- * A hidden story is still found by a search: its menu then offers Unhide instead (kept open, it turns back into
+ * A hidden story opened from Saved or at its own address offers Unhide instead (kept open, it turns back into
  * Hide). Mute keeps the menu open and turns into "Unmute [paper]" with a Muted tag, so the reader sees it took.
  */
 export function ArticleActionsBar({ article, userId, onHidden }: { article: FeedArticle; userId: string | null; onHidden?: () => void }) {
@@ -36,7 +36,7 @@ export function ArticleActionsBar({ article, userId, onHidden }: { article: Feed
   const [guestMuted, setGuestMuted] = useState(false);
   const muted = userId ? (mutedHere ?? false) : guestMuted;
   const [muting, setMuting] = useState(false);
-  // Whether this story is hidden (a search shows hidden stories too): asked once the sheet shows the story.
+  // Whether this story is hidden (Saved and a shared link can still open one): asked once the sheet shows the story.
   const knownHidden = useKnownHidden(article.id);
   const hidden = knownHidden ?? false;
   const [unhiding, setUnhiding] = useState(false);
@@ -149,7 +149,7 @@ export function ArticleActionsBar({ article, userId, onHidden }: { article: Feed
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" collisionPadding={{ top: 72, bottom: 16, left: 8, right: 8 }} className="w-64">
           {hidden ? (
-            // Found by a search: bring it back to the paper. Stays open and turns back into Hide.
+            // Opened from Saved or a link: bring it back to the paper. Stays open and turns back into Hide.
             <DropdownMenuItem
               onSelect={(event) => {
                 event.preventDefault();

@@ -10,8 +10,9 @@ import { useEffect, useSyncExternalStore } from 'react';
  * ×, or the next page load (the server leaves hidden stories out from then on). The cards that can print the slip
  * (ArticleCard, HeadlineList) say they are on the page, so the sheet knows whether the reader will see it.
  *
- * A search still finds hidden stories (the lists leave them out): the sheet's More menu then offers Unhide, so it
- * keeps here whether each story it has looked at is hidden (`useKnownHidden`).
+ * Hidden stories stay out of every list and every search (get_feed, get_front_page). The sheet can still show one
+ * when it is opened from Saved or at the story's own address (a shared link): its More menu then offers Unhide, so
+ * it keeps here whether each story it has looked at is hidden (`useKnownHidden`).
  */
 
 type Hidden = { state: 'hidden' | 'dismissed'; undo: () => Promise<boolean> };

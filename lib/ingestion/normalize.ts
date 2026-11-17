@@ -1,4 +1,4 @@
-import { cleanText, truncate } from '@/lib/text';
+import { authorName, cleanText, truncate } from '@/lib/text';
 import type { ParsedFeedItem } from '@/lib/ingestion/parse-feed';
 
 export type NormalizedArticle = {
@@ -88,7 +88,7 @@ function cleanAuthor(raw: string | null): string | null {
     .replace(/\S+@\S+/g, '')
     .replace(/[()]/g, '')
     .trim();
-  if (!text || text.length < 2) return null;
+  if (!text || text.length < 2 || !authorName(text)) return null;
   return truncate(text, 100);
 }
 

@@ -51,31 +51,24 @@ export function useToast() {
  * One notice, printed as a slip of paper: a double rule round it and a rule
  * down its left edge in the notice's ink (brass, or red for a failure), with a
  * wax seal when something was done and a printer's fist when it is news.
- * It goes after a while, but never while the reader points at it or is on
- * it with the keyboard, so an Undo cannot slip away under them.
+ * It goes by itself after a while (a fine rule along its foot runs down to show
+ * how long is left), but waits while the reader points at it with a mouse or is
+ * on it with the keyboard, so an Undo cannot slip away under them.
  */
-function ToastSlip({
-  toast,
-  paused,
-  onHover,
-  onDismiss,
-}: {
-  toast: Toast;
-  paused: boolean;
-  onHover: (over: boolean) => void;
-  onDismiss: (id: number) => void;
-}) {
+function ToastSlip({ toast, paused, onDismiss }: { toast: Toast; paused: boolean; onDismiss: (id: number) => void }) {
   const { t } = useI18n();
   const type = toast.type ?? 'info';
-  const remaining = useRef(toast.duration ?? (toast.action ? 7000 : 4500));
+  const duration = toast.duration ?? (toast.action ? 7000 : 4500);
+  const remaining = useRef(duration);
 
+  // The timer and the running-down rule stop and start together, so the rule is empty when the notice goes.
   useEffect(() => {
     if (paused) return;
     const started = Date.now();
     const timer = window.setTimeout(() => onDismiss(toast.id), remaining.current);
     return () => {
       window.clearTimeout(timer);
-      remaining.current = Math.max(1500, remaining.current - (Date.now() - started));
+      remaining.current = Math.max(0, remaining.current - (Date.now() - started));
     };
   }, [paused, toast.id, onDismiss]);
 
@@ -83,10 +76,8 @@ function ToastSlip({
   return (
     <div
       role={type === 'error' ? 'alert' : 'status'}
-      onPointerEnter={(event) => event.pointerType === 'mouse' && onHover(true)}
-      onPointerLeave={() => onHover(false)}
       className={cn(
-        'pointer-events-auto relative flex w-full max-w-sm items-start gap-3 rounded-[3px] border-[3px] border-double border-rule/45 bg-popover py-3.5 pl-4 pr-3 text-popover-foreground shadow-float',
+        'pointer-events-auto relative flex w-full max-w-sm items-start gap-3 overflow-hidden rounded-[3px] border-[3px] border-double border-rule/45 bg-popover py-3.5 pl-4 pr-3 text-popover-foreground shadow-float',
         'before:absolute before:inset-y-1.5 before:left-1 before:w-[3px] before:rounded-[1px]',
         failed ? 'before:bg-destructive/70' : 'before:bg-(--ink-gold)',
         'animate-in fade-in-0 slide-in-from-bottom-4 sm:slide-in-from-right-4',
@@ -124,6 +115,11 @@ function ToastSlip({
       >
         <span aria-hidden="true">×</span>
       </button>
+      <span
+        aria-hidden="true"
+        className={cn('toast-time', failed ? 'bg-destructive/60' : 'bg-(--ink-gold)')}
+        style={{ animationDuration: `${duration}ms`, animationPlayState: paused ? 'paused' : 'running' }}
+      />
     </div>
   );
 }
@@ -133,10 +129,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const nextId = useRef(1);
+  const shelf = useRef<HTMLDivElement>(null);
 
-  const dismiss = useCallback((id: number) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id));
+  /*
+   * Whether the notices wait: a mouse over one of them, or the keyboard's focus on one (a finger's tap focuses a
+   * button too, but that is not the keyboard: it must not hold them). Asked again whenever a notice goes, because a
+   * notice removed under the mouse or with the focus on its button sends neither "leave" nor "blur": the notices
+   * then waited for good (the bug of 2026-11-17: two "Removed from your saved stories" that never went).
+   */
+  const recheck = useCallback(() => {
+    const el = shelf.current;
+    if (!el) return;
+    const active = document.activeElement;
+    setHovered(el.matches(':hover') && matchMedia('(hover: hover)').matches);
+    setFocused(Boolean(active && el.contains(active) && active.matches(':focus-visible')));
   }, []);
+  const dismiss = useCallback(
+    (id: number) => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+      // Once the notice is off the page (the next frame).
+      requestAnimationFrame(recheck);
+    },
+    [recheck],
+  );
 
   // Stable identity: components can safely list showToast in effect deps.
   const showToast = useCallback((toast: ToastOptions) => {
@@ -154,18 +169,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
        * px), so the notices stand just above it there; from 1024px, in the corner.
        */}
       <div
+        ref={shelf}
         data-toasts=""
         aria-live="polite"
         onPointerDownCapture={notePress}
         onClickCapture={notePress}
-        onFocus={() => setFocused(true)}
+        onPointerOver={(event) => event.pointerType === 'mouse' && setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onFocus={(event) => setFocused(event.target.matches(':focus-visible'))}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
         }}
         className="pointer-events-none fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-100 flex flex-col items-center gap-2 p-3 sm:bottom-[calc(72px+env(safe-area-inset-bottom))] sm:left-auto sm:right-4 sm:items-end sm:p-0 lg:bottom-4"
       >
         {toasts.map((toast) => (
-          <ToastSlip key={toast.id} toast={toast} paused={hovered || focused} onHover={setHovered} onDismiss={dismiss} />
+          <ToastSlip key={toast.id} toast={toast} paused={hovered || focused} onDismiss={dismiss} />
         ))}
       </div>
     </ToastContext.Provider>

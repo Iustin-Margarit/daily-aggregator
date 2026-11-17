@@ -20,7 +20,7 @@ import { useI18n } from '@/lib/i18n/client';
 import { safeExternalUrl } from '@/lib/redirect';
 import { FRONT_PATH, paperPath, storyPath } from '@/lib/routes';
 import { loadStoryDetail, recallStory, sheetHostActive, sheetWasPushed, storyDetail, subscribeSheet } from '@/lib/story-cache';
-import { cleanText } from '@/lib/text';
+import { authorName, cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 
 const ARTICLE_PREFIX = storyPath('');
@@ -74,6 +74,58 @@ function Overlay() {
   return <div ref={ref} aria-hidden="true" className="sheet-overlay fixed inset-0 z-50 bg-[hsl(40_12%_6%/0.55)]" />;
 }
 
+const SCROLL_KEYS: Record<string, number> = { ArrowDown: 40, ArrowUp: -40, PageDown: 0.85, PageUp: -0.85, ' ': 0.85 };
+
+/**
+ * Scrolling inside the sheet stays in the sheet's scroller. A wheel over its bar, or over a story too short to
+ * scroll, would otherwise scroll the page underneath; so would the scrolling keys while Close has the focus.
+ */
+function useContainedScroll(el: HTMLDivElement | null, scroller: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    if (!el) return;
+    const inScroller = (target: EventTarget | null) => target instanceof Node && Boolean(scroller.current?.contains(target));
+    const onWheel = (event: WheelEvent) => {
+      const box = scroller.current;
+      if (!box || !inScroller(event.target) || box.scrollHeight <= box.clientHeight) event.preventDefault();
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (!inScroller(event.target)) event.preventDefault();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      const step = SCROLL_KEYS[event.key];
+      const box = scroller.current;
+      if (step === undefined || !box || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      // Keys pressed in the story itself already scroll it (a link's Space included); a button's Space presses it.
+      if (inScroller(event.target) || (event.key === ' ' && event.target instanceof HTMLButtonElement)) return;
+      event.preventDefault();
+      const by = Math.abs(step) < 1 ? step * box.clientHeight : step;
+      box.scrollBy({ top: event.shiftKey && event.key === ' ' ? -by : by });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('keydown', onKey);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('keydown', onKey);
+    };
+  }, [el, scroller]);
+}
+
+/** "Read the full report at Daily Mail - Health" with the pointing hand kept to its last word, never alone on a line. */
+function FullReportLabel({ text }: { text: string }) {
+  const cut = text.lastIndexOf(' ') + 1;
+  return (
+    <span className="text-balance">
+      {text.slice(0, cut)}
+      <span className="whitespace-nowrap">
+        {text.slice(cut)}
+        <Ornament name="fist" className="fist-poke ml-2 inline-block w-[1.45rem] align-[-0.12em] [--ornament-ink:currentColor]" />
+      </span>
+    </span>
+  );
+}
+
 /** Hidden at once on Close, until the address has changed (Back takes a moment). */
 function useClosing(pathname: string) {
   const [closingAt, setClosingAt] = useState<string | null>(null);
@@ -83,8 +135,8 @@ function useClosing(pathname: string) {
 
 /**
  * The sheet's paper: the photograph, the headline, the summary, the big way on to the publisher's full story,
- * the story's actions, and at its foot the same news from other papers and more from the desk. From the right
- * on wide screens and from the bottom on phones, over a dimmed page.
+ * the story's actions, and at its foot the same news from other papers and more from the desk. The whole
+ * screen on phones; wider, a framed page in the middle over a dimmed paper.
  */
 function Sheet({
   open,
@@ -111,14 +163,17 @@ function Sheet({
 }) {
   const { t, fmt } = useI18n();
   const scroller = useRef<HTMLDivElement>(null);
+  // The content mounts a moment after the sheet opens (in its portal), hence a callback ref, not useRef.
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
   usePausedPage(open);
+  useContainedScroll(content, scroller);
   useEffect(() => {
     scroller.current?.scrollTo({ top: 0 });
   }, [scrollKey]);
 
   const title = story ? cleanText(story.title) : '';
   const summary = story ? cleanText(story.summary) : '';
-  const author = story?.author ? cleanText(story.author) : null;
+  const author = authorName(story?.author);
   const readingTime = story ? formatReadingTime(story.reading_minutes) : null;
   const style = getCategoryStyle(story?.category_name);
   const publisher = story ? safeExternalUrl(story.url) : null;
@@ -130,6 +185,7 @@ function Sheet({
       <DialogPrimitive.Portal>
         {open && <Overlay />}
         <DialogPrimitive.Content
+          ref={setContent}
           data-section={style.key ?? undefined}
           aria-describedby={undefined}
           aria-modal="true"
@@ -138,30 +194,40 @@ function Sheet({
           onInteractOutside={(event) => {
             if (toastWasJustPressed(event.target)) event.preventDefault();
           }}
-          className="quick-read card-paper fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col border-t-[3px] border-double border-rule/60 shadow-float lg:inset-y-0 lg:left-auto lg:right-0 lg:max-h-none lg:w-[min(40rem,92vw)] lg:border-l-[3px] lg:border-t-0"
+          // Phones: the whole screen, edge to edge. Wider: a framed broadsheet page in the middle (styles: .quick-read).
+          className="quick-read card-paper fixed inset-0 z-50 flex flex-col"
         >
-          {/* The sheet's own bar: what it is, and Close, always in reach. */}
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule/40 px-5 py-2.5 sm:px-7">
+          {/* The sheet's own bar: what it is, and Close, always in reach; text scrolls away under its fading rule. */}
+          <div className="quick-read-bar relative z-10 flex shrink-0 items-center justify-between gap-3 border-b border-rule/40 py-1 pl-4 pr-2 sm:py-1.5 sm:pl-7 sm:pr-3">
             <p className="kicker">{t.story.quickRead}</p>
-            <DialogPrimitive.Close className="inline-flex h-10 items-center gap-2 frame-ruled rounded-[3px] px-3.5 font-label text-[0.82rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <DialogPrimitive.Close className="inline-flex h-9 items-center gap-1.5 frame-ruled rounded-[3px] px-3 font-label text-[0.76rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
               {t.common.close}
-              <span aria-hidden="true" className="font-display text-[1.3rem] leading-none normal-case">
+              <span aria-hidden="true" className="font-display text-[1.15rem] leading-none normal-case">
                 ×
               </span>
             </DialogPrimitive.Close>
           </div>
 
-          <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-5 sm:px-7">
+          <div ref={scroller} className="quick-read-scroller min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-7 sm:pt-5">
             {story ? (
               <article>
                 <div className="photo-plate">
-                  <ArticleImage src={story.image_url} alt="" category={story.category_name} width={1200} sizes="(min-width: 1024px) 40rem, 100vw" eager className="aspect-video w-full" />
+                  <ArticleImage
+                    src={story.image_url}
+                    alt=""
+                    category={story.category_name}
+                    width={1200}
+                    sizes="(min-width: 640px) 42.5rem, 100vw"
+                    eager
+                    // Never more than about a third of the screen, so the headline and the summary show on opening.
+                    className="aspect-video max-h-[min(34vh,20rem)] w-full"
+                  />
                 </div>
-                <div className="mt-5">
+                <div className="mt-4">
                   <CategoryBadge name={story.category_name} />
                 </div>
-                <DialogPrimitive.Title className="headline mt-3 text-balance text-[1.75rem] sm:text-[2.2rem]">{title}</DialogPrimitive.Title>
-                <p className="byline mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                <DialogPrimitive.Title className="headline mt-2 text-balance text-[1.6rem] sm:text-[2rem]">{title}</DialogPrimitive.Title>
+                <p className="byline mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {author && (
                     <>
                       <span>{fmt(t.story.by, { author })}</span>
@@ -181,26 +247,25 @@ function Sheet({
                   )}
                 </p>
                 {summary ? (
-                  <DropCap text={summary} className="news-text mt-5 text-[1.1rem] leading-relaxed text-foreground/90" />
+                  <DropCap text={summary} className="news-text mt-4 text-[1.1rem] leading-relaxed text-foreground/90" />
                 ) : (
-                  <p className="mt-5 italic text-muted-foreground">{t.article.noSummary}</p>
+                  <p className="mt-4 italic text-muted-foreground">{t.article.noSummary}</p>
                 )}
 
                 {/* The way on to the whole story, one press away. */}
                 {publisher && (
-                  <div className="mt-6">
-                    <Button asChild size="lg" className="group/read h-auto min-h-12 w-full whitespace-normal py-2.5 text-center leading-snug">
+                  <div className="mt-5">
+                    <Button asChild size="lg" className="group/read h-auto min-h-12 w-full whitespace-normal px-5 py-2.5 text-center leading-snug">
                       <a href={publisher} target="_blank" rel="noopener noreferrer">
-                        {fmt(t.article.fullReport, { source: story.source_name })}
-                        <Ornament name="fist" className="fist-poke w-[1.45rem] shrink-0 [--ornament-ink:currentColor]" />
+                        <FullReportLabel text={fmt(t.article.fullReport, { source: story.source_name })} />
                         <span className="sr-only">{t.article.opensPublisher}</span>
                       </a>
                     </Button>
-                    <p className="mt-2 text-pretty text-center text-[0.88rem] italic text-muted-foreground">{t.article.summaryNote}</p>
+                    <p className="mt-2 text-pretty text-center text-[0.86rem] italic leading-snug text-muted-foreground">{t.article.summaryNote}</p>
                   </div>
                 )}
 
-                <div className="mt-6">
+                <div className="mt-5">
                   {/* Hide closes the sheet: the story's place on the page shows the hidden slip. */}
                   <ArticleActionsBar article={story} userId={userId} onHidden={onClose} />
                 </div>
@@ -210,7 +275,7 @@ function Sheet({
             ) : waiting ? (
               <div aria-busy="true">
                 <DialogPrimitive.Title className="sr-only">{t.story.quickRead}</DialogPrimitive.Title>
-                <Skeleton className="aspect-video w-full" />
+                <Skeleton className="aspect-video max-h-[min(34vh,20rem)] w-full" />
                 <Skeleton className="mt-5 h-6 w-28" />
                 <Skeleton className="mt-3 h-10 w-full" />
                 <Skeleton className="mt-2 h-10 w-3/4" />
