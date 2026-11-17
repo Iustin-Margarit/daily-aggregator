@@ -1,4 +1,4 @@
-import { authorName, cleanText, truncate } from '@/lib/text';
+import { authorName, plainText, truncate } from '@/lib/text';
 import type { ParsedFeedItem } from '@/lib/ingestion/parse-feed';
 
 export type NormalizedArticle = {
@@ -76,14 +76,14 @@ const BOILERPLATE = [
 ];
 
 function cleanSummary(html: string | null): string {
-  let text = cleanText(html);
+  let text = plainText(html);
   for (const pattern of BOILERPLATE) text = text.replace(pattern, '');
   return text.trim();
 }
 
 function cleanAuthor(raw: string | null): string | null {
   if (!raw) return null;
-  const text = cleanText(raw)
+  const text = plainText(raw)
     .replace(/^by\s+/i, '')
     .replace(/\S+@\S+/g, '')
     .replace(/[()]/g, '')
@@ -139,7 +139,7 @@ function isGamePicks(title: string): boolean {
  */
 function isSponsoredNewsletter(summaryHtml: string | null): boolean {
   if (!summaryHtml) return false;
-  return /\{beacon\}/i.test(summaryHtml) || /^presented by\b/i.test(cleanText(summaryHtml));
+  return /\{beacon\}/i.test(summaryHtml) || /^presented by\b/i.test(plainText(summaryHtml));
 }
 
 /** True when a headline is an advert or a betting tip rather than news. */
@@ -158,7 +158,7 @@ export type NormalizeOptions = {
 export function normalizeItem(item: ParsedFeedItem, options: NormalizeOptions = {}): NormalizedArticle | null {
   const now = options.now ?? Date.now();
 
-  const title = truncate(cleanText(item.title), 300);
+  const title = truncate(plainText(item.title), 300);
   if (title.length < 3 || isAdvertTitle(title) || isSponsoredNewsletter(item.summaryHtml)) return null;
 
   const url = normalizeUrl(item.link, options.baseUrl);

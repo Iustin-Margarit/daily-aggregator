@@ -281,19 +281,31 @@ export function StreetTheatre({ className }: { className?: string }) {
       element.classList.toggle('st-offscreen', !entry.isIntersecting);
       setAmbienceStageInView(entry.isIntersecting);
     });
+    // The scene's ~20 prints (about 600 KB) are fetched only when the banner comes within reach of
+    // the screen: until then the scene is not displayed (st-unprinted), so the browser asks for none.
+    const nearby = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        element.classList.remove('st-unprinted');
+        nearby.disconnect();
+      },
+      { rootMargin: '500px 0px' },
+    );
     resize.observe(element);
     visibility.observe(element);
+    nearby.observe(element);
     // The sound follows the cab and the pigeon.
     setAmbienceStage(element);
     return () => {
       resize.disconnect();
       visibility.disconnect();
+      nearby.disconnect();
       setAmbienceStage(null);
     };
   }, []);
 
   return (
-    <div ref={ref} className={cn('st', className)}>
+    <div ref={ref} className={cn('st st-unprinted', className)}>
       <div className="st-scene" aria-hidden="true">
         {/* Chimney smoke, behind the skyline so it rises from behind the roofs; it drifts with the skyline. */}
         <div className="st-pan st-far-pan st-smoke-pan">

@@ -856,6 +856,10 @@
 .st-offscreen .st-scene {
   visibility: hidden;
 }
+/* Not yet near the screen (components/site/street-theatre.tsx): not displayed, so none of its prints is fetched. */
+.st-unprinted .st-scene {
+  display: none;
+}
 .st-scene {
   transition: opacity 0.2s ease-out;
 }

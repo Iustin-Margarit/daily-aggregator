@@ -172,6 +172,23 @@ describe('get_front_page for a visitor', () => {
     assert.ok(rows.every((r) => r.is_saved === false));
   });
 
+  it('ranks at most three lead stories, each with a photograph, among the news several papers carry', async () => {
+    // Dev is not fetched every hour: ask for the paper as it stood after its newest story.
+    const newest = [...rows].sort((a, b) => b.published_at.localeCompare(a.published_at))[0].published_at;
+    const { data, error } = await anon.rpc('get_front_page', { p_as_of: newest });
+    assert.equal(error, null, error?.message);
+    const leads = (data ?? []).filter((r) => r.lead_rank !== null).sort((a, b) => (a.lead_rank ?? 0) - (b.lead_rank ?? 0));
+    assert.deepEqual(leads.map((r) => r.lead_rank), leads.map((_, i) => i + 1));
+    assert.ok(leads.length <= 3);
+    assert.ok(leads.every((r) => r.image_url));
+    assert.ok(leads.every((r) => ['World', 'Technology'].includes(r.category_name)), 'only World or Technology leads');
+    for (const lead of leads) {
+      const { data: also, error: alsoError } = await anon.rpc('get_also_reported', { p_article_id: lead.id });
+      assert.equal(alsoError, null, alsoError?.message);
+      assert.ok((also ?? []).length >= 2, 'a lead is reported by at least two other papers');
+    }
+  });
+
   it('keeps the newest to the chosen sections, but still prints every section', async () => {
     const section = rows[0].category_id;
     const { data, error } = await anon.rpc('get_front_page', { p_category_ids: [section], p_per_section: 3, p_latest: 10 });

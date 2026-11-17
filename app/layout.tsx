@@ -13,11 +13,13 @@ import { siteConfig } from '@/lib/site';
 import { THEME_COLORS, THEME_SCRIPT } from '@/lib/theme';
 import '@/styles/globals.css';
 
+// `subsets` is what is preloaded: only Latin. The latin-ext files (ő, ł, ș in names) stay declared and are
+// fetched only by a page that prints such a letter (unicode-range), instead of on every page.
 // Fraunces with its 'soft' axis: rounded old-style headlines.
-const display = Fraunces({ subsets: ['latin', 'latin-ext'], axes: ['SOFT', 'opsz'], variable: '--font-fraunces', display: 'swap' });
-const serif = Source_Serif_4({ subsets: ['latin', 'latin-ext'], variable: '--font-source-serif', display: 'swap' });
+const display = Fraunces({ subsets: ['latin'], axes: ['SOFT', 'opsz'], variable: '--font-fraunces', display: 'swap' });
+const serif = Source_Serif_4({ subsets: ['latin'], variable: '--font-source-serif', display: 'swap' });
 // Jost: a 1920s geometric sans for labels, buttons and navigation.
-const label = Jost({ subsets: ['latin', 'latin-ext'], variable: '--font-jost', display: 'swap' });
+const label = Jost({ subsets: ['latin'], variable: '--font-jost', display: 'swap' });
 // Blackletter for the newspaper title only.
 const masthead = UnifrakturMaguntia({ weight: '400', subsets: ['latin'], variable: '--font-unifraktur', display: 'swap' });
 // Typewriter type for stamps and small notes.

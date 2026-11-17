@@ -211,7 +211,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_color: string
           banner_color: string
           created_at: string
           font_size: string
@@ -222,7 +221,6 @@ export type Database = {
           username: string
         }
         Insert: {
-          avatar_color?: string
           banner_color?: string
           created_at?: string
           font_size?: string
@@ -233,7 +231,6 @@ export type Database = {
           username: string
         }
         Update: {
-          avatar_color?: string
           banner_color?: string
           created_at?: string
           font_size?: string
@@ -515,6 +512,7 @@ export type Database = {
           image_url: string
           is_saved: boolean
           latest_rank: number
+          lead_rank: number
           published_at: string
           reading_minutes: number
           section_rank: number

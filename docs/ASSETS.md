@@ -165,6 +165,8 @@ browser places the passers-by on the street, and the carriage follows the cab ac
 
 `favicon.ico`, `icon.png` and `apple-icon.png` are a blackletter "D" set in UnifrakturMaguntia (SIL
 Open Font License, the masthead's typeface) on a parchment tile with a gilt rule, made for this site.
+`public/icons/icon-512.png` and `icon-maskable-512.png` (the home-screen icons of `app/manifest.ts`) are the
+same tile set again at 512 px; the maskable one fills the square, so phones can cut it to their own shape.
 `opengraph-image.png` / `twitter-image.png` (1200×630) set the title, the motto and a line of copy in
 the site's fonts (OFL) on the paper texture above, with the Spencerian flourish (CC0) and Edward
 Penfield's reader (1897, public domain), both credited above.

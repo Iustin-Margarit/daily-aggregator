@@ -23,7 +23,6 @@ const en = {
     /** The title of a search page. */
     search: 'Search: “{q}”',
     logIn: 'Log in',
-    articleNotFound: 'Article not found',
     /** Description of a story without a summary, for link previews. */
     articleFallback: '{section} news from {source}',
   },

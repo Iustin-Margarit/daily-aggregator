@@ -87,6 +87,29 @@ const RULES: Rule[] = [
       u.searchParams.set('cquality', '80');
     },
   },
+  // ESPNcricinfo: the feed's p.imgci.com originals (often 800 KB) are also on its Cloudinary, which resizes:
+  // p.imgci.com/db/PICTURES/... -> img1.hscicdn.com/image/upload/f_auto,w_640/lsci/db/PICTURES/...
+  {
+    test: (u) => u.hostname === 'p.imgci.com' && u.pathname.startsWith('/db/PICTURES/'),
+    resize: (u, w) => {
+      u.protocol = 'https:';
+      u.hostname = 'img1.hscicdn.com';
+      u.pathname = `/image/upload/f_auto,w_${w}/lsci${u.pathname}`;
+      u.search = '';
+    },
+  },
+  // GB News (RebelMouse): assets.rbl.ms/<id>/origin.png does not resize, its own media library does
+  // (the extension must stay the same): www.gbnews.com/media-library/image.png?id=<id>&width=640
+  {
+    test: (u) => u.hostname === 'assets.rbl.ms' && /^\/\d+\/origin\.(jpe?g|png|webp)$/i.test(u.pathname),
+    resize: (u, w) => {
+      const [, id, ext] = /^\/(\d+)\/origin\.(\w+)$/.exec(u.pathname) ?? [];
+      u.protocol = 'https:';
+      u.hostname = 'www.gbnews.com';
+      u.pathname = `/media-library/image.${ext}`;
+      u.search = `?id=${id}&width=${w}&quality=85`;
+    },
+  },
 ];
 
 /** True when we know how to request a smaller version of this image. */

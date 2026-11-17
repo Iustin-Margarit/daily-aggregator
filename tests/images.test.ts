@@ -25,6 +25,18 @@ describe('sizedImageUrl', () => {
     );
   });
 
+  it('moves originals to the CDN that resizes them (ESPNcricinfo, GB News)', () => {
+    assert.equal(
+      sizedImageUrl('http://p.imgci.com/db/PICTURES/CMS/416800/416895.jpg', 640),
+      'https://img1.hscicdn.com/image/upload/f_auto,w_640/lsci/db/PICTURES/CMS/416800/416895.jpg',
+    );
+    assert.equal(
+      sizedImageUrl('https://assets.rbl.ms/68699045/origin.png', 480),
+      'https://www.gbnews.com/media-library/image.png?id=68699045&width=480&quality=85',
+    );
+    assert.equal(sizedImageUrl('https://assets.rbl.ms/68699045/980x.png', 480), 'https://assets.rbl.ms/68699045/980x.png');
+  });
+
   it('snaps to the sizes a CDN actually serves', () => {
     assert.equal(
       sizedImageUrl('https://ichef.bbci.co.uk/ace/standard/976/cpsprodpb/a.jpg', 700),

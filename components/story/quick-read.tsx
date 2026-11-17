@@ -134,7 +134,7 @@ function useClosing(pathname: string) {
 }
 
 /**
- * The sheet's paper: the photograph, the headline, the summary, the big way on to the publisher's full story,
+ * The sheet's paper: the photograph, the headline, the big way on to the publisher's full story, the summary,
  * the story's actions, and at its foot the same news from other papers and more from the desk. The whole
  * screen on phones; wider, a framed page in the middle over a dimmed paper.
  */
@@ -246,23 +246,24 @@ function Sheet({
                     </>
                   )}
                 </p>
-                {summary ? (
-                  <DropCap text={summary} className="news-text mt-4 text-[1.1rem] leading-relaxed text-foreground/90" />
-                ) : (
-                  <p className="mt-4 italic text-muted-foreground">{t.article.noSummary}</p>
+
+                {/* The way on to the whole story, right under the headline: in view on opening, on any screen. */}
+                {publisher && (
+                  <Button asChild size="lg" className="group/read mt-4 h-auto min-h-12 w-full whitespace-normal px-5 py-2.5 text-center leading-snug">
+                    <a href={publisher} target="_blank" rel="noopener noreferrer">
+                      <FullReportLabel text={fmt(t.article.fullReport, { source: story.source_name })} />
+                      <span className="sr-only">{t.article.opensPublisher}</span>
+                    </a>
+                  </Button>
                 )}
 
-                {/* The way on to the whole story, one press away. */}
+                {summary ? (
+                  <DropCap text={summary} className="news-text mt-5 text-[1.1rem] leading-relaxed text-foreground/90" />
+                ) : (
+                  <p className="mt-5 italic text-muted-foreground">{t.article.noSummary}</p>
+                )}
                 {publisher && (
-                  <div className="mt-5">
-                    <Button asChild size="lg" className="group/read h-auto min-h-12 w-full whitespace-normal px-5 py-2.5 text-center leading-snug">
-                      <a href={publisher} target="_blank" rel="noopener noreferrer">
-                        <FullReportLabel text={fmt(t.article.fullReport, { source: story.source_name })} />
-                        <span className="sr-only">{t.article.opensPublisher}</span>
-                      </a>
-                    </Button>
-                    <p className="mt-2 text-pretty text-center text-[0.86rem] italic leading-snug text-muted-foreground">{t.article.summaryNote}</p>
-                  </div>
+                  <p className="mt-4 text-pretty text-[0.86rem] italic leading-snug text-muted-foreground">{t.article.summaryNote}</p>
                 )}
 
                 <div className="mt-5">
