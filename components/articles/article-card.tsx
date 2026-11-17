@@ -17,7 +17,7 @@ import { useHiddenStory } from '@/lib/hidden-stories';
 import { formatReadingTime } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/client';
 import { paperPath } from '@/lib/routes';
-import { cleanText } from '@/lib/text';
+import { authorName, cleanText } from '@/lib/text';
 import type { FeedArticle } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +61,7 @@ function StoryActions({ article, userId, className }: { article: FeedArticle; us
 
 function Byline({ article, withAuthor = false, className }: { article: FeedArticle; withAuthor?: boolean; className?: string }) {
   const { t, fmt } = useI18n();
-  const author = withAuthor && article.author ? cleanText(article.author) : null;
+  const author = withAuthor ? authorName(article.author) : null;
   const readingTime = formatReadingTime(article.reading_minutes);
   return (
     <p className={cn('byline flex min-w-0 flex-wrap items-center gap-x-1.5', className)}>

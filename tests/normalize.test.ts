@@ -151,6 +151,10 @@ describe('normalizeItem', () => {
   it('cleans author names and drops e-mail addresses', () => {
     assert.equal(normalizeItem(item({ author: 'By Jane Doe' }), { now: NOW })?.author, 'Jane Doe');
     assert.equal(normalizeItem(item({ author: 'news@example.com' }), { now: NOW })?.author, null);
+    assert.equal(normalizeItem(item({ author: 'None' }), { now: NOW })?.author, null);
+    assert.equal(normalizeItem(item({ author: 'By null' }), { now: NOW })?.author, null);
+    // A real name that merely starts like a placeholder stays.
+    assert.equal(normalizeItem(item({ author: 'Nonie Smith' }), { now: NOW })?.author, 'Nonie Smith');
   });
 
   it('normalises the image URL relative to the feed', () => {

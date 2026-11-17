@@ -15,7 +15,7 @@ import type { AlsoReported, RelatedArticle } from '@/lib/types';
 export function AlsoReportedBy({ stories }: { stories: AlsoReported[] }) {
   const { t } = useI18n();
   return (
-    <section aria-labelledby="also-reported" className="mt-8 border-t-[3px] border-double border-rule/45 pt-4">
+    <section aria-labelledby="also-reported" className="mt-6 border-t-[3px] border-double border-rule/45 pt-3">
       <h3 id="also-reported" className="kicker">
         {t.article.alsoReported}
       </h3>
@@ -47,7 +47,7 @@ export function MoreFromDesk({ stories, categoryName }: { stories: RelatedArticl
   const key = getCategoryStyle(categoryName).key;
   const heading = fmt(t.article.moreFromDesk, { section: sectionText(t, key, categoryName ?? '').name });
   return (
-    <section aria-labelledby="more-from-desk" className="mt-8 border-t-[3px] border-double border-rule/45 pt-4">
+    <section aria-labelledby="more-from-desk" className="mt-6 border-t-[3px] border-double border-rule/45 pt-3">
       <h3 id="more-from-desk" className="kicker">
         {heading}
       </h3>
