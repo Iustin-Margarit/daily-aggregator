@@ -8,6 +8,10 @@ care about.
 
 ![The front page in the morning edition: the blackletter masthead with a pocket watch and tonight's moon, the section ribbon, the lead story beside the latest dispatches, and the paper-theatre street](docs/screenshots/feed.jpg)
 
+![The paper-theatre street at night, moving: gas lamps flicker and moths circle them, a hansom cab trots past, a newsboy waves the evening paper and passers-by stroll along the railings](docs/screenshots/street.gif)
+
+*The street at the foot of the front page, in the night edition: cut-out engravings on a paper stage, all in CSS.*
+
 More screenshots: [quick read](docs/screenshots/quick-read.jpg) · [night edition](docs/screenshots/feed-dark.jpg) ·
 [saved stories](docs/screenshots/saved.jpg) · [sections](docs/screenshots/sections.jpg) ·
 [phone](docs/screenshots/mobile.jpg) · [newsroom dashboard](docs/screenshots/admin.jpg)
@@ -18,12 +22,14 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 ## Features
 
 **Reading**
-- **One front page for everyone** (`/`): the lead story beside "Latest dispatches" (ten one-line
+- **One front page for everyone** (`/`): the lead story (the World or Technology news that the most
+  papers carry right now, else the newest with a photo) beside "Latest dispatches" (ten one-line
   headlines), then every section in brief (a photo story, four headlines, "All World news"). 8 sections
-  from 48 RSS sources, refreshed every hour; the Newsroom switches any of them on or off.
-- **Quick read**: pressing a headline opens the story in a sheet over the page (from the right on a
-  computer, from the bottom on a phone) with the photo, summary, Save, Share and the way on to the
-  publisher, and three more from the same desk at its foot. Close, Escape or Back return to the same
+  from 47 RSS sources, refreshed every hour; the Newsroom switches any of them on or off.
+- **Quick read**: pressing a headline opens the story in a sheet over the page (a framed page in the
+  middle on a computer, the whole screen on a phone) with the photo, the headline, "Read the full
+  report" right under it, the summary, Save and Share, and at its foot the same news from other papers
+  and more from the same desk. Close, Escape or Back return to the same
   spot. A shared link opens the front page with that story's sheet open.
 - **New since your last visit**: the front page says how many stories came out since you last read
   the paper ("12 new stories since your last visit this morning"). Remembered in the browser, no
@@ -43,6 +49,8 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 - Hide a story, mute a newspaper, or mute words (Settings > Sections & papers).
 - A reading time ("4 min read") on stories, an "On this day" almanac (three anniversaries from
   Wikipedia).
+- **Add to Home Screen**: a web app manifest with the blackletter "D" icon and shortcuts to Latest,
+  Sections and Saved.
 - An optional ambient **Sound** on the street banner (soft rain and a pocket watch, made in the
   browser; off by default).
 
