@@ -376,32 +376,6 @@ export type Database = {
           },
         ]
       }
-      user_preferred_categories: {
-        Row: {
-          category_id: string
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          category_id: string
-          created_at?: string
-          user_id: string
-        }
-        Update: {
-          category_id?: string
-          created_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_preferred_categories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
