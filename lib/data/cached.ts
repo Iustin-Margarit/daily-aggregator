@@ -10,7 +10,7 @@ import type { Category } from '@/lib/types';
  * What every visitor sees alike, kept by Next.js between requests so a page does not ask the
  * database again each time:
  * - the sections and the newspapers (an hour; the Newsroom clears them on every change);
- * - the front page of a visitor without mutes, for each choice of sections (five minutes; every
+ * - the front page of a visitor without mutes (five minutes; every
  *   news fetch clears it, so new stories show at once).
  * Read with the anonymous key and no cookies: nothing here may depend on who is reading. Anything
  * personal (an account's hidden stories and mutes, a visitor's mutes) is read live instead.
@@ -53,11 +53,10 @@ export const getPapers = unstable_cache(
   { tags: [LISTS_TAG], revalidate: 3600 },
 );
 
-/** The front page for a visitor without mutes; `sections` is their sorted choice ("" = every section). */
+/** The front page for a visitor without mutes (every section). */
 export const getPlainFrontPage = unstable_cache(
-  async (sections: string): Promise<FrontRow[]> => {
-    const ids = sections ? sections.split(',') : [];
-    const { data, error } = await anonClient().rpc('get_front_page', { p_category_ids: ids.length ? ids : undefined, ...FRONT_PAGE_ARGS });
+  async (): Promise<FrontRow[]> => {
+    const { data, error } = await anonClient().rpc('get_front_page', { ...FRONT_PAGE_ARGS });
     if (error) throw new Error(`Could not load the front page: ${error.message}`);
     return (data ?? []) as FrontRow[];
   },

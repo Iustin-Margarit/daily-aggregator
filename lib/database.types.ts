@@ -442,6 +442,14 @@ export type Database = {
           username: string
         }[]
       }
+      admin_source_stats: {
+        Args: never
+        Returns: {
+          photos_week: number
+          source_id: string
+          stories_week: number
+        }[]
+      }
       cleanup_old_articles: {
         Args: { p_retention_days?: number }
         Returns: number

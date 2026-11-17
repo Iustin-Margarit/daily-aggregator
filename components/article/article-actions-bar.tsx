@@ -122,7 +122,7 @@ export function ArticleActionsBar({ article, userId, onHidden }: { article: Feed
     setMuting(false);
     if (error) {
       setSourceMuted(sourceId, !next);
-      showToast({ type: 'error', title: next ? t.feed.muteFailed : t.settings.sections.unmuteFailed, message: errorText(error, t) });
+      showToast({ type: 'error', title: next ? t.feed.muteFailed : t.settings.muted.unmuteFailed, message: errorText(error, t) });
     }
   };
 

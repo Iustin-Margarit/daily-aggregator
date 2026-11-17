@@ -35,7 +35,7 @@ function writeSeen(value: number) {
 /**
  * A short welcome for a visitor's first visits, printed as a slip tucked into the
  * paper under the top stories: what this paper is, one of five paintings of
- * people reading the paper (lib/welcome-plates.ts), and Choose my sections.
+ * people reading the paper (lib/welcome-plates.ts), and Browse the sections.
  * Kept in this browser; signed-in readers never see it.
  */
 export function WelcomeSlip({ plate, papers }: { plate: WelcomePlate; papers: number }) {

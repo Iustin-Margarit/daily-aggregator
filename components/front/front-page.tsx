@@ -28,7 +28,7 @@ import { pickWelcomePlate } from '@/lib/welcome-plates';
 /**
  * The front page, for visitors and readers alike: the nameplate and the section
  * ribbon, the lead story beside the latest headlines, the street, then every
- * section in brief (the reader's own sections first), and the almanac.
+ * section in brief, and the almanac.
  * It is a digest, not a numbered list: the lists are /latest and /section/<name>.
  * Printed at `/`, and under the quick-read sheet when a story's address is opened
  * directly (a shared link, a reload: app/(paper)/article/[id]). The page using it
@@ -39,21 +39,21 @@ const SIDE_DISPATCHES = 6;
 
 export async function FrontPageContent({ account }: { account?: string }) {
   const [{ t }, reader] = await Promise.all([getI18n(), getReaderContext()]);
-  const { supabase, userId, categories, preferredIds, guestMutes } = reader;
+  const { supabase, userId, categories, guestMutes } = reader;
   const onThisDayPromise = getOnThisDay(new Date());
-  // A visitor without mutes sees what every such visitor with the same sections sees: kept between
+  // A visitor without mutes sees what every such visitor sees: kept between
   // requests (lib/data/cached.ts). An account (hidden stories, its own mutes) or a visitor's mutes: read live.
   const plain = !userId && noGuestMutes(guestMutes);
   const live = () =>
-    supabase.rpc('get_front_page', { p_category_ids: preferredIds.length ? preferredIds : undefined, ...FRONT_PAGE_ARGS, ...mutedArgs(guestMutes), ...hiddenArgs(guestMutes) });
+    supabase.rpc('get_front_page', { ...FRONT_PAGE_ARGS, ...mutedArgs(guestMutes), ...hiddenArgs(guestMutes) });
   const storiesPromise = plain
-    ? getPlainFrontPage([...preferredIds].sort().join(','))
+    ? getPlainFrontPage()
         .then((data) => ({ data, error: null }))
         .catch(live)
     : live();
   const [{ data: rows, error }, papers, onThisDay] = await Promise.all([storiesPromise, getPapers().catch(() => null), onThisDayPromise]);
   if (error) console.error('[front] could not load the stories:', error.message);
-  const { lead, dispatches, digests } = buildFrontPage((rows ?? []) as FrontRow[], categories, preferredIds);
+  const { lead, dispatches, digests } = buildFrontPage((rows ?? []) as FrontRow[], categories);
 
   // A brand-new install has no stories yet: fetch them now (and every visit refreshes stale feeds).
   let databaseEmpty = false;
@@ -112,7 +112,7 @@ export async function FrontPageContent({ account }: { account?: string }) {
               {t.landing.latest}
             </SectionHead>
             {/* "12 new stories since your last visit this morning." (from the second visit in this browser). */}
-            <NewSince categoryIds={preferredIds} signedIn={Boolean(userId)} className="mt-1.5 text-center" />
+            <NewSince signedIn={Boolean(userId)} className="mt-1.5 text-center" />
             {/* From 1024px only the first few here; the rest are printed under the lead (above). */}
             <HeadlineList articles={dispatches} withSection thumbnails className="mt-3 lg:[&>li:nth-child(n+7)]:hidden" />
             <Link
@@ -132,11 +132,11 @@ export async function FrontPageContent({ account }: { account?: string }) {
       <StreetBand className="mt-10 sm:mt-12" />
 
       {digests.length > 0 && (
-        <section className="mt-10 sm:mt-12" aria-labelledby="sections-heading">
+        <section className="mt-8 sm:mt-9" aria-labelledby="sections-heading">
           <SectionHead id="sections-heading" className="text-[1.35rem]">
             {t.front.sectionsTitle}
           </SectionHead>
-          <p className="mt-1 text-balance text-center italic text-muted-foreground">{preferredIds.length > 0 ? t.front.sectionsNoteMine : t.front.sectionsNote}</p>
+          <p className="mt-1 text-balance text-center italic text-muted-foreground">{t.front.sectionsNote}</p>
           <div className="digest-grid mt-7">
             {digests.map((digest) => (
               <SectionDigest

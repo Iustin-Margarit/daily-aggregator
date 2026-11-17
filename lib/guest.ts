@@ -3,16 +3,14 @@ import { normalizeMutedKeyword } from '@/lib/validation';
 import { UUID } from '@/lib/uuid';
 
 /*
- * Visitors without an account can read the whole paper, choose their sections,
- * clip stories and set their preferences in Settings. Their sections, muted
- * newspapers and words and accent ink are kept in cookies (so the server
+ * Visitors without an account can read the whole paper, clip stories and set
+ * their preferences in Settings. Their muted newspapers and words, hidden
+ * stories and accent ink are kept in cookies (so the server
  * prints their paper straight away), mirrored in the browser's storage
  * (lib/guest-prefs.ts); their clippings are in the browser's storage
  * (lib/guest-clippings.ts). Signing in moves them into the account.
  */
 
-/** Cookie with a guest's chosen sections: category ids, comma separated. */
-export const GUEST_SECTIONS_COOKIE = 'guest-sections';
 /** Cookie with a guest's muted newspapers: source ids, comma separated. */
 export const GUEST_MUTED_PAPERS_COOKIE = 'guest-muted-papers';
 /** Cookie with a guest's muted words, separated by '|' (a character a muted word cannot contain). */
@@ -37,11 +35,6 @@ export type GuestMutes = { sourceIds: string[]; words: string[]; hiddenIds: stri
 function uuidList(value: string | undefined | null, max: number): string[] {
   if (!value) return [];
   return [...new Set(value.split(',').map((id) => id.trim()))].filter((id) => UUID.test(id)).slice(0, max);
-}
-
-/** The category ids in a guest-sections cookie (invalid entries are dropped). */
-export function parseGuestSections(value: string | undefined | null): string[] {
-  return uuidList(value, 50);
 }
 
 /** The source ids in a guest-muted-papers cookie. */

@@ -2,14 +2,12 @@
 
 import { createContext, useActionState, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import Link from 'next/link';
 import { useTheme } from '@/components/site/theme-provider';
 import type { ThemeChoice } from '@/lib/theme';
 import { deleteAccount, saveAccentInk, saveFontSize, updateProfile } from '@/app/actions/profile';
 import { muteSource, unmuteSource } from '@/components/articles/moderation';
 import { GoogleButton } from '@/components/auth/google-button';
 import { ledgerIndex, type LedgerEntryId, type LedgerIndex } from '@/components/profile/ledger-index';
-import { CategoryBadge } from '@/components/articles/category-badge';
 import { Engraving, type EngravingName } from '@/components/site/engraving';
 import { Ornament, type OrnamentName } from '@/components/site/ornament';
 import { Button } from '@/components/ui/button';
@@ -35,7 +33,7 @@ import { MAX_MUTED_KEYWORDS, normalizeMutedKeyword } from '@/lib/validation';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { setReaderPref, useReaderPref } from '@/lib/use-reader-pref';
 import { cn } from '@/lib/utils';
-import { SECTIONS_PATH, SETTINGS_PATH } from '@/lib/routes';
+import { SETTINGS_PATH } from '@/lib/routes';
 
 /*
  * The Settings page as the Reader's Ledger: each part is an entry on a sheet
@@ -46,7 +44,7 @@ import { SECTIONS_PATH, SETTINGS_PATH } from '@/lib/routes';
 
 const LedgerContext = createContext<LedgerIndex>(ledgerIndex(false));
 
-/** The entries on the page and their numerals: all six for an account, three for a visitor. */
+/** The entries on the page and their numerals: all five for an account, three for a visitor. */
 export function Ledger({ guest, children }: { guest: boolean; children: React.ReactNode }) {
   const index = useMemo(() => ledgerIndex(guest), [guest]);
   return <LedgerContext.Provider value={index}>{children}</LedgerContext.Provider>;
@@ -326,11 +324,19 @@ function PhotoSpecimen({ look }: { look: ReaderPrefValue<'photos'> }) {
   );
 }
 
-/** The hansom cab from the street banner: driving across, standing still, or an empty frame. */
+/**
+ * The hansom cab from the street banner: driving across with three speed rules trailing behind it (so Moving reads
+ * as moving even in a glance or a still picture), standing still, or an empty frame.
+ */
 function BannerSpecimen({ banner }: { banner: ReaderPrefValue<'banner'> }) {
   return (
     <span className="banner-specimen" data-banner-look={banner}>
-      {banner !== 'hidden' && <span className="banner-specimen-cab" />}
+      {banner !== 'hidden' && (
+        <span className="banner-specimen-ride">
+          {banner === 'moving' && <span className="banner-specimen-lines" />}
+          <span className="banner-specimen-cab" />
+        </span>
+      )}
     </span>
   );
 }
@@ -400,7 +406,7 @@ function MutedWords({ userId, initialKeywords }: { userId: string | null; initia
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const { t, fmt } = useI18n();
-  const w = t.settings.sections;
+  const w = t.settings.muted;
   const max = userId ? MAX_MUTED_KEYWORDS : GUEST_MAX_MUTED_WORDS;
 
   const add = async (event: React.FormEvent) => {
@@ -524,7 +530,7 @@ function MutedPapers({
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const { t, fmt } = useI18n();
-  const w = t.settings.sections;
+  const w = t.settings.muted;
 
   // The newspapers that can still be muted, under their sections.
   const groups = useMemo(
@@ -615,15 +621,17 @@ function MutedPapers({
   );
 }
 
-export function SectionsAndSourcesSection({
-  topics,
+/**
+ * Muted newspapers and muted words, side by side on wide screens (a column rule between them) and one
+ * under the other on phones: what the reader keeps out of every list of the paper.
+ */
+export function MutesSection({
   userId,
   muted,
   sources,
   categories,
   keywords,
 }: {
-  topics: string[];
   /** null for a visitor: everything is kept in this browser. */
   userId: string | null;
   muted: MutedPaper[];
@@ -632,31 +640,15 @@ export function SectionsAndSourcesSection({
   categories: Category[];
   keywords: string[];
 }) {
-  const w = useI18n().t.settings.sections;
-
   return (
-    <LedgerEntry id="sections">
+    <LedgerEntry id="muted">
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-0">
-        <div className="md:border-r md:border-rule/30 md:pr-8">
-          <SubHead>{w.yours}</SubHead>
-          <div className="flex flex-wrap gap-2">
-            {topics.length === 0 ? (
-              <p className="text-[0.95rem] italic text-muted-foreground">{w.none}</p>
-            ) : (
-              topics.map((name) => <CategoryBadge key={name} name={name} />)
-            )}
-          </div>
-          {/* May wrap with large type on a narrow phone rather than run off the page. */}
-          <Button variant="outline" asChild className="mt-5 h-auto min-h-10 max-w-full whitespace-normal text-center">
-            <Link href={SECTIONS_PATH}>{w.edit}</Link>
-          </Button>
-        </div>
-        <div className="md:pl-8">
+        <div className="min-w-0 md:border-r md:border-rule/30 md:pr-8">
           <MutedPapers userId={userId} initial={muted} sources={sources} categories={categories} />
         </div>
-      </div>
-      <div className="mt-8 border-t border-dashed border-rule/45 pt-6">
-        <MutedWords userId={userId} initialKeywords={keywords} />
+        <div className="min-w-0 border-t border-dashed border-rule/45 pt-6 md:border-t-0 md:pl-8 md:pt-0">
+          <MutedWords userId={userId} initialKeywords={keywords} />
+        </div>
       </div>
     </LedgerEntry>
   );

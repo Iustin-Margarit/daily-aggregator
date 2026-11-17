@@ -15,10 +15,10 @@ const en = {
   meta: {
     titleDefault: 'your own morning paper',
     description:
-      'A personal newspaper in the style of a Victorian broadsheet: headlines from 33 publishers, arranged by the sections you choose. Free to read, no account needed.',
+      'A personal newspaper in the style of a Victorian broadsheet: headlines from over 50 publishers, printed section by section. Free to read, no account needed.',
     frontPage: 'Front page',
     saved: 'Saved stories',
-    sections: 'Your sections',
+    sections: 'Sections',
     settings: 'Settings',
     /** The title of a search page. */
     search: 'Search: “{q}”',
@@ -146,10 +146,12 @@ const en = {
   },
 
   street: {
-    sound: 'Sound',
-    soundTitle: 'Victorian street ambience',
+    /** The banner's Sound ticket says its state: off until the reader presses it. */
+    soundOff: 'Sound: off',
+    soundOn: 'Sound: on',
+    soundTitle: 'Victorian street ambience: click to play',
     soundTitlePlaying: 'Victorian street ambience (playing): click to stop',
-    soundSr: ': Victorian street ambience',
+    soundSr: ' (Victorian street ambience)',
     play: 'Play',
     pause: 'Pause',
     playTitle: 'Let the town move again',
@@ -192,8 +194,8 @@ const en = {
     },
     kicker: 'Free, and no account needed',
     title: 'Your own morning paper',
-    intro: '{count}+ newspapers, printed as one. Pick the sections you care about and read them like a real paper, with none of the noise.',
-    choose: 'Choose my sections',
+    intro: '{count}+ newspapers, printed as one. Read them section by section, like a real paper, with none of the noise.',
+    choose: 'Browse the sections',
     /** {account} is a link worded by `account`. */
     guestNote: 'Read, search and save stories without signing up; they stay in this browser. {account} keeps them on every device.',
     account: 'A free account',
@@ -204,8 +206,6 @@ const en = {
   feed: {
     searching: 'Searching the paper for “{q}”.',
     everySection: 'Every section, freshest first.',
-    covers: 'Your edition covers {list}.',
-    coversMany: 'Your edition covers {first}, {second} and {n} more sections.',
     stories: 'Stories',
     endTitle: 'That is the end of today’s edition.',
     endNote: 'Even the office cat has nodded off. Fresh stories arrive every hour.',
@@ -243,7 +243,6 @@ const en = {
     allSection: 'All {name} news',
     sectionsTitle: 'Section by section',
     sectionsNote: 'The newest stories from every section.',
-    sectionsNoteMine: 'Your sections first, then the rest of the paper.',
     welcomeClose: 'Close',
     notPrintedShort: 'New stories arrive every hour. Come back a little later.',
   },
@@ -255,8 +254,6 @@ const en = {
     sectionKicker: 'Section',
     latestKicker: 'Hour by hour',
     latestTitle: 'The latest',
-    onlyMine: 'Show only my sections',
-    everySection: 'Show every section',
     searchKicker: 'The last 30 days',
     searchTitle: 'Search the paper',
     searchPrompt: 'Type a word or two, then press Search.',
@@ -447,35 +444,11 @@ const en = {
     importedNote: 'The stories you saved before signing in are in Saved, on every device.',
   },
 
-  onboarding: {
-    kickerFirst: 'Welcome, new reader',
-    kicker: 'Your paper',
-    titleFirst: 'Choose your sections',
-    title: 'Your sections',
-    descriptionFirst: 'Pick your sections. You can change them any time.',
-    descriptionGuest: 'Tap the stamps to choose your front page.',
-    description: 'Tap the stamps to choose your front page.',
-    skip: 'Skip for now',
-    continueWith: plural('Continue with {n} section', 'Continue with {n} sections'),
-    continueAll: 'Continue with every section',
-    pressStampAuto: 'Press a stamp to add or remove it. Each change is saved at once.',
-    saving: 'Saving…',
-    saved: 'Saved',
-    toFrontPage: 'Go to my front page',
-    byline: 'Your byline (username)',
-    bylineHint: 'Shown at the top of your paper. You can change it later.',
-    inYourPaper: 'In your paper',
-    everySection: 'Every section',
-    countOf: plural('{n} of {total} sections', '{n} of {total} sections'),
-    noneYet: 'No section chosen yet, so your paper includes them all.',
-    pressStamp: 'Press a stamp to add or remove it.',
-    clearAll: 'Clear all',
-    selectAll: 'Select all',
-    legend: 'Sections',
+  /** The Sections page: the eight stamps, each opening its section. */
+  sectionsPage: {
+    title: 'Sections',
+    description: 'Tap a stamp to open that section.',
     newspapers: plural('{n} newspaper', '{n} newspapers'),
-    /** Typed in a small postmark ring: one short word. */
-    chosen: 'CHOSEN',
-    choose: 'CHOOSE',
   },
 
   settings: {
@@ -491,7 +464,7 @@ const en = {
       byline: 'Your account',
       printing: 'Appearance',
       'reading-room': 'Reading',
-      sections: 'Sections & papers',
+      muted: 'Muted papers & words',
       close: 'Delete account',
     },
     byline: {
@@ -534,10 +507,7 @@ const en = {
         options: { justified: 'Straight', ragged: 'Ragged right' },
       },
     },
-    sections: {
-      yours: 'Your sections',
-      none: 'None chosen, so your paper shows every section.',
-      edit: 'Edit my sections',
+    muted: {
       mutedPapers: 'Muted newspapers',
       noMutedPapers: 'No newspapers muted.',
       pickPaper: 'Choose a newspaper…',
@@ -580,8 +550,6 @@ const en = {
     cannotDelete: 'Accounts cannot be deleted right now. Please try again later.',
     deleteFailed: 'Could not delete the account. Please try again.',
     profileRetry: 'Could not save your profile. Please try again.',
-    topicsUpdateFailed: 'Could not update your topics. Please try again.',
-    topicsSaveFailed: 'Could not save your topics. Please try again.',
   },
 
   validation: {
@@ -597,8 +565,8 @@ const en = {
 
   auth: {
     benefits: [
-      { title: 'Only your sections', text: 'Eight sections from 30+ newspapers. Read the ones you like.' },
-      { title: 'On every device', text: 'Your sections, saved stories and settings follow you.' },
+      { title: 'Eight sections', text: 'Stories from 50+ newspapers. Mute the papers and words you do not want.' },
+      { title: 'On every device', text: 'Your saved stories, mutes and settings follow you.' },
       { title: 'Save for later', text: 'Keep the stories you like, sorted into folders.' },
     ],
     pictureAlt: 'A woman in a straw hat reading the paper in a green rocking chair (after Edward Penfield, 1897)',
@@ -607,8 +575,8 @@ const en = {
     login: {
       title: 'Log in',
       description: 'One press with your Google account. New here? The same button makes your free account.',
-      note: 'Your sections, saved stories and settings then follow you to every device. Google sends us only your name and email address.',
-      googleOff: 'Signing in is switched off right now. You can still read, save stories and choose sections in this browser.',
+      note: 'Your saved stories, mutes and settings then follow you to every device. Google sends us only your name and email address.',
+      googleOff: 'Signing in is switched off right now. You can still read, save stories and change Settings in this browser.',
       linkInvalid: 'That link is invalid or has expired. Please request a new one.',
       sessionExpired: 'Your session expired. Please log in again.',
       signInFailed: 'Signing in did not finish. Please try again.',

@@ -49,25 +49,34 @@ export function SectionRibbon({
   className?: string;
 }) {
   const { t } = useI18n();
+  // A section's Filter lists only that section's newspapers; the latest, a search and the front page list them all.
+  const scoped = current?.kind === 'section' ? papers.filter((p) => p.category_id === current.id) : papers;
+  // A filtered list (the latest, a section, a search) hands its newspapers on to the tabs: the latest keeps them all,
+  // a section only its own, so a tab never opens on an empty list. A newspaper's own page hands nothing on.
+  const carried = current && current.kind !== 'paper' ? activePapers : [];
+  const sectionOf = new Map(papers.map((p) => [paperSlug(p.name), p.category_id]));
+  const withPapers = (path: string, slugs: string[]) => (slugs.length > 0 ? `${path}?papers=${slugs.join(',')}` : path);
+  const latestHref = withPapers(LATEST_PATH, carried);
   return (
     <div className={className}>
       <div className="flex items-stretch gap-2 min-[400px]:gap-3 sm:gap-5">
         {/* The ribbon scrolls sideways whenever the departments do not all fit (styles: .dept-bar). */}
         <DeptBar label={t.toolbar.sections}>
-          <Link href={LATEST_PATH} className="dept-tab" aria-current={current?.kind === 'latest' ? 'page' : undefined} onClick={(event) => stayOnCurrentPage(event, LATEST_PATH)}>
+          <Link href={latestHref} className="dept-tab" aria-current={current?.kind === 'latest' ? 'page' : undefined} onClick={(event) => stayOnCurrentPage(event, latestHref)}>
             {t.toolbar.latest}
           </Link>
           {categories.map((category) => {
             const style = getCategoryStyle(category.name);
             const here = current?.kind === 'section' && current.id === category.id;
+            const href = withPapers(sectionPath(category.name), carried.filter((slug) => sectionOf.get(slug) === category.id));
             return (
               <Link
                 key={category.id}
-                href={sectionPath(category.name)}
+                href={href}
                 className="dept-tab"
                 aria-current={here ? 'page' : undefined}
                 data-section={style.key ?? undefined}
-                onClick={(event) => stayOnCurrentPage(event, sectionPath(category.name))}
+                onClick={(event) => stayOnCurrentPage(event, href)}
               >
                 {sectionText(t, style.key, category.name).name}
               </Link>
@@ -75,7 +84,7 @@ export function SectionRibbon({
           })}
         </DeptBar>
         {/* Search lives in the header bar (components/site/site-header.tsx), so the sections keep the width. */}
-        {papers.length > 0 && <FilterTicket papers={papers} categories={categories} active={activePapers} />}
+        {scoped.length > 0 && <FilterTicket papers={scoped} categories={categories} active={activePapers} />}
       </div>
     </div>
   );
@@ -83,7 +92,8 @@ export function SectionRibbon({
 
 /**
  * "Filter": one boxed ticket at the end of the ribbon, with the funnel from A. Pforr's patent drawing (1875), that
- * opens a printed checklist of every newspaper under its section's name. The reader ticks any number of them (All and
+ * opens a printed checklist of the newspapers under their section's name (on a section's page: only that section's).
+ * The reader ticks any number of them (All and
  * Clear at the top), and Apply at the foot prints the list they are on with only those newspapers (?papers=…; from
  * the front page or a newspaper's own page, the latest): nothing reloads until Apply. With newspapers chosen the
  * ticket is inked in brass and shows how many. Phones print the funnel and the word without the caret (below 360px

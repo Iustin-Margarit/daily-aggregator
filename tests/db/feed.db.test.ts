@@ -217,6 +217,7 @@ describe('what a visitor cannot see or do', () => {
 
   it('cannot call the admin and ingestion functions', async () => {
     assert.ok((await anon.rpc('admin_list_sources')).error);
+    assert.ok((await anon.rpc('admin_source_stats')).error, 'the papers’ weekly figures are for admins only');
     assert.ok((await anon.rpc('database_size_bytes')).error, 'the database size is for the server only');
     assert.ok((await anon.rpc('join_story_group', { p_article_id: '00000000-0000-0000-0000-000000000000' })).error, 'grouping stories is for ingestion only');
     assert.ok((await anon.rpc('ingest_articles', { p_source_id: '00000000-0000-0000-0000-000000000000', p_articles: [] })).error);

@@ -19,8 +19,8 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 
 **Reading**
 - **One front page for everyone** (`/`): the lead story beside "Latest dispatches" (ten one-line
-  headlines), then every section in brief (a photo story, four headlines, "All World news"). Readers'
-  own sections come first. 8 sections from 33 RSS sources, refreshed every hour.
+  headlines), then every section in brief (a photo story, four headlines, "All World news"). 8 sections
+  from 54 RSS sources, refreshed every hour; the Newsroom switches any of them on or off.
 - **Quick read**: pressing a headline opens the story in a sheet over the page (from the right on a
   computer, from the bottom on a phone) with the photo, summary, Save, Share and the way on to the
   publisher, and three more from the same desk at its foot. Close, Escape or Back return to the same
@@ -38,7 +38,7 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 - Pages are printed on the server; what every visitor sees alike (the sections, the newspapers and
   the front page of a visitor without mutes) is kept between requests and refreshed after every news
   fetch. Images are requested from each publisher's CDN at the size they are shown.
-- No sign-up wall: visitors read, search, choose sections, save stories and change Settings in their
+- No sign-up wall: visitors read, search, save stories and change Settings in their
   browser; signing in moves all of it into the account.
 - Hide a story, mute a newspaper, or mute words (Settings > Sections & papers).
 - A reading time ("4 min read") on stories, an "On this day" almanac (three anniversaries from
@@ -57,7 +57,7 @@ Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and 
 **Account**
 - Sign in with Google: the first sign-in makes the account (no passwords to keep; set-up in
   [docs/GOOGLE_SIGN_IN.md](docs/GOOGLE_SIGN_IN.md)).
-- Sections (`/sections`): press postage stamps to choose the sections of your front page.
+- Sections (`/sections`): eight postage stamps; press one to open that section.
 - Settings (`/settings`): byline (username) and avatar ink, Morning / Night / by-the-clock edition, type size, accent ink for section labels, muted
   sources, account deletion (after a fresh Google sign-in).
 
@@ -98,7 +98,7 @@ nothing heavy runs on your computer.
    npm run ingest               # fetch today's news (about a minute)
    npm run dev                  # http://localhost:3000
    ```
-4. Sign in with Google, pick your sections, and make yourself an admin with
+4. Sign in with Google, and make yourself an admin with
    `npm run make-admin -- you@example.com`; reload and open `/admin`.
 
 The `db:push:dev`, `db:push:prod` and `db:types` scripts in `package.json` name this project's own
@@ -151,17 +151,17 @@ Anything else can call the endpoint too:
 - Between cron runs the paper refreshes itself when people open the front page (at most hourly,
   `INGESTION_INTERVAL_MINUTES`); an external cron service (cron-job.org) can fetch every hour.
 - **The database never fills up**: every full fetch deletes unsaved articles older than
-  `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 33 feeds is
-  roughly 30,000 short rows, well under the free 500 MB.
+  `ARTICLE_RETENTION_DAYS` (30) and fetch logs older than 60 days. A month of news from 54 feeds is
+  roughly 34,000 short rows (about 100 MB), well under the free 500 MB.
 - Photos are loaded straight from each publisher's CDN, so they use none of Vercel's image or
   bandwidth allowance beyond the page itself.
 
 ### Visitors without an account
 
-Everyone can read, search, open stories, choose sections (kept in a cookie) and clip stories, with
-folders and notes (kept in the browser's storage, up to 200). An account adds the
-same things on every device and muted words; when a visitor signs in, their
-sections and clippings move into the account. Only Settings and the admin pages need a login.
+Everyone can read, search, open stories, clip stories into folders (kept in the
+browser's storage, up to 200), mute newspapers and words and change Settings. An account
+keeps the same things on every device; when a visitor signs in, their clippings, mutes and
+settings move into the account. Only the admin pages need a login.
 
 ## Security
 
@@ -233,7 +233,7 @@ app/                     routes (App Router)
   (auth)/                the login page (Continue with Google)
   (paper)/               front page, latest, sections, papers, search, story sheet, saved, settings
   (admin)/admin/         dashboard, sources, users
-  actions/               server actions (profile, onboarding, admin)
+  actions/               server actions (profile, admin)
   api/cron/ingest/       scheduled ingestion endpoint
   auth/                  Google sign-in callback
 components/              UI (ui/ = shadcn-style primitives)

@@ -37,7 +37,12 @@
   --o-street: 0.66;
   --o-grain: 0.14;
   position: relative;
-  height: var(--st-h);
+  /*
+   * The scene is drawn --st-h tall and anchored to the bottom; the banner shows its lower 90%, trimming bare sky above
+   * the lamps (they reach 80% up) so the street reads larger in the same drawing. The component measures --st-h, not
+   * this height, for the routes.
+   */
+  height: calc(var(--st-h) * 0.9);
   overflow: hidden;
   background: var(--st-sky);
   contain: paint;
@@ -45,24 +50,27 @@
   user-select: none;
 }
 
-/* Night edition: charcoal navy, slate and steel, with parchment-warm lamplight. */
+/*
+ * Night edition: charcoal navy, slate and steel, lit by amber gaslight. The townsfolk are near-solid silhouettes and
+ * the mist thinner, so the street reads crisp against the lit pavement rather than a uniform grey.
+ */
 .dark .st {
-  --st-ink: #0d1016;
-  --st-sky: linear-gradient(#262c3a, #2c3343 50%, #4a5264 90%, #3b4253);
-  --st-halo: rgb(230 213 167 / 0.24);
-  --st-mist: rgb(74 82 100 / 0.42);
+  --st-ink: #090b10;
+  --st-sky: linear-gradient(#232937, #2a3142 50%, #4d5468 88%, #3d4456);
+  --st-halo: rgb(255 186 96 / 0.3);
+  --st-mist: rgb(74 82 100 / 0.3);
   --st-vignette: rgb(5 7 12 / 0.5);
-  --st-moth: rgb(244 226 178 / 0.88);
-  --st-smoke: rgb(132 140 162 / 0.36);
-  --st-flame: rgb(255 214 138 / 0.95);
+  --st-moth: rgb(255 222 160 / 0.9);
+  --st-smoke: rgb(132 140 162 / 0.34);
+  --st-flame: rgb(255 196 104 / 1);
   --o-smoke: 0.72;
-  --o-cab: 0.72;
+  --o-cab: 0.82;
   --o-far: 0.3;
-  --o-mid: 0.44;
-  --o-lamp: 0.5;
-  --o-front: 0.82;
-  --o-back: 0.58;
-  --o-street: 0.72;
+  --o-mid: 0.5;
+  --o-lamp: 0.58;
+  --o-front: 0.93;
+  --o-back: 0.68;
+  --o-street: 0.8;
   --o-grain: 0.1;
 }
 
@@ -765,6 +773,13 @@
  * Sound on: the ticket is inked in brass with a gilt double rule, glows softly
  * like a lit window, and the gramophone gently rocks. Paused, the glow dims.
  */
+/* Sound off: the gramophone faded, so off and on differ even where the words are hidden (phones). */
+.st-sound[aria-pressed='false'] .ornament-mask {
+  opacity: 0.45;
+}
+.st-sound[aria-pressed='false']:hover .ornament-mask {
+  opacity: 0.8;
+}
 .st-sound[aria-pressed='true'] {
   color: var(--brass-ink);
   border-color: var(--ink-gold);

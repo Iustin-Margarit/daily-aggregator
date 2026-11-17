@@ -240,7 +240,8 @@ function SoundToggle() {
       title={playing ? t.street.soundTitlePlaying : t.street.soundTitle}
     >
       <Ornament name="gramophone" className="h-[1.05rem] [--ornament-ink:currentColor]" />
-      <span className="st-label">{t.street.sound}</span>
+      {/* The state in words ("Sound: off" / "Sound: on"); on phones only the gramophone, dimmed when off, lit when on. */}
+      <span className="st-label">{playing ? t.street.soundOn : t.street.soundOff}</span>
       <span className="sr-only">{t.street.soundSr}</span>
     </button>
   );
@@ -270,7 +271,9 @@ export function StreetTheatre({ className }: { className?: string }) {
     if (!element) return;
     // Routes are as long as the banner is wide (in banner heights), at least 6.
     const resize = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
+      const { width } = entry.contentRect;
+      // The scene's drawing height (--st-h); the banner shows only its lower part (street-theatre.css).
+      const height = parseFloat(getComputedStyle(element).getPropertyValue('--st-h')) || entry.contentRect.height;
       if (height > 0) element.style.setProperty('--span', Math.max(width / height, 6).toFixed(3));
     });
     // No animation work while the banner is scrolled out of view.

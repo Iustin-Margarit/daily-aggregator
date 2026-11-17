@@ -60,13 +60,10 @@ export function SectionsProof() {
     <div className="container py-8 sm:py-10" aria-busy="true">
       <TitleProof />
       <ScrollDivider className="mb-8 mt-8" />
-      <div className="grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)] lg:gap-0">
-        <MarginProof rows={3} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:pl-9 xl:grid-cols-4">
-          {Array.from({ length: 8 }, (_, i) => (
-            <Skeleton key={i} className="h-52 w-full sm:h-56" />
-          ))}
-        </div>
+      <div className="mx-auto grid max-w-[68rem] grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} className="h-52 w-full sm:h-56" />
+        ))}
       </div>
     </div>
   );

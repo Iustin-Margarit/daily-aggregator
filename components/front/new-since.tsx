@@ -15,24 +15,21 @@ function useLastVisit(): number | null {
 
 /**
  * Under Latest dispatches: "12 new stories since your last visit this morning." Counted like the
- * latest list the reader would open (their sections, their mutes); nothing on a first visit, when
+ * latest list the reader would open (every section, their mutes); nothing on a first visit, when
  * nothing is new, or while the count is on its way (it never pushes the lead story down: it sits in
  * the column beside it, and under it on phones).
  */
-export function NewSince({ categoryIds, signedIn, className }: { categoryIds: string[]; signedIn: boolean; className?: string }) {
+export function NewSince({ signedIn, className }: { signedIn: boolean; className?: string }) {
   const i18n = useI18n();
   const { t, plural, rich } = i18n;
   const since = useLastVisit();
   const [counted, setCounted] = useState<{ since: number; count: number; at: number } | null>(null);
-  const sections = categoryIds.join(',');
 
   useEffect(() => {
     if (since === null) return;
     let live = true;
-    const ids = sections ? sections.split(',') : [];
     createClient()
       .rpc('get_feed', {
-        p_category_ids: ids.length ? ids : undefined,
         p_since: new Date(since + 1).toISOString(),
         p_limit: 1,
         // A visitor's muted papers and words live in this browser; an account's are in the database.
@@ -45,7 +42,7 @@ export function NewSince({ categoryIds, signedIn, className }: { categoryIds: st
     return () => {
       live = false;
     };
-  }, [since, sections, signedIn]);
+  }, [since, signedIn]);
 
   if (since === null || !counted || counted.since !== since || counted.count === 0) return null;
   return (

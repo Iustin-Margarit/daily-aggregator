@@ -29,23 +29,19 @@ const byRank = (key: 'section_rank' | 'latest_rank') => (a: FrontRow, b: FrontRo
  * The front page from get_front_page's rows:
  * - the lead is the newest story with a photograph among the five newest (or the newest);
  * - the dispatches are the next newest headlines;
- * - each section gets a digest of its newest stories not already printed above, the
- *   reader's own sections first ("For you"), then the rest in the paper's order.
+ * - each section gets a digest of its newest stories not already printed above, in the
+ *   paper's order.
  * A section whose stories were all printed above repeats them rather than vanish.
  */
-export function buildFrontPage(rows: FrontRow[], categories: Category[], preferredIds: string[]): FrontPage {
+export function buildFrontPage(rows: FrontRow[], categories: Category[]): FrontPage {
   const latest = rows.filter((r) => r.latest_rank !== null).sort(byRank('latest_rank'));
   const withPhoto = latest.slice(0, 5).find((r) => r.image_url);
   const lead = withPhoto ?? latest[0] ?? null;
   const dispatches = latest.filter((r) => r !== lead).slice(0, DISPATCH_COUNT);
   const printed = new Set([lead?.id, ...dispatches.map((r) => r.id)]);
 
-  const ordered = [
-    ...categories.filter((c) => preferredIds.includes(c.id)),
-    ...categories.filter((c) => !preferredIds.includes(c.id)),
-  ];
   const digests: SectionDigest[] = [];
-  for (const category of ordered) {
+  for (const category of categories) {
     const all = rows.filter((r) => r.category_id === category.id && r.section_rank !== null).sort(byRank('section_rank'));
     if (all.length === 0) continue;
     const fresh = all.filter((r) => !printed.has(r.id));

@@ -4,8 +4,8 @@
  * settings.entries.<id> in lib/i18n/en.ts. Visitors without
  * an account see only the entries kept in their browser, numbered I to III.
  */
-const ENTRIES = ['byline', 'printing', 'reading-room', 'sections', 'close'] as const;
-const GUEST_ENTRIES = ['printing', 'reading-room', 'sections'] as const;
+const ENTRIES = ['byline', 'printing', 'reading-room', 'muted', 'close'] as const;
+const GUEST_ENTRIES = ['printing', 'reading-room', 'muted'] as const;
 const NUMERALS = ['I', 'II', 'III', 'IV', 'V'];
 
 export type LedgerEntryId = (typeof ENTRIES)[number];

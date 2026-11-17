@@ -90,6 +90,40 @@ describe('normalizeItem', () => {
     assert.equal(result.summary, 'The two companies agreed on new terms today.');
   });
 
+  it('takes a newsletter plug out of the summary', () => {
+    const result = normalizeItem(
+      item({
+        summaryHtml:
+          'Documents show draft reports backed the reporting. Sign up for Guardian Australia’s breaking news email. The watchdog later changed course.',
+      }),
+      { now: NOW },
+    );
+    assert.equal(result?.summary, 'Documents show draft reports backed the reporting. The watchdog later changed course.');
+    const cut = normalizeItem(item({ summaryHtml: 'The memorial stood by its account of events, the records show. Sign up for Guardian Aust' }), { now: NOW });
+    assert.equal(cut?.summary, 'The memorial stood by its account of events, the records show.');
+  });
+
+  it('cuts everything from "The post … appeared first on" on', () => {
+    const result = normalizeItem(
+      item({
+        summaryHtml:
+          'Ministers have spent a decade trying to ban it… The post Has the bill been blown up? appeared first on The Spectator Australia. What to read next: Unemployment falls | Parliament needs HR',
+      }),
+      { now: NOW },
+    );
+    assert.equal(result?.summary, 'Ministers have spent a decade trying to ban it…');
+  });
+
+  it('leaves out sponsored newsletters sent through a news feed', () => {
+    for (const summaryHtml of [
+      'Presented by EQT Energy & Environment The Big Story Senate steps toward passing permitting reform',
+      'Welcome to The Hill’s Defense newsletter {beacon} Defense & National Security The Big Story',
+    ]) {
+      assert.equal(normalizeItem(item({ title: 'Senate clears hurdle for permitting reform', summaryHtml }), { now: NOW }), null, summaryHtml);
+    }
+    assert.ok(normalizeItem(item({ summaryHtml: 'The bill was presented by the senator from Ohio on Monday.' }), { now: NOW }));
+  });
+
   it('uses the full content when the summary is too short', () => {
     const result = normalizeItem(
       item({ summaryHtml: 'Short', contentHtml: '<p>This full content paragraph is much longer than the summary.</p>' }),
@@ -157,6 +191,20 @@ describe('adverts and betting tips', () => {
       '49ers vs. Cowboys prediction, odds, time: NFL Week 10 picks from advanced model',
       'NFL longshot parlay picks, bets, player props for Week 10',
       'Sponsored: The best mattress of 2026',
+      // Coupon and deal pages (Wired)
+      '1Password Coupon: Score a Free Trial in November 2026',
+      'Wayfair Coupons: Up to 80% Off November 2026',
+      'Disney Plus Discount Codes: 52% Off November 2026',
+      'Klook Promo Code: 20% Off November 2026',
+      '10 Best Early Black Friday Headphone Deals (2026): Up to 50% Off',
+      'The 21 Best REI Holiday Sale Outdoor Deals (2026)',
+      'Thanksgiving Meal Deals Roundup (2026): Walmart, Amazon, Target',
+      // Game picks, odds and fantasy-team tips (CBS Sports, Forbes)
+      'Rockets vs. Heat NBA picks: A four-game win streak will end in Giannis Antetokounmpo vs. Kevin Durant showdown',
+      'College basketball picks, schedule: Predictions for Duke vs. Illinois and more Top 25 games on Tuesday',
+      'NFL Week 11 early odds: Bills, Chiefs favored by 16.5 points; Bengals line jumps after blowout',
+      'NFL DFS, Ravens vs. Chargers: Top daily Fantasy picks, lineup advice for Monday Night Football',
+      'Fantasy Football Week 11 Injury Report: Drake Maye, Brock Bowers And More',
     ]) {
       assert.equal(isAdvertTitle(title), true, title);
       assert.equal(normalizeItem(item({ title }), { now: NOW }), null, title);
@@ -171,6 +219,11 @@ describe('adverts and betting tips', () => {
       'Zuffa Boxing 13 results: Carlos Adames picks up win in promotional debut',
       'Against all odds, the Mars rover wakes up',
       'Here are our favorite deals from REI’s giant Holiday Sale',
+      '2027 NFL Draft order, team needs: Full first-round picks for all 32 teams entering Week 11',
+      'Black Friday shoppers queue overnight as retailers cut prices',
+      'EU agrees to resurrect cooperation deal with Syria',
+      'Shares fall 30% after a profit warning',
+      'Dodgers vs. Mets: Ohtani homers twice in the opener',
     ]) {
       assert.equal(isAdvertTitle(title), false, title);
     }

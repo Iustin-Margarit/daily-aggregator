@@ -1,59 +1,74 @@
 import type { Metadata } from 'next';
-import { getI18n } from '@/lib/i18n/server';
-import { cookies } from 'next/headers';
-import { TopicsForm } from '@/components/onboarding/topics-form';
+import Link from 'next/link';
 import { PageHeader } from '@/components/site/page-header';
 import { ScrollDivider } from '@/components/site/scroll-divider';
-import { GUEST_SECTIONS_COOKIE, parseGuestSections } from '@/lib/guest';
-import { createClient, getCurrentProfile, getSessionUser } from '@/lib/supabase/server';
+import { Engraving } from '@/components/site/engraving';
+import { getPapers, getSections } from '@/lib/data/cached';
+import { getCategoryStyle } from '@/lib/category-styles';
+import { sectionText } from '@/lib/i18n';
+import { getI18n } from '@/lib/i18n/server';
+import { sectionPath } from '@/lib/routes';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
   return { title: t.meta.sections };
 }
 
-export default async function OnboardingPage() {
-  const [user, jar, { t }, supabase] = await Promise.all([getSessionUser(), cookies(), getI18n(), createClient()]);
-  const w = t.onboarding;
-  // Sections a visitor chose before signing up (lib/guest.ts).
-  const guestSections = parseGuestSections(jar.get(GUEST_SECTIONS_COOKIE)?.value);
-
-  // The profile and the lists load side by side.
-  const [profile, { data: categories }, { data: preferences }, { data: sources }] = await Promise.all([
-    getCurrentProfile(),
-    supabase.from('categories').select('id, name, sort_order').order('sort_order').order('name'),
-    user
-      ? supabase.from('user_preferred_categories').select('category_id').eq('user_id', user.id)
-      : Promise.resolve({ data: guestSections.map((category_id) => ({ category_id })) }),
-    supabase.from('sources').select('category_id').eq('is_enabled', true),
+/**
+ * The paper's sections as eight postage stamps, centred: pressing a stamp opens that section's list.
+ * The same for every reader (the front page always prints every section), so it is read from the
+ * lists kept between requests (lib/data/cached.ts).
+ */
+export default async function SectionsPage() {
+  const [{ t, fmt, plural }, categories, papers] = await Promise.all([
+    getI18n(),
+    getSections().catch(() => []),
+    getPapers().catch(() => []),
   ]);
+  const w = t.sectionsPage;
 
-  const sourceCounts: Record<string, number> = {};
-  for (const source of sources ?? []) sourceCounts[source.category_id] = (sourceCounts[source.category_id] ?? 0) + 1;
-
-  const isGuest = !user || !profile;
-  const isFirstRun = !isGuest && !profile.has_completed_onboarding;
-  // A new account starts from the sections its owner chose as a visitor.
-  const selectedIds =
-    isFirstRun && (preferences ?? []).length === 0 ? guestSections : (preferences ?? []).map((p) => p.category_id);
+  const paperCounts: Record<string, number> = {};
+  for (const paper of papers) paperCounts[paper.category_id] = (paperCounts[paper.category_id] ?? 0) + 1;
 
   return (
     // Phones: a short header, so the first row of stamps shows without scrolling.
     <div className="container pb-8 pt-4 sm:py-10">
-      <PageHeader
-        kicker={isFirstRun ? w.kickerFirst : isGuest ? undefined : w.kicker}
-        title={isFirstRun ? w.titleFirst : w.title}
-        description={isFirstRun ? w.descriptionFirst : isGuest ? w.descriptionGuest : w.description}
-        compact
-      />
+      <PageHeader title={w.title} description={w.description} compact />
       <ScrollDivider className="my-2 sm:my-8 max-sm:[&_.ornament-mask]:w-[7.5rem]" />
-      <TopicsForm
-        categories={categories ?? []}
-        selectedIds={selectedIds}
-        isFirstRun={isFirstRun}
-        username={profile?.username ?? ''}
-        sourceCounts={sourceCounts}
-      />
+      <nav aria-label={w.title} className="mx-auto max-w-[68rem]">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+          {categories.map((category, index) => {
+            const style = getCategoryStyle(category.name);
+            const section = sectionText(t, style.key, category.name);
+            const count = paperCounts[category.id] ?? 0;
+            return (
+              <li key={category.id} className="flex">
+                <Link
+                  href={sectionPath(category.name)}
+                  data-section={style.key ?? undefined}
+                  className="section-stamp relative block w-full rounded-sm focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                >
+                  {/* A container: the section's name shrinks to the stamp's width ("Entertainment" on a phone). */}
+                  <span className="stamp @container flex h-full flex-col items-center gap-2.5 text-center">
+                    <span className="w-full text-left font-label text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-(--stamp-ink)">
+                      {fmt(t.sections.stampNo, { n: String(index + 1).padStart(2, '0') })}
+                    </span>
+                    <Engraving name={style.engraving} className="mx-auto h-16 max-w-[min(7rem,100%)]" />
+                    <span className="w-full min-w-0 px-1">
+                      {/* Sized to the stamp (11.5% of its width): "Entertainment" keeps clear of the inner rule on a
+                          320px phone. If a phone's own text size makes it larger still, it breaks with a hyphen. */}
+                      <span className="headline block text-[min(1.2rem,11.5cqi)] text-(--stamp-ink) [overflow-wrap:anywhere] hyphens-auto">{section.name}</span>
+                      {/* A very narrow stamp (a 280px phone) keeps only the name: the line would break inside its words. */}
+                      <span className="mt-1 block break-words text-[0.9rem] leading-snug text-muted-foreground @max-[8.5rem]:hidden">{section.description}</span>
+                    </span>
+                    {count > 0 && <span className="byline mt-auto">{plural(w.newspapers, count)}</span>}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </div>
   );
 }

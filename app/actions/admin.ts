@@ -34,6 +34,8 @@ export async function runIngestionNow(sourceId?: string): Promise<IngestionActio
     revalidatePath('/admin', 'layout');
     revalidatePath(FRONT_PATH);
     updateTag(STORIES_TAG);
+    // The newspapers too: a paper switched on or off outside the Newsroom (a migration) shows after "Fetch all".
+    updateTag(LISTS_TAG);
     const { sources, ...rest } = summary;
     return {
       ok: true,

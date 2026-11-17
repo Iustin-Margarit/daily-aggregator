@@ -234,6 +234,14 @@ function AccountMenu({ user }: { user: HeaderUser }) {
  * Morning or Night edition for visitors (signed-in readers find it in the account
  * menu): the woodcut sun or the man in the moon, whichever edition comes next.
  */
+/**
+ * The bar's icon buttons (Search, the edition, Settings) all alike. Phones: a framed 44px square (40px below 360px),
+ * the bar's title shrinking to leave them room (SiteHeader). From 640px: bare until pointed at or reached with the
+ * keyboard, then the same brass double frame (frame-double) on a card tint, in both editions.
+ */
+const ICON_BUTTON =
+  'inline-flex h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 items-center justify-center frame-double rounded-[3px] px-0 text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:border-(--ink-gold) focus-visible:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent';
+
 function EditionToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useHydrated();
@@ -241,18 +249,9 @@ function EditionToggle() {
   const { t } = useI18n();
   const label = night ? t.nav.toMorning : t.nav.toNight;
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => setTheme(night ? 'light' : 'dark')}
-      aria-label={label}
-      title={label}
-      // On every width. Phones: a framed 44px button (40px below 360px, beside Search and Log in) like Log in; the
-      // bar's title shrinks to leave them room (SiteHeader).
-      className="h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 frame-double rounded-[3px] px-0 [--ornament-ink:var(--brass-ink)] sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
-    >
+    <button type="button" onClick={() => setTheme(night ? 'light' : 'dark')} aria-label={label} title={label} className={ICON_BUTTON}>
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.45rem] sm:h-[1.35rem]" />
-    </Button>
+    </button>
   );
 }
 
@@ -271,10 +270,7 @@ function SearchButton({ pathname }: { pathname: string }) {
       title={t.toolbar.searchLabel}
       aria-current={active ? 'page' : undefined}
       onClick={(event) => stayOnCurrentPage(event, SEARCH_PATH)}
-      className={cn(
-        'inline-flex h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent',
-        active && 'bg-(--ink-gold)/15 sm:bg-(--ink-gold)/15',
-      )}
+      className={cn(ICON_BUTTON, active && 'bg-(--ink-gold)/15 sm:bg-(--ink-gold)/15')}
     >
       {/* The engraved magnifier's lines are fine: a hairline shadow in its own ink, twice, thickens them to the weight of
           the sun and cogwheel beside it (on a wrapper: a filter on the masked drawing itself would be masked away). */}
@@ -294,16 +290,17 @@ function SettingsButton({ pathname }: { pathname: string }) {
   const { t } = useI18n();
   const active = isActive(SETTINGS_PATH, pathname);
   return (
-    <Button
-      asChild
-      variant="ghost"
-      size="sm"
-      className={cn('hidden h-10 w-10 px-0 lg:inline-flex', active && 'bg-(--ink-gold)/15')}
+    <Link
+      href={SETTINGS_PATH}
+      aria-label={t.nav.settings}
+      title={t.nav.settingsHint}
+      aria-current={active ? 'page' : undefined}
+      onClick={(event) => stayOnCurrentPage(event, SETTINGS_PATH)}
+      // Wide screens only (phones reach Settings from the bottom bar); framed on hover like Search and the edition.
+      className={cn(ICON_BUTTON, 'hidden lg:inline-flex', active && 'bg-(--ink-gold)/15 sm:bg-(--ink-gold)/15')}
     >
-      <Link href={SETTINGS_PATH} aria-label={t.nav.settings} title={t.nav.settingsHint} aria-current={active ? 'page' : undefined} onClick={(event) => stayOnCurrentPage(event, SETTINGS_PATH)}>
-        <Ornament name="gear" className="h-[1.2rem] [--ornament-ink:var(--brass-ink)]" />
-      </Link>
-    </Button>
+      <Ornament name="gear" className="h-[1.2rem]" />
+    </Link>
   );
 }
 
