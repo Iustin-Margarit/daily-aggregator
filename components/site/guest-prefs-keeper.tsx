@@ -28,7 +28,7 @@ export function GuestPrefsKeeper({ signedIn }: { signedIn: boolean }) {
       return;
     }
     const mutes = readGuestMutes();
-    if (!hasGuestMirror() && mutes.sourceIds.length === 0 && mutes.words.length === 0) return;
+    if (!hasGuestMirror() && mutes.sourceIds.length === 0 && mutes.words.length === 0 && mutes.hiddenIds.length === 0) return;
 
     const mirror = readGuestMirror();
     void (async () => {
@@ -37,6 +37,7 @@ export function GuestPrefsKeeper({ signedIn }: { signedIn: boolean }) {
         accent: mirror.accent,
         mutedPapers: [...new Set([...(mirror.mutedPapers ?? []), ...mutes.sourceIds])],
         mutedWords: [...new Set([...(mirror.mutedWords ?? []), ...mutes.words])],
+        hiddenStories: [...new Set([...(mirror.hiddenStories ?? []), ...mutes.hiddenIds])],
       });
       if (!result.ok) return; // try again on the next page
       clearGuestPrefs();

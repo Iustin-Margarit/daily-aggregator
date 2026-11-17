@@ -7,9 +7,9 @@ import { SectionRibbon, type RibbonPlace } from '@/components/front/section-ribb
 import { Engraving } from '@/components/site/engraving';
 import { PageHeader } from '@/components/site/page-header';
 import { getCategoryStyle } from '@/lib/category-styles';
-import { getPapers } from '@/lib/data/cached';
+import { getPapers, ribbonPapers } from '@/lib/data/cached';
 import { getReaderContext } from '@/lib/data/reader';
-import { feedRpcArgs, firstParam, hasLeadPage, pageFromSearchParams, searchFromParams, sectionFromSlug, type SearchParams } from '@/lib/feed';
+import { feedRpcArgs, firstParam, hasLeadPage, pageFromSearchParams, pageHref, paperSlugsFromParams, searchFromParams, sectionFromSlug, type SearchParams } from '@/lib/feed';
 import { sectionText } from '@/lib/i18n';
 import { getI18n } from '@/lib/i18n/server';
 import { refreshNewsIfStale } from '@/lib/ingestion/auto-refresh';
@@ -28,7 +28,8 @@ const linkClass = 'font-medium not-italic text-foreground underline decoration-(
  * to the front page), the section ribbon, then the stories (components/feed/story-list.tsx).
  */
 export async function PaperPage({ list, params }: { list: ListKind; params: SearchParams }) {
-  const [i18n, reader] = await Promise.all([getI18n(), getReaderContext()]);
+  // The newspapers (kept between requests) for the ribbon's Filter ticket and a newspaper's own page.
+  const [i18n, reader, sources] = await Promise.all([getI18n(), getReaderContext(), getPapers().catch(() => null)]);
   const { t, fmt, rich, list: listOf } = i18n;
   const { supabase, userId, categories, preferredIds, guestMutes } = reader;
   const names = (ids: string[]) => categories.filter((c) => ids.includes(c.id)).map((c) => sectionText(t, getCategoryStyle(c.name).key, c.name).name);
@@ -68,7 +69,6 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
     );
   } else if (list.kind === 'paper') {
     // The 30-odd newspapers are few: find this one by the name in its address.
-    const sources = await getPapers().catch(() => null);
     const paper = (sources ?? []).find((s) => paperSlug(s.name) === list.slug.toLowerCase());
     if (!paper && sources) notFound();
     const category = categories.find((c) => c.id === paper?.category_id);
@@ -77,6 +77,7 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
     const site = safeExternalUrl(paper?.website_url ?? null);
     filters = { categoryIds: [], sourceIds: paper ? [paper.id] : [], search: '' };
     path = `${PAPER_PREFIX}${list.slug.toLowerCase()}`;
+    place = { kind: 'paper', slug: list.slug.toLowerCase() };
     head = (
       <PageHeader
         compact
@@ -152,6 +153,33 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
     );
   }
 
+  // Filter > Apply: only some newspapers (?papers=…, their address names), on the latest, a section or a search.
+  const chosenPapers =
+    list.kind === 'paper'
+      ? []
+      : paperSlugsFromParams(params).flatMap((slug) => {
+          const paper = (sources ?? []).find((s) => paperSlug(s.name) === slug);
+          return paper ? [paper] : [];
+        });
+  const unfiltered = pageHref(path, query, 1);
+  if (chosenPapers.length > 0) {
+    filters = { ...filters, sourceIds: chosenPapers.map((p) => p.id) };
+    query = { ...query, papers: chosenPapers.map((p) => paperSlug(p.name)).join(',') };
+  }
+  // The ribbon's Filter shows how many are chosen (a newspaper's own page counts as one).
+  const activePapers = list.kind === 'paper' ? [list.slug.toLowerCase()] : chosenPapers.map((p) => paperSlug(p.name));
+  const paperNames = chosenPapers.map((p) => p.name);
+  const filteredLine = chosenPapers.length > 0 && (
+    <p className="mt-3 text-pretty text-center text-[0.95rem] italic text-muted-foreground">
+      {paperNames.length <= 3
+        ? fmt(t.list.filteredBy, { list: listOf(paperNames) })
+        : fmt(t.list.filteredMany, { first: paperNames[0], second: paperNames[1], n: paperNames.length - 2 })}{' '}
+      <Link href={unfiltered} className={linkClass}>
+        {t.list.everyPaper}
+      </Link>
+    </p>
+  );
+
   const page = pageFromSearchParams(params);
   // An empty search asks for words first; nothing to look up.
   const nothingToFind = list.kind === 'search' && !filters.search;
@@ -161,16 +189,16 @@ export async function PaperPage({ list, params }: { list: ListKind; params: Sear
   if (error) console.error('[list] could not load the stories:', error.message);
   after(() => refreshNewsIfStale());
 
-  // On the search page the departments stand above the form, so the ribbon's Search ticket (where you are) is
-  // not mistaken for the form's own Search button beneath it.
+  // On the search page the departments stand above the head, so the search form follows its title directly.
   const searching = list.kind === 'search';
-  const ribbon = <SectionRibbon categories={categories} current={place} className={searching ? 'mb-6 sm:mb-8' : 'mt-6 sm:mt-8'} />;
+  const ribbon = <SectionRibbon categories={categories} papers={ribbonPapers(sources)} activePapers={activePapers} current={place} className={searching ? 'mb-6 sm:mb-8' : 'mt-6 sm:mt-8'} />;
 
   return (
     <div className="container pt-6 sm:pt-9">
       {searching && ribbon}
       {head}
       {!searching && ribbon}
+      {filteredLine}
       {!nothingToFind && (
         <StoryList
           articles={(data ?? []) as FeedArticle[]}

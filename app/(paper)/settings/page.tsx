@@ -9,7 +9,6 @@ import {
   ProfileSection,
   ReadingRoomSection,
   SectionsAndSourcesSection,
-  type HiddenStory,
 } from '@/components/profile/settings-sections';
 import { ledgerIndex } from '@/components/profile/ledger-index';
 import { PageHeader } from '@/components/site/page-header';
@@ -49,12 +48,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           supabase.from('muted_sources').select('source_id, sources(name)').eq('user_id', session.id),
           supabase.from('user_preferred_categories').select('category_id').eq('user_id', session.id),
           supabase.from('muted_keywords').select('keyword').eq('user_id', session.id).order('keyword'),
-          supabase
-            .from('hidden_articles')
-            .select('article_id, articles(title, slug)')
-            .eq('user_id', session.id)
-            .order('created_at', { ascending: false })
-            .limit(50),
         ])
       : null,
   ]);
@@ -67,11 +60,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   let sectionIds: string[];
   let muted: { id: string; name: string }[];
   let keywords: string[];
-  let hidden: HiddenStory[] = [];
   if (account) {
-    const [{ data: mutedRows }, { data: preferences }, { data: mutedWords }, { data: hiddenRows }] = account;
-    // Stories that have since left the paper (older than 30 days) have nothing to show again.
-    hidden = (hiddenRows ?? []).flatMap((h) => (h.articles ? [{ id: h.article_id, title: h.articles.title, slug: h.articles.slug }] : []));
+    const [{ data: mutedRows }, { data: preferences }, { data: mutedWords }] = account;
     sectionIds = (preferences ?? []).map((p) => p.category_id);
     muted = (mutedRows ?? []).map((m) => ({ id: m.source_id, name: m.sources?.name ?? w.unknownSource }));
     keywords = (mutedWords ?? []).map((k) => k.keyword);
@@ -122,7 +112,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               sources={sources}
               categories={categories}
               keywords={keywords}
-              hidden={hidden}
             />
             {/* ?delete=confirm: back from "Confirm with Google", so the delete dialog opens again. */}
             {user && <DangerZone openOnLoad={query.delete === 'confirm'} />}

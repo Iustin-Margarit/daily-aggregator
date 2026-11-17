@@ -2,7 +2,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { mutedArgs } from '@/lib/feed';
-import { guestMutesFrom } from '@/lib/guest';
+import { guestMutesFrom, type GuestMutes } from '@/lib/guest';
 import { createClient, getSessionUser } from '@/lib/supabase/server';
 import type { AlsoReported, ArticleDetail, RelatedArticle } from '@/lib/types';
 
@@ -24,10 +24,15 @@ export const getArticle = cache(async (slugOrId: string): Promise<ArticleDetail 
   return (data as ArticleDetail | null) ?? null;
 });
 
-/** A visitor's muted newspapers and words (in their cookies); an account's are in the database. */
+/** A visitor's muted newspapers and words and hidden stories (in their cookies); an account's are in the database. */
 async function readerMutes() {
   const [supabase, user, jar] = await Promise.all([createClient(), getSessionUser(), cookies()]);
   return { supabase, mutes: user ? undefined : guestMutesFrom((name) => jar.get(name)?.value) };
+}
+
+/** The two lists leave out a visitor's hidden stories here (the database functions leave out an account's). */
+function withoutHidden<T extends { id: string }>(stories: T[], mutes: GuestMutes | undefined): T[] {
+  return mutes?.hiddenIds.length ? stories.filter((story) => !mutes.hiddenIds.includes(story.id)) : stories;
 }
 
 /**
@@ -39,7 +44,7 @@ export async function getAlsoReported(articleId: string, limit = 5): Promise<Als
   const { supabase, mutes } = await readerMutes();
   const { data, error } = await supabase.rpc('get_also_reported', { p_article_id: articleId, p_limit: limit, ...mutedArgs(mutes) });
   if (error) console.error('[story] could not load also reported by:', error.message);
-  return (data ?? []) as AlsoReported[];
+  return withoutHidden((data ?? []) as AlsoReported[], mutes);
 }
 
 /**
@@ -51,5 +56,5 @@ export async function getMoreFromDesk(articleId: string, limit = 3): Promise<Rel
   const { supabase, mutes } = await readerMutes();
   const { data, error } = await supabase.rpc('get_related_articles', { p_article_id: articleId, p_limit: limit, ...mutedArgs(mutes) });
   if (error) console.error('[story] could not load more from the desk:', error.message);
-  return (data ?? []) as RelatedArticle[];
+  return withoutHidden((data ?? []) as RelatedArticle[], mutes);
 }

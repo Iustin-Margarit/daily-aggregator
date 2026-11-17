@@ -28,7 +28,7 @@ import { editionLabel } from '@/lib/site';
 import { createClient } from '@/lib/supabase/client';
 import { useClientValue, useHydrated } from '@/lib/use-client-value';
 import { cn } from '@/lib/utils';
-import { FRONT_PATH, SECTIONS_PATH, SETTINGS_PATH, isPaperPath, loginPath } from '@/lib/routes';
+import { FRONT_PATH, SEARCH_PATH, SECTIONS_PATH, SETTINGS_PATH, isPaperPath, loginPath } from '@/lib/routes';
 
 export type HeaderUser = {
   email: string | null;
@@ -247,12 +247,41 @@ function EditionToggle() {
       onClick={() => setTheme(night ? 'light' : 'dark')}
       aria-label={label}
       title={label}
-      // On every width. Phones: a framed 44px button like Log in beside it; the
+      // On every width. Phones: a framed 44px button (40px below 360px, beside Search and Log in) like Log in; the
       // bar's title shrinks to leave them room (SiteHeader).
-      className="h-11 w-11 shrink-0 frame-double rounded-[3px] px-0 [--ornament-ink:var(--brass-ink)] sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
+      className="h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 frame-double rounded-[3px] px-0 [--ornament-ink:var(--brass-ink)] sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent"
     >
       <Ornament name={night ? 'sun' : 'moon'} className="h-[1.45rem] sm:h-[1.35rem]" />
     </Button>
+  );
+}
+
+/**
+ * Search, for everyone, always one press away in the bar (it used to be a ticket in the section ribbon, which
+ * left the sections too little room on phones): the brass magnifier in a framed square like the edition button
+ * beside it; from 640px a plain button like Settings. Lit on the search page.
+ */
+function SearchButton({ pathname }: { pathname: string }) {
+  const { t } = useI18n();
+  const active = pathname === SEARCH_PATH;
+  return (
+    <Link
+      href={SEARCH_PATH}
+      aria-label={t.toolbar.searchTab}
+      title={t.toolbar.searchLabel}
+      aria-current={active ? 'page' : undefined}
+      onClick={(event) => stayOnCurrentPage(event, SEARCH_PATH)}
+      className={cn(
+        'inline-flex h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-10 sm:w-10 sm:border-transparent sm:bg-transparent',
+        active && 'bg-(--ink-gold)/15 sm:bg-(--ink-gold)/15',
+      )}
+    >
+      {/* The engraved magnifier's lines are fine: a hairline shadow in its own ink, twice, thickens them to the weight of
+          the sun and cogwheel beside it (on a wrapper: a filter on the masked drawing itself would be masked away). */}
+      <span className="inline-flex [filter:drop-shadow(0_0_0.5px_var(--brass-ink))_drop-shadow(0_0_0.5px_var(--brass-ink))]" aria-hidden="true">
+        <Ornament name="magnifier" className="h-[1.55rem] -rotate-[30deg] sm:h-[1.7rem]" />
+      </span>
+    </Link>
   );
 }
 
@@ -339,6 +368,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
         </div>
         <NavTabs user={user} pathname={pathname} />
         <div className="flex items-center justify-end gap-1 min-[400px]:gap-1.5 sm:gap-2 lg:gap-1.5 xl:gap-2">
+          <SearchButton pathname={pathname} />
           {user ? (
             <AccountMenu user={user} />
           ) : (
@@ -353,7 +383,7 @@ export function SiteHeader({ user }: { user: HeaderUser | null }) {
                 href={loginPath(pathname)}
                 aria-label={t.nav.logIn}
                 title={t.nav.logIn}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+                className="inline-flex h-10 w-10 min-[360px]:h-11 min-[360px]:w-11 shrink-0 items-center justify-center frame-double rounded-[3px] text-foreground [--ornament-ink:var(--brass-ink)] transition-colors hover:bg-card focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
               >
                 <Ornament name="key" className="h-[0.9rem] -rotate-[30deg]" />
               </Link>

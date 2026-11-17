@@ -14,7 +14,7 @@ import { sectionPath } from '@/lib/routes';
 /**
  * One section on the front page: its postage stamp and name at the head (both
  * links to the section), its newest story with a photograph, a few more
- * headlines, and "All World news" at the foot.
+ * headlines (each with a small picture when it has one), and "All World news" at the foot.
  */
 export function SectionDigest({ digest, number, userId }: { digest: Digest; number: number; userId: string | null }) {
   const { t, fmt } = useI18n();
@@ -51,7 +51,7 @@ export function SectionDigest({ digest, number, userId }: { digest: Digest; numb
           <ArticleCard article={photo} userId={userId} variant="digest" />
         </div>
       )}
-      {lines.length > 0 && <HeadlineList articles={lines} className={photo ? 'mt-4 border-t border-rule/30 pt-3' : 'pt-4'} />}
+      {lines.length > 0 && <HeadlineList articles={lines} thumbnails className={photo ? 'mt-4 border-t border-rule/30 pt-3' : 'pt-4'} />}
 
       <Link
         href={href}

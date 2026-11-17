@@ -8,9 +8,11 @@ import { DEFAULT_ACCENT, HEX_COLOR } from '@/lib/colors';
 import {
   GUEST_ACCENT_COOKIE,
   GUEST_MUTED_PAPERS_COOKIE,
+  GUEST_HIDDEN_COOKIE,
   GUEST_MUTED_WORDS_COOKIE,
   parseGuestAccent,
   parseGuestMutedPapers,
+  parseGuestHidden,
   parseGuestMutedWords,
 } from '@/lib/guest';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -78,7 +80,7 @@ export async function saveAccentInk(color: string): Promise<ActionResult> {
 /**
  * A visitor who signs in brings what they chose in this browser
  * (components/site/guest-prefs-keeper.tsx): their muted newspapers and words
- * join the account's, and their type size and ink are used if the account
+ * and the stories they hid join the account's, and their type size and ink are used if the account
  * still has the defaults (a new account; an account's own choice wins).
  * Everything is checked again here and written as the signed-in reader (RLS).
  */
@@ -87,12 +89,14 @@ export async function adoptGuestPreferences(input: {
   accent?: string;
   mutedPapers?: string[];
   mutedWords?: string[];
+  hiddenStories?: string[];
 }): Promise<{ ok: boolean; moved: number }> {
   const { supabase, user } = await requireUser();
   if (!user || typeof input !== 'object' || input === null) return { ok: false, moved: 0 };
 
   const papers = parseGuestMutedPapers(Array.isArray(input.mutedPapers) ? input.mutedPapers.join(',') : '');
   const words = parseGuestMutedWords(Array.isArray(input.mutedWords) ? input.mutedWords.join('|') : '');
+  const hidden = parseGuestHidden(Array.isArray(input.hiddenStories) ? input.hiddenStories.join(',') : '');
   let ok = true;
 
   if (papers.length) {
@@ -100,6 +104,14 @@ export async function adoptGuestPreferences(input: {
       .from('muted_sources')
       .upsert(papers.map((source_id) => ({ user_id: user.id, source_id })), { onConflict: 'user_id,source_id', ignoreDuplicates: true });
     if (error) ok = false;
+  }
+  if (hidden.length) {
+    const rows = hidden.map((article_id) => ({ user_id: user.id, article_id }));
+    const { error } = await supabase.from('hidden_articles').upsert(rows, { onConflict: 'user_id,article_id', ignoreDuplicates: true });
+    // A story that has since left the paper fails the whole batch: then one by one, skipping those.
+    if (error) {
+      for (const row of rows) await supabase.from('hidden_articles').upsert(row, { onConflict: 'user_id,article_id', ignoreDuplicates: true });
+    }
   }
   for (const keyword of words) {
     // One by one: the database allows 50 words an account, and a word it refuses must not stop the rest.
@@ -124,8 +136,8 @@ export async function adoptGuestPreferences(input: {
   }
 
   const jar = await cookies();
-  for (const name of [GUEST_MUTED_PAPERS_COOKIE, GUEST_MUTED_WORDS_COOKIE, GUEST_ACCENT_COOKIE]) jar.delete(name);
-  if (papers.length || words.length || Object.keys(appearance).length) revalidatePath('/', 'layout');
+  for (const name of [GUEST_MUTED_PAPERS_COOKIE, GUEST_MUTED_WORDS_COOKIE, GUEST_HIDDEN_COOKIE, GUEST_ACCENT_COOKIE]) jar.delete(name);
+  if (papers.length || words.length || hidden.length || Object.keys(appearance).length) revalidatePath('/', 'layout');
   return { ok, moved: papers.length + words.length };
 }
 

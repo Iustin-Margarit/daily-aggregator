@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { mutedArgs } from '@/lib/feed';
+import { hiddenArgs, mutedArgs } from '@/lib/feed';
 import { readGuestMutes } from '@/lib/guest-prefs';
 import { useI18n } from '@/lib/i18n/client';
 import { subscribeVisit, visitSince, visitWhen, visitWhenText } from '@/lib/last-visit';
@@ -36,7 +36,7 @@ export function NewSince({ categoryIds, signedIn, className }: { categoryIds: st
         p_since: new Date(since + 1).toISOString(),
         p_limit: 1,
         // A visitor's muted papers and words live in this browser; an account's are in the database.
-        ...(signedIn ? {} : mutedArgs(readGuestMutes())),
+        ...(signedIn ? {} : { ...mutedArgs(readGuestMutes()), ...hiddenArgs(readGuestMutes()) }),
       })
       .then(({ data, error }) => {
         if (!live || error) return;
