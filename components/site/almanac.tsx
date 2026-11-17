@@ -72,7 +72,7 @@ export function AlmanacTile({
 }) {
   if (layout === 'ear') {
     return (
-      <div className={cn('flex flex-col items-center justify-center gap-1.5 px-3 py-2 text-center', className)}>
+      <div className={cn('flex flex-col items-center justify-center gap-1 px-3 py-1.5 text-center', className)}>
         <p className="section-head w-full whitespace-nowrap font-label text-[0.68rem] tracking-[0.18em] text-muted-foreground">{label}</p>
         {/* Both instruments stand on the same line in the same box, so the lines under them stay level across the masthead. */}
         <div className="flex h-[8.25rem] items-end justify-center">{picture}</div>

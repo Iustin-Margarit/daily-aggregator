@@ -59,6 +59,24 @@ describe('get_feed for a visitor', () => {
     assert.ok(!(data ?? []).some((row) => row.id === page[0].id));
   });
 
+  it('leaves a visitor’s hidden story out of the lists, but a search still finds it', async () => {
+    const story = page[1];
+    const { data, error } = await anon.rpc('get_feed', { p_limit: 30, p_hidden_ids: [story.id] });
+    assert.equal(error, null, error?.message);
+    assert.ok((data ?? []).length > 0);
+    assert.ok(!(data ?? []).some((row) => row.id === story.id));
+    // Searching its headline's longest word (within its paper, so it is on the first page).
+    const word = story.title.split(/[^p{L}p{N}]+/u).sort((x, y) => y.length - x.length)[0];
+    const { data: found, error: searchError } = await anon.rpc('get_feed', {
+      p_limit: 60,
+      p_search: word,
+      p_source_ids: [story.source_id],
+      p_hidden_ids: [story.id],
+    });
+    assert.equal(searchError, null, searchError?.message);
+    assert.ok((found ?? []).some((row) => row.id === story.id), `a search for "${word}" finds the hidden story`);
+  });
+
   it('keeps to the chosen sections', async () => {
     const section = page[0].category_id;
     const { data, error } = await anon.rpc('get_feed', { p_limit: 30, p_category_ids: [section] });
@@ -171,6 +189,14 @@ describe('get_front_page for a visitor', () => {
     assert.equal(error, null, error?.message);
     assert.ok((data ?? []).length > 0);
     assert.ok((data ?? []).every((r) => r.source_id !== muted && r.id !== rows[0].id));
+  });
+
+  it('leaves out a visitor’s hidden stories', async () => {
+    const hidden = rows.slice(0, 2).map((r) => r.id);
+    const { data, error } = await anon.rpc('get_front_page', { p_hidden_ids: hidden });
+    assert.equal(error, null, error?.message);
+    assert.ok((data ?? []).length > 0);
+    assert.ok(!(data ?? []).some((r) => hidden.includes(r.id)));
   });
 
   it('keeps its limits', async () => {

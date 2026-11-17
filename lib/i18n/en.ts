@@ -239,6 +239,7 @@ const en = {
   /** The front page (V2): the digest of every section and the welcome slip. */
   front: {
     allLatest: 'All the latest',
+    moreDispatches: 'More dispatches',
     allSection: 'All {name} news',
     sectionsTitle: 'Section by section',
     sectionsNote: 'The newest stories from every section.',
@@ -260,6 +261,10 @@ const en = {
     searchTitle: 'Search the paper',
     searchPrompt: 'Type a word or two, then press Search.',
     searchButton: 'Search',
+    /** Under the ribbon of a list filtered by newspaper (Filter > Apply). */
+    filteredBy: 'Only from {list}.',
+    filteredMany: 'Only from {first}, {second} and {n} more.',
+    everyPaper: 'Show every newspaper',
   },
   toolbar: {
     latest: 'Latest',
@@ -267,6 +272,16 @@ const en = {
     sections: 'Sections',
     search: 'Search headlines…',
     searchLabel: 'Search headlines',
+    /** The Filter ticket at the end of the section ribbon: a checklist of newspapers, applied with one press. */
+    filter: 'Filter',
+    filterLabel: 'Filter by newspaper',
+    filterActive: plural('Filter by newspaper: {n} newspaper chosen', 'Filter by newspaper: {n} newspapers chosen'),
+    filterTitle: 'Show stories from',
+    filterAll: 'All',
+    filterClear: 'Clear',
+    filterApply: 'Apply',
+    filterApplyCount: plural('Apply: {n} newspaper', 'Apply: {n} newspapers'),
+    filterEvery: 'Apply: every newspaper',
   },
 
   pagination: {
@@ -287,6 +302,13 @@ const en = {
     /** Shown on the Share button for a moment after the link was copied. */
     copied: 'Copied',
     mute: 'Mute {source}',
+    unmute: 'Unmute {source}',
+    /** Beside the Unmute item once a newspaper is muted from the sheet. */
+    mutedTag: 'Muted',
+    /** The slip printed in a hidden story's place (Undo brings it back, × folds the slip away). */
+    hiddenSlip: 'Story hidden',
+    hiddenSlipNote: 'It will not appear in your paper again (a search still finds it).',
+    dismissSlip: 'Dismiss',
     readDispatch: 'Read dispatch',
     save: 'Save',
     saved: 'Saved',
@@ -347,7 +369,10 @@ const en = {
     shareTitle: 'Share this story with someone',
     hideFromFeed: 'Hide from my paper',
     hiddenFromFeed: 'Hidden from your paper',
-    mutedNote: 'Their stories will no longer appear in your paper. You can bring them back in Settings.',
+    /** In the sheet's More menu on a story the reader hid (a search still finds it). */
+    unhide: 'Unhide this story',
+    hiddenTag: 'Hidden',
+    mutedNote: 'Their stories will no longer appear in your paper.',
     noSummary: 'The publisher did not include a summary for this story.',
     fullReport: 'Read the full report at {source}',
     summaryNote: 'You are reading a summary. The complete article, with all its reporting, is on the publisher’s website.',
@@ -527,10 +552,6 @@ const en = {
       muteWord: 'Mute word',
       noWords: 'No words muted.',
       yourWords: 'Your muted words',
-      hiddenStories: 'Hidden stories',
-      showAgain: 'Show again',
-      showAgainLabel: 'Show “{title}” again',
-      showAgainFailed: 'Could not show the story again',
       unmuteWord: 'Unmute “{word}”',
       alreadyMuted: '“{word}” is already muted.',
       tooManyWords: 'You can mute at most {max} words. Unmute one first.',

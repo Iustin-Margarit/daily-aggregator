@@ -1,10 +1,13 @@
 import { accentVariables } from '@/lib/colors';
 import {
   GUEST_ACCENT_COOKIE,
+  GUEST_HIDDEN_COOKIE,
+  GUEST_MAX_HIDDEN,
   GUEST_MUTED_PAPERS_COOKIE,
   GUEST_MUTED_WORDS_COOKIE,
   guestMutesFrom,
   parseGuestAccent,
+  parseGuestHidden,
   parseGuestMutedPapers,
   parseGuestMutedWords,
   serializeGuestMutedWords,
@@ -32,6 +35,8 @@ export type GuestMirror = {
   accent?: string;
   mutedPapers?: string[];
   mutedWords?: string[];
+  /** Stories hidden from the paper (article ids, newest last). */
+  hiddenStories?: string[];
 };
 
 export function readCookie(name: string): string | undefined {
@@ -57,6 +62,7 @@ export function readGuestMirror(): GuestMirror {
     if (accent) out.accent = accent;
     if (Array.isArray(raw.mutedPapers)) out.mutedPapers = parseGuestMutedPapers(raw.mutedPapers.join(','));
     if (Array.isArray(raw.mutedWords)) out.mutedWords = parseGuestMutedWords(raw.mutedWords.join('|'));
+    if (Array.isArray(raw.hiddenStories)) out.hiddenStories = parseGuestHidden(raw.hiddenStories.join(','));
     return out;
   } catch {
     return {};
@@ -74,7 +80,7 @@ function updateMirror(change: GuestMirror) {
 /** True when this browser holds choices a visitor made. */
 export function hasGuestMirror(): boolean {
   const mirror = readGuestMirror();
-  return Boolean(mirror.fontSize || mirror.accent || mirror.mutedPapers?.length || mirror.mutedWords?.length);
+  return Boolean(mirror.fontSize || mirror.accent || mirror.mutedPapers?.length || mirror.mutedWords?.length || mirror.hiddenStories?.length);
 }
 
 /** Forgets the visitor's choices (once they are in the account). The type size cookie stays: it is the page's. */
@@ -86,6 +92,7 @@ export function clearGuestPrefs() {
   }
   writeCookie(GUEST_MUTED_PAPERS_COOKIE, null);
   writeCookie(GUEST_MUTED_WORDS_COOKIE, null);
+  writeCookie(GUEST_HIDDEN_COOKIE, null);
   writeCookie(GUEST_ACCENT_COOKIE, null);
 }
 
@@ -128,6 +135,21 @@ export function saveGuestMutes({ sourceIds, words }: GuestMutes) {
   updateMirror({ mutedPapers: sourceIds, mutedWords: words });
 }
 
+// ------------------------------------------------------------ hidden stories
+
+/** The stories the visitor hid from their paper, from this browser's cookie (newest last). */
+export function readGuestHidden(): string[] {
+  return parseGuestHidden(readCookie(GUEST_HIDDEN_COOKIE));
+}
+
+/** Hides a story from the visitor's paper (or shows it again): the cookie for the server, the mirror for safety. */
+export function setGuestHidden(articleId: string, hidden: boolean) {
+  const others = readGuestHidden().filter((id) => id !== articleId);
+  const ids = hidden ? [...others, articleId].slice(-GUEST_MAX_HIDDEN) : others;
+  writeCookie(GUEST_HIDDEN_COOKIE, ids.join(','));
+  updateMirror({ hiddenStories: ids });
+}
+
 /**
  * Puts back cookies the browser dropped while localStorage kept the choice.
  * True when something was put back (the page should then be printed again).
@@ -151,6 +173,10 @@ export function restoreGuestCookies(): boolean {
   }
   if (mirror.mutedWords?.length && mutes.words.length === 0) {
     writeCookie(GUEST_MUTED_WORDS_COOKIE, serializeGuestMutedWords(mirror.mutedWords));
+    restored = true;
+  }
+  if (mirror.hiddenStories?.length && mutes.hiddenIds.length === 0) {
+    writeCookie(GUEST_HIDDEN_COOKIE, mirror.hiddenStories.join(','));
     restored = true;
   }
   return restored;

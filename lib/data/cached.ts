@@ -28,6 +28,11 @@ function anonClient() {
 
 export type Paper = { id: string; name: string; category_id: string; website_url: string | null; description: string | null };
 
+/** The newspapers as the ribbon's Papers ticket lists them: only what it prints, to keep the page small. */
+export function ribbonPapers(papers: Paper[] | null): { id: string; name: string; category_id: string }[] {
+  return (papers ?? []).map(({ id, name, category_id }) => ({ id, name, category_id }));
+}
+
 export const getSections = unstable_cache(
   async (): Promise<Category[]> => {
     const { data, error } = await anonClient().from('categories').select('id, name, sort_order').order('sort_order').order('name');

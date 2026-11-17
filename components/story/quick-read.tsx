@@ -201,7 +201,8 @@ function Sheet({
                 )}
 
                 <div className="mt-6">
-                  <ArticleActionsBar article={story} userId={userId} />
+                  {/* Hide closes the sheet: the story's place on the page shows the hidden slip. */}
+                  <ArticleActionsBar article={story} userId={userId} onHidden={onClose} />
                 </div>
 
                 {extras}

@@ -1,9 +1,9 @@
-import { parseGuestSections } from '../lib/guest';
+import { GUEST_MAX_HIDDEN, guestMutesFrom, noGuestMutes, parseGuestHidden, parseGuestSections } from '../lib/guest';
 import { toClipping } from '../lib/guest-clippings';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { isLightColor, shade } from '../lib/colors';
-import { FEED_PAGE_SIZE, FIRST_PAGE_SIZE, feedRpcArgs, gridGaps, pageCount, pageFromSearchParams, pageHref, queryWithout, searchFromParams, sectionFromSlug, visiblePages } from '../lib/feed';
+import { FEED_PAGE_SIZE, FIRST_PAGE_SIZE, feedRpcArgs, gridGaps, pageCount, pageFromSearchParams, pageHref, paperSlugsFromParams, queryWithout, searchFromParams, sectionFromSlug, visiblePages } from '../lib/feed';
 import { buildFrontPage, DIGEST_LINES, type FrontRow } from '../lib/front-page';
 import { isPaperPath, loginPath, paperPath, paperSlug, searchPath, sectionPath, sectionSlug, storyPath } from '../lib/routes';
 import { recallStory, rememberStory } from '../lib/story-cache';
@@ -234,6 +234,32 @@ describe('guest mode', () => {
     assert.deepEqual(parseGuestSections(`${a},${b},${a}`), [a, b]);
     assert.deepEqual(parseGuestSections(`${a},not-a-uuid,'; drop table x`), [a]);
     assert.deepEqual(parseGuestSections(undefined), []);
+  });
+
+  it('reads the stories a visitor hid, keeping the newest when there are too many', () => {
+    const a = '11111111-1111-4111-8111-111111111111';
+    const b = '22222222-2222-4222-8222-222222222222';
+    assert.deepEqual(parseGuestHidden(`${a},junk,${b},${a}`), [a, b]);
+    const many = Array.from({ length: GUEST_MAX_HIDDEN + 5 }, (_, i) => `${String(i).padStart(8, '0')}-1111-4111-8111-111111111111`);
+    const kept = parseGuestHidden(many.join(','));
+    assert.equal(kept.length, GUEST_MAX_HIDDEN);
+    assert.equal(kept.at(-1), many.at(-1));
+    const mutes = guestMutesFrom((name) => (name === 'guest-hidden' ? a : undefined));
+    assert.deepEqual(mutes.hiddenIds, [a]);
+    assert.equal(noGuestMutes(mutes), false);
+    assert.equal(noGuestMutes({ sourceIds: [], words: [], hiddenIds: [] }), true);
+    // Sent to the feed only when there are some.
+    const asOf = '2026-11-17T08:00:00.000Z';
+    assert.deepEqual(feedRpcArgs({ categoryIds: [], search: '' }, 1, asOf, mutes).p_hidden_ids, [a]);
+    assert.equal(feedRpcArgs({ categoryIds: [], search: '' }, 1, asOf, { sourceIds: [], words: [], hiddenIds: [] }).p_hidden_ids, undefined);
+  });
+
+  it('reads the newspapers a list is filtered to from its address', () => {
+    assert.deepEqual(paperSlugsFromParams({ papers: 'al-jazeera,NPR-World,al-jazeera' }), ['al-jazeera', 'npr-world']);
+    assert.deepEqual(paperSlugsFromParams({ papers: "bbc-news-world,<script>,a b,'x" }), ['bbc-news-world']);
+    assert.deepEqual(paperSlugsFromParams({ papers: ['first', 'second'] }), ['first']);
+    assert.deepEqual(paperSlugsFromParams({}), []);
+    assert.equal(paperSlugsFromParams({ papers: Array.from({ length: 80 }, (_, i) => `p${i}`).join(',') }).length, 60);
   });
 
   it('turns a story into a clipping kept in the browser', () => {

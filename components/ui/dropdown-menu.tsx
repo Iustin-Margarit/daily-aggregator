@@ -16,11 +16,84 @@ import { cn } from "@/lib/utils"
  * its items leaves `pointer-events: none` on <body> after the dialog closes
  * (a Radix bug), which makes the whole page unclickable.
  */
-const DropdownMenu = ({ modal = false, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) => (
-  <DropdownMenuPrimitive.Root modal={modal} {...props} />
-)
+type MenuOpenState = { open: boolean; setOpen: (open: boolean) => void }
+const MenuOpen = React.createContext<MenuOpenState | null>(null)
 
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+const DropdownMenu = ({
+  modal = false,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) => {
+  // Kept here (controlled or not) so the trigger can open the menu on a finger's tap itself (below).
+  const [inner, setInner] = React.useState(defaultOpen)
+  const open = openProp ?? inner
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (openProp === undefined) setInner(next)
+      onOpenChange?.(next)
+    },
+    [openProp, onOpenChange]
+  )
+  const state = React.useMemo(() => ({ open, setOpen }), [open, setOpen])
+  return (
+    <MenuOpen.Provider value={state}>
+      <DropdownMenuPrimitive.Root modal={modal} open={open} onOpenChange={setOpen} {...props} />
+    </MenuOpen.Provider>
+  )
+}
+
+/** How far a finger may move between landing and lifting and still count as a tap, in CSS pixels. */
+const TAP_SLOP = 10
+
+/**
+ * Radix opens a menu the moment a pointer lands on its trigger, which on a phone is
+ * also the start of every scroll: a thumb scrolling past a menu button popped the
+ * menu open. With a mouse it still opens on the press; with a finger or a pen it
+ * opens only on a deliberate tap, the click the browser sends when the finger lifts
+ * (none after a scroll), and not when the finger slid more than a few pixels.
+ * Keyboard opening (Enter, Space, arrow down) is Radix's own and unchanged.
+ */
+const DropdownMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ onPointerDown, onPointerCancel, onClick, ...props }, ref) => {
+  const menu = React.useContext(MenuOpen)
+  const landed = React.useRef<{ x: number; y: number; wasOpen: boolean } | null>(null)
+  return (
+    <DropdownMenuPrimitive.Trigger
+      ref={ref}
+      {...props}
+      onPointerDown={(event) => {
+        onPointerDown?.(event)
+        if (event.pointerType === "mouse") {
+          landed.current = null
+          return
+        }
+        // Touch or pen: Radix skips its own open when the event is marked handled; the tap's click opens it.
+        // Whether it was open is noted now: a tap on the trigger of an open menu also counts as a press
+        // outside the menu, which closes it before the click arrives, and must not open it again.
+        landed.current = { x: event.clientX, y: event.clientY, wasOpen: menu?.open ?? false }
+        event.preventDefault()
+      }}
+      onPointerCancel={(event) => {
+        onPointerCancel?.(event)
+        // The browser took the finger over for scrolling.
+        landed.current = null
+      }}
+      onClick={(event) => {
+        onClick?.(event)
+        const start = landed.current
+        landed.current = null
+        if (!start || !menu || event.defaultPrevented) return
+        if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > TAP_SLOP) return
+        menu.setOpen(!start.wasOpen)
+      }}
+    />
+  )
+})
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
@@ -118,9 +191,10 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     checked={checked}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    {/* A printed box on every line, ticked in brass when chosen, so the list reads as a checklist at once. */}
+    <span className="absolute left-2 flex h-4 w-4 items-center justify-center rounded-[2px] border border-rule/70 bg-card/60" aria-hidden="true">
       <DropdownMenuPrimitive.ItemIndicator>
-        <span aria-hidden="true">✓</span>
+        <span className="text-[0.8rem] font-bold leading-none text-(--brass-ink)">✓</span>
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}

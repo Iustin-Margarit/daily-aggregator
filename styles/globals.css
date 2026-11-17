@@ -1688,10 +1688,20 @@ article:focus-within .photo-plate::after,
       padding-inline: 0.55rem 0.65rem;
       letter-spacing: 0.1em;
     }
-    /* On the search page itself. */
-    &[aria-current='page'] {
+    /* The Filter ticket with newspapers chosen (components/front/section-ribbon.tsx). */
+    &[aria-current='page'],
+    &[data-active] {
       color: var(--brass-ink);
       border-color: var(--ink-gold);
+    }
+  }
+
+  /* The Filter ticket on phones: as narrow as the frame allows. */
+  @media (width < 40rem) {
+    .filter-ticket {
+      gap: 0.3rem;
+      padding-inline: 0.5rem 0.55rem;
+      letter-spacing: 0.08em;
     }
   }
 
@@ -2182,58 +2192,9 @@ article:focus-within .photo-plate::after,
 
 
 /*
- * Saved stories (components/saved/saved-item.tsx). A story the reader has read is franked like a used stamp:
- * the photo fades to grey and a real postmark ring (docs/ASSETS.md) is struck on it in red with the word READ. Under it, two
- * hairline buttons: its folder (a Victorian printer's label its mark) and Remove.
+ * Saved stories (components/saved/saved-item.tsx): under each, two hairline buttons, its folder (a Victorian
+ * printer's label its mark) and Remove. The photograph is never marked (a story already opened has a softer headline).
  */
-.photo-plate.is-read img {
-  filter: grayscale(1) contrast(0.95);
-  opacity: 0.55;
-}
-.read-postmark {
-  --read-ink: hsl(2 70% 42%);
-  --ornament-ink: var(--read-ink);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: block;
-  width: min(62%, 6.5rem);
-  pointer-events: none;
-  transform: translate(-50%, -50%) rotate(-12deg);
-  /* A thin light edge, so the red reads on a dark photograph as well as a pale one. */
-  filter: drop-shadow(0 0 1px rgb(255 250 240 / 0.85)) drop-shadow(0 0 0.5px rgb(255 250 240 / 0.6));
-  animation: read-strike 0.32s cubic-bezier(0.2, 1.5, 0.4, 1);
-}
-@keyframes read-strike {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(-12deg) scale(1.4);
-  }
-}
-.dark .read-postmark {
-  --read-ink: hsl(4 78% 62%);
-  filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.8));
-}
-.dark .read-postmark-word {
-  background: rgb(18 22 32 / 0.75);
-}
-.read-postmark-word {
-  position: absolute;
-  /* A pale disc of paper inside the ring, so the word reads on a small, busy photograph. */
-  inset: 17%;
-  border-radius: 50%;
-  background: rgb(255 250 240 / 0.78);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-typewriter);
-  font-size: clamp(0.66rem, 1.4vw + 0.32rem, 0.95rem);
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--read-ink);
-}
 /* The folder button under a saved story: its small label engraving gives way to the folder's name when narrow. */
 .folder-button {
   container-type: inline-size;
@@ -2241,11 +2202,6 @@ article:focus-within .photo-plate::after,
 .folder-button-mark {
   @container (max-width: 8rem) {
     display: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .read-postmark {
-    animation: none;
   }
 }
 

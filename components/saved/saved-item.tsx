@@ -54,16 +54,10 @@ function SavedItemImpl({ article, folders, onOpen, onMove, onNewFolder, onRemove
         onClick={() => onOpen(article)}
         tabIndex={-1}
         aria-hidden="true"
-        className={cn('photo-plate relative col-start-1 row-start-1 self-start sm:row-span-3', article.is_read && 'is-read')}
+        className="photo-plate relative col-start-1 row-start-1 self-start sm:row-span-3"
       >
+        {/* The picture stays clean: a story already opened is told by its softer headline, not a mark on the photo. */}
         <ArticleImage src={article.image_url} alt="" category={article.category_name} width={300} sizes="(min-width: 640px) 8.5rem, 4.5rem" className="aspect-4/3 w-full" />
-        {/* Read (the story was opened): franked like a used stamp, a real postmark struck on the faded photo (styles: .read-postmark). */}
-        {article.is_read && (
-          <span className="read-postmark" aria-hidden="true">
-            <Ornament name="postmark-ring" className="block w-full" />
-            <span className="read-postmark-word">{w.read}</span>
-          </span>
-        )}
       </StoryLink>
 
       <p className="byline col-start-2 row-start-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 self-center text-[0.75rem] leading-snug sm:self-start sm:text-[0.8rem]">
@@ -77,7 +71,7 @@ function SavedItemImpl({ article, folders, onOpen, onMove, onNewFolder, onRemove
             <span className="whitespace-nowrap">{readingTime}</span>
           </>
         )}
-        {/* Said in words for screen readers; the eye sees the postmark on the photo. */}
+        {/* Said in words for screen readers; the eye sees the softer headline. */}
         {article.is_read && <span className="sr-only">{w.read}</span>}
       </p>
 

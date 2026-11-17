@@ -10,8 +10,10 @@ import { TopStoryStamp } from '@/components/articles/top-story-stamp';
 import { useArticleActions } from '@/components/articles/use-article-actions';
 import { Ornament } from '@/components/site/ornament';
 import { TimeAgo } from '@/components/site/time-ago';
+import { HiddenSlip } from '@/components/story/hidden-slip';
 import { StoryLink } from '@/components/story/story-link';
 import { getCategoryStyle } from '@/lib/category-styles';
+import { useHiddenStory } from '@/lib/hidden-stories';
 import { formatReadingTime } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/client';
 import { paperPath } from '@/lib/routes';
@@ -93,53 +95,59 @@ function ArticleCardImpl({ article, userId, eagerImage, variant = 'standard', to
   const summary = cleanText(article.summary);
   const section = getCategoryStyle(article.category_name).key ?? undefined;
   const { t } = useI18n();
+  // Hidden from the sheet just now: a slip in its place (Undo, ×), or nothing once the slip is folded away.
+  const hidden = useHiddenStory(article.id);
+  if (hidden === 'dismissed') return null;
+  if (hidden === 'hidden') return <HiddenSlip id={article.id} className="self-start" />;
 
   if (variant === 'lead') {
     return (
-      <article className="flex h-full w-full flex-col" data-section={section}>
-        <figure className="relative lg:min-h-[26rem] lg:flex-1">
-          <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate h-full">
-            {/* On desktops the photo fills the plate inside its 4px mount (.photo-plate). */}
-            <ArticleImage
-              src={article.image_url}
-              alt=""
-              category={article.category_name}
-              width={1400}
-              // Phones and tablets: the full width. Desktops: the lead column, cropped to fill a plate taller than the photo.
-              sizes="(min-width: 1024px) min(75vw, 1100px), 100vw"
-              eager={eagerImage}
-              className="aspect-video w-full lg:absolute lg:inset-1 lg:aspect-auto lg:h-[calc(100%-0.5rem)] lg:w-[calc(100%-0.5rem)]"
-            />
-          </StoryLink>
-          {topStory && <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />}
-        </figure>
-        {/*
-         * The headline is printed above the photograph, as broadsheets do, so the news shows on the
-         * first screen of a laptop or a phone without scrolling past the picture.
-         */}
-        <div className="contents">
-          <div className="order-first pb-4 lg:pb-5">
-            <CategoryBadge name={article.category_name} />
-            <h2 className="headline mt-2.5 text-[1.7rem] sm:mt-3 sm:text-[2.5rem] lg:text-[2.85rem]">
-              <StoryLink article={article} className="decoration-2 underline-offset-4 hover:underline">
-                {title}
-              </StoryLink>
-            </h2>
-            <Byline article={article} withAuthor className="mt-2 sm:mt-3" />
-          </div>
-          {summary && <DropCap text={summary} className="news-text mt-4 text-[1.08rem] leading-relaxed text-foreground/90 sm:mt-5" />}
-          {/* Phones: like the story rows, Save and Share wait in the quick-read sheet, so the next headlines come sooner. */}
-          <div className="mt-5 hidden flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3 sm:flex">
-            <StoryLink
-              article={article}
-              className="group/read inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold text-(--brass-ink) hover:text-foreground"
-            >
-              {t.story.readDispatch}
-              <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
+      <article className="flex w-full flex-col" data-section={section}>
+        {/* The headline above the photograph, as broadsheets print it, so the news is the first thing on screen. */}
+        <div className="pb-4">
+          <CategoryBadge name={article.category_name} />
+          <h2 className="headline mt-2.5 text-[1.7rem] sm:mt-3 sm:text-[2.5rem] lg:text-[2.85rem]">
+            <StoryLink article={article} className="decoration-2 underline-offset-4 hover:underline">
+              {title}
             </StoryLink>
-            {/* Fills the rest of the line beside "Read dispatch", or takes a line of its own when that is too narrow. */}
-            <StoryActions article={article} userId={userId} className="min-w-[min(17rem,100%)] flex-1" />
-          </div>
+          </h2>
+          <Byline article={article} withAuthor className="mt-2 sm:mt-3" />
+        </div>
+        {/*
+         * The photograph and the opening of the story read together: from 1280px side by side (the summary in a column
+         * beside the picture), below that one above the other. The picture's height is capped (it used to stretch to the
+         * height of the headlines beside it and push the summary off the first screen); cropped from a little above the
+         * middle, so faces in a portrait keep their heads.
+         */}
+        <div className="xl:grid xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start xl:gap-7">
+          <figure className="relative">
+            <StoryLink article={article} tabIndex={-1} aria-hidden="true" className="photo-plate">
+              <ArticleImage
+                src={article.image_url}
+                alt=""
+                category={article.category_name}
+                width={1400}
+                // Phones and tablets: the full width. From 1280px: the photo's column beside the summary.
+                sizes="(min-width: 1280px) min(45vw, 700px), (min-width: 1024px) 62vw, 100vw"
+                eager={eagerImage}
+                className="aspect-video max-h-[clamp(12rem,42svh,27rem)] w-full object-[50%_30%] xl:aspect-[3/2]"
+              />
+            </StoryLink>
+            {topStory && <TopStoryStamp className="absolute right-3 top-3 z-10 h-20 w-20 rotate-12 drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)] sm:right-5 sm:top-5 sm:h-24 sm:w-24" />}
+          </figure>
+          {summary && <DropCap text={summary} className="news-text mt-4 text-[1.08rem] leading-relaxed text-foreground/90 sm:mt-5 xl:mt-0" />}
+        </div>
+        {/* Phones: like the story rows, Save and Share wait in the quick-read sheet, so the next headlines come sooner. */}
+        <div className="mt-5 hidden flex-wrap items-center justify-between gap-3 border-t-[3px] border-double border-rule/40 pt-3 sm:flex">
+          <StoryLink
+            article={article}
+            className="group/read inline-flex items-center gap-2.5 font-display text-[1.05rem] font-semibold text-(--brass-ink) hover:text-foreground"
+          >
+            {t.story.readDispatch}
+            <Ornament name="fist" className="fist-poke h-[1rem] [--ornament-ink:currentColor]" />
+          </StoryLink>
+          {/* Fills the rest of the line beside "Read dispatch", or takes a line of its own when that is too narrow. */}
+          <StoryActions article={article} userId={userId} className="min-w-[min(17rem,100%)] flex-1" />
         </div>
       </article>
     );

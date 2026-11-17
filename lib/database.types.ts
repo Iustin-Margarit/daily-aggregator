@@ -487,6 +487,7 @@ export type Database = {
         Args: {
           p_as_of?: string
           p_category_ids?: string[]
+          p_hidden_ids?: string[]
           p_limit?: number
           p_muted_source_ids?: string[]
           p_muted_words?: string[]
@@ -518,6 +519,7 @@ export type Database = {
         Args: {
           p_as_of?: string
           p_category_ids?: string[]
+          p_hidden_ids?: string[]
           p_latest?: number
           p_muted_source_ids?: string[]
           p_muted_words?: string[]

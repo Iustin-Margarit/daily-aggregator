@@ -38,7 +38,13 @@ export function feedRpcArgs(filters: FeedFilters, page: number, asOf: string, mu
     p_offset: offset,
     p_as_of: asOf,
     ...mutedArgs(mutes),
+    ...hiddenArgs(mutes),
   };
+}
+
+/** get_feed's and get_front_page's argument for a visitor's hidden stories (omitted when there are none). */
+export function hiddenArgs(mutes?: GuestMutes) {
+  return { p_hidden_ids: mutes?.hiddenIds.length ? mutes.hiddenIds : undefined };
 }
 
 /** The feed functions' arguments for a visitor's muted newspapers and words (omitted when there are none). */
@@ -92,6 +98,13 @@ export function pageHref(path: string, query: Record<string, string>, page: numb
   if (page > 1) params.set('page', String(page));
   const text = params.toString();
   return text ? `${path}?${text}` : path;
+}
+
+/** The newspapers a list is filtered to (?papers=the-guardian-world,bbc-news-world): their address names, at most 60. */
+export function paperSlugsFromParams(params: SearchParams): string[] {
+  const value = firstParam(params.papers);
+  if (!value) return [];
+  return [...new Set(value.toLowerCase().split(',').map((slug) => slug.trim()))].filter((slug) => /^[a-z0-9-]{1,80}$/.test(slug)).slice(0, 60);
 }
 
 /** The query again (first value of each key), without the given keys: "?a=1&b=2", or "" when nothing is left. */
