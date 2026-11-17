@@ -9,7 +9,7 @@ care about.
 ![The front page in the morning edition: the blackletter masthead with a pocket watch and tonight's moon, the section ribbon, the lead story beside the latest dispatches, and the paper-theatre street](docs/screenshots/feed.jpg)
 
 More screenshots: [quick read](docs/screenshots/quick-read.jpg) · [night edition](docs/screenshots/feed-dark.jpg) ·
-[saved stories](docs/screenshots/saved.jpg) ·
+[saved stories](docs/screenshots/saved.jpg) · [sections](docs/screenshots/sections.jpg) ·
 [phone](docs/screenshots/mobile.jpg) · [newsroom dashboard](docs/screenshots/admin.jpg)
 
 Built with **Next.js 16**, **React 19**, **TypeScript**, **Tailwind CSS 4** and **Supabase**
@@ -252,7 +252,7 @@ tests/                   unit tests (node:test)
 | `npm run build` / `start` | Production build / production server |
 | `npm run preview` | Build and start production locally: the real speed of the site |
 | `npm run check` | Type check + lint + unit tests |
-| `npm run test:db` | Check the feed functions against the development database, as a visitor (read-only) |
+| `npm run test:db` | Check the feed functions and the security rules against the development database (makes and deletes two temporary readers) |
 | `npm run ingest` | Fetch all enabled sources once |
 | `npm run make-admin -- <email>` | Give an account the admin role |
 | `npm run db:push:dev` | Apply new migrations to the development project |
